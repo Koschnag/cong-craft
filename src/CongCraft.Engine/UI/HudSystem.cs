@@ -4,6 +4,7 @@ using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
 using CongCraft.Engine.Dialogue;
 using CongCraft.Engine.Inventory;
+using CongCraft.Engine.Quest;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
 using Silk.NET.OpenGL;
@@ -144,6 +145,9 @@ public sealed class HudSystem : ISystem
             // NPC proximity hint
             DrawNpcProximityHint(w, h);
         }
+
+        // Quest tracker (top-left)
+        DrawQuestTracker(w, h);
 
         // Minimap placeholder (top-right)
         DrawRect(new HudElement(
@@ -319,6 +323,66 @@ public sealed class HudSystem : ISystem
                     new Vector4(0.3f, 0.3f, 0.15f, 0.7f)));
                 break;
             }
+        }
+    }
+
+    private void DrawQuestTracker(int screenW, int screenH)
+    {
+        foreach (var (entity, player) in _world.Query<PlayerComponent>())
+        {
+            if (!_world.HasComponent<QuestJournal>(entity)) continue;
+            var journal = _world.GetComponent<QuestJournal>(entity);
+            if (journal.ActiveQuests.Count == 0) continue;
+
+            float trackerX = 20f;
+            float trackerY = screenH - 30f;
+
+            // Show first active quest
+            var quest = journal.ActiveQuests[0];
+
+            // Quest title bar
+            DrawRect(new HudElement(new Vector2(trackerX, trackerY), new Vector2(200, 18),
+                new Vector4(0.3f, 0.25f, 0.1f, 0.7f)));
+
+            // Objectives
+            float objY = trackerY - 22;
+            foreach (var obj in quest.Objectives)
+            {
+                // Objective background
+                DrawRect(new HudElement(new Vector2(trackerX + 8, objY), new Vector2(185, 16),
+                    new Vector4(0.1f, 0.1f, 0.12f, 0.6f)));
+
+                // Progress bar
+                float progress = obj.RequiredCount > 0
+                    ? (float)obj.CurrentCount / obj.RequiredCount
+                    : 0;
+                float barWidth = 120f * progress;
+
+                var barColor = obj.IsComplete
+                    ? new Vector4(0.2f, 0.7f, 0.2f, 0.7f)
+                    : new Vector4(0.6f, 0.5f, 0.2f, 0.6f);
+
+                DrawRect(new HudElement(new Vector2(trackerX + 12, objY + 2), new Vector2(barWidth, 12),
+                    barColor));
+
+                // Completion checkmark (small green square)
+                if (obj.IsComplete)
+                {
+                    DrawRect(new HudElement(new Vector2(trackerX + 170, objY + 3), new Vector2(10, 10),
+                        new Vector4(0.2f, 0.8f, 0.2f, 0.9f)));
+                }
+
+                objY -= 20;
+            }
+
+            // Quest count indicator
+            if (journal.ActiveQuests.Count > 1)
+            {
+                DrawRect(new HudElement(new Vector2(trackerX, objY), new Vector2(60, 12),
+                    new Vector4(0.4f, 0.3f, 0.15f, 0.5f)));
+            }
+
+            break; // Only show first player's quests
         }
     }
 

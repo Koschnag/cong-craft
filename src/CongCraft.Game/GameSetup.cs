@@ -10,6 +10,7 @@ using CongCraft.Engine.Combat;
 using CongCraft.Engine.Dialogue;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.Inventory;
+using CongCraft.Engine.Quest;
 using CongCraft.Engine.UI;
 using CongCraft.Game.Systems;
 
@@ -43,6 +44,7 @@ public static class GameSetup
         engine.RegisterSystem(new CombatSystem());
         engine.RegisterSystem(new EnemyAISystem());
         engine.RegisterSystem(new InventorySystem());
+        engine.RegisterSystem(new QuestSystem());
         engine.RegisterSystem(new EnemySpawner());
         engine.RegisterSystem(new NpcSpawner());
         engine.RegisterSystem(new RenderSystem());
@@ -114,6 +116,7 @@ internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
         if (startPotion != null) inventory.TryAdd(startPotion, 2);
         _world.AddComponent(player, inventory);
         _world.AddComponent(player, new EquipmentComponent());
+        _world.AddComponent(player, new QuestJournal());
 
         // Player capsule mesh
         var capsule = PrimitiveMeshBuilder.CreateCapsule(_gl, 0.3f, 1.8f, 12, 0.6f, 0.5f, 0.4f);
