@@ -17,6 +17,7 @@ using CongCraft.Engine.Magic;
 using CongCraft.Engine.Quest;
 using CongCraft.Engine.SaveLoad;
 using CongCraft.Engine.UI;
+using CongCraft.Engine.Weather;
 using CongCraft.Engine.VFX;
 using CongCraft.Game.Systems;
 
@@ -40,6 +41,7 @@ public static class GameSetup
         // Register systems in logical order (execution order is by Priority)
         var inputSystem = new InputSystem();
         engine.RegisterSystem(inputSystem);
+        engine.RegisterSystem(new WeatherSystem());
         engine.RegisterSystem(new PlayerMovementSystem());
         engine.RegisterSystem(dayNight);
         engine.RegisterSystem(new TerrainSystem(viewDistance: 2));

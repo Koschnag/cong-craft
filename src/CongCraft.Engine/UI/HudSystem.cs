@@ -10,6 +10,7 @@ using CongCraft.Engine.Leveling;
 using CongCraft.Engine.Magic;
 using CongCraft.Engine.Quest;
 using CongCraft.Engine.SaveLoad;
+using CongCraft.Engine.Weather;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
 using Silk.NET.OpenGL;
@@ -235,6 +236,9 @@ public sealed class HudSystem : ISystem
 
         // Save/Load notification (top-center)
         DrawSaveNotification(w, h);
+
+        // Weather indicator (top-right, above minimap)
+        DrawWeatherIndicator(w, h);
 
         // Minimap placeholder (top-right)
         DrawRect(new HudElement(
@@ -683,6 +687,33 @@ public sealed class HudSystem : ISystem
         // Key hints
         DrawRect(new HudElement(new Vector2(panelX + 8, panelY + 8), new Vector2(50, 12),
             new Vector4(0.4f, 0.3f, 0.5f, 0.6f))); // "1/2/3"
+    }
+
+    private void DrawWeatherIndicator(int screenW, int screenH)
+    {
+        if (!_world.TryGetSingleton<WeatherState>(out var weather) || weather == null) return;
+
+        float x = screenW - 170;
+        float y = screenH - 15;
+
+        // Weather type color indicator
+        var weatherColor = weather.Current switch
+        {
+            WeatherType.Clear => new Vector4(0.4f, 0.6f, 0.9f, 0.6f),
+            WeatherType.Cloudy => new Vector4(0.5f, 0.5f, 0.55f, 0.6f),
+            WeatherType.Rain => new Vector4(0.3f, 0.4f, 0.7f, 0.7f),
+            WeatherType.HeavyRain => new Vector4(0.2f, 0.3f, 0.6f, 0.8f),
+            WeatherType.Fog => new Vector4(0.6f, 0.6f, 0.65f, 0.7f),
+            WeatherType.Storm => new Vector4(0.2f, 0.15f, 0.4f, 0.8f),
+            _ => new Vector4(0.5f, 0.5f, 0.5f, 0.5f)
+        };
+
+        // Background
+        DrawRect(new HudElement(new Vector2(x, y), new Vector2(150, 10), new Vector4(0.1f, 0.1f, 0.1f, 0.4f)));
+
+        // Intensity fill
+        float fillWidth = 150f * weather.Intensity;
+        DrawRect(new HudElement(new Vector2(x, y), new Vector2(fillWidth, 10), weatherColor));
     }
 
     private void DrawSaveNotification(int screenW, int screenH)
