@@ -17,6 +17,7 @@ using CongCraft.Engine.Magic;
 using CongCraft.Engine.Quest;
 using CongCraft.Engine.SaveLoad;
 using CongCraft.Engine.UI;
+using CongCraft.Engine.Boss;
 using CongCraft.Engine.Weather;
 using CongCraft.Engine.VFX;
 using CongCraft.Game.Systems;
@@ -52,6 +53,7 @@ public static class GameSetup
         engine.RegisterSystem(new CombatSystem());
         engine.RegisterSystem(new MagicSystem());
         engine.RegisterSystem(new EnemyAISystem());
+        engine.RegisterSystem(new BossAISystem());
         engine.RegisterSystem(new InventorySystem());
         engine.RegisterSystem(new QuestSystem());
         engine.RegisterSystem(new CraftingSystem());

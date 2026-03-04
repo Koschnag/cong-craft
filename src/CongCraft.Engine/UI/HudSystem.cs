@@ -10,6 +10,7 @@ using CongCraft.Engine.Leveling;
 using CongCraft.Engine.Magic;
 using CongCraft.Engine.Quest;
 using CongCraft.Engine.SaveLoad;
+using CongCraft.Engine.Boss;
 using CongCraft.Engine.Terrain;
 using CongCraft.Engine.Weather;
 using CongCraft.Engine.Procedural;
@@ -230,6 +231,9 @@ public sealed class HudSystem : ISystem
             // Crafting station proximity hint
             DrawCraftingStationHint(w, h);
         }
+
+        // Boss health bar (top-center when boss is active)
+        DrawBossHealthBar(w, h);
 
         // Quest tracker (top-left)
         DrawQuestTracker(w, h);
@@ -836,6 +840,20 @@ public sealed class HudSystem : ISystem
             }
         }
 
+        // Boss markers (magenta)
+        foreach (var (entity, boss, health) in _world.Query<BossComponent, HealthComponent>())
+        {
+            if (!health.IsAlive) continue;
+            if (!_world.HasComponent<TransformComponent>(entity)) continue;
+            var bossTransform = _world.GetComponent<TransformComponent>(entity);
+            var markerPos = WorldToMinimap(bossTransform.Position, playerPos, mapX, mapY, mapSize, range);
+            if (markerPos.HasValue)
+            {
+                DrawRect(new HudElement(new Vector2(markerPos.Value.X - 3, markerPos.Value.Y - 3),
+                    new Vector2(7, 7), new Vector4(0.8f, 0.2f, 0.8f, 0.9f)));
+            }
+        }
+
         // Border
         DrawRect(new HudElement(new Vector2(mapX - 2, mapY - 2), new Vector2(mapSize + 4, 2),
             new Vector4(0.4f, 0.35f, 0.2f, 0.7f)));
@@ -877,6 +895,59 @@ public sealed class HudSystem : ISystem
         {
             if (_world.HasComponent<TransformComponent>(entity))
                 yield return (entity, enemy, health, _world.GetComponent<TransformComponent>(entity));
+        }
+    }
+
+    private void DrawBossHealthBar(int screenW, int screenH)
+    {
+        foreach (var (entity, boss, health) in _world.Query<BossComponent, HealthComponent>())
+        {
+            if (!boss.IsActivated || !health.IsAlive) continue;
+
+            var bossData = BossDatabase.Get(boss.BossId);
+            if (bossData == null) continue;
+
+            float barW = 400f;
+            float barH = 20f;
+            float barX = (screenW - barW) / 2f;
+            float barY = screenH - 40f;
+
+            // Boss name bar (colored by boss)
+            DrawRect(new HudElement(new Vector2(barX, barY + barH + 4), new Vector2(160, 14),
+                new Vector4(bossData.ColorR, bossData.ColorG, bossData.ColorB, 0.8f)));
+
+            // Health bar background
+            DrawRect(new HudElement(new Vector2(barX, barY), new Vector2(barW, barH),
+                new Vector4(0.1f, 0.05f, 0.05f, 0.8f)));
+
+            // Health bar fill (red to orange based on phase)
+            float healthFill = barW * health.Percentage;
+            var fillColor = boss.CurrentPhase switch
+            {
+                >= 2 => new Vector4(0.9f, 0.2f, 0.1f, 0.9f),
+                1 => new Vector4(0.9f, 0.5f, 0.1f, 0.9f),
+                _ => new Vector4(0.8f, 0.15f, 0.15f, 0.85f)
+            };
+            DrawRect(new HudElement(new Vector2(barX, barY), new Vector2(healthFill, barH), fillColor));
+
+            // Phase indicator dots
+            for (int i = 0; i < boss.MaxPhases; i++)
+            {
+                float dotX = barX + barW + 8 + i * 14;
+                var dotColor = i < boss.CurrentPhase
+                    ? new Vector4(1f, 0.3f, 0.1f, 0.9f)
+                    : new Vector4(0.3f, 0.3f, 0.3f, 0.6f);
+                DrawRect(new HudElement(new Vector2(dotX, barY + 4), new Vector2(10, 12), dotColor));
+            }
+
+            // Enraged indicator
+            if (boss.State == BossState.Enraged)
+            {
+                DrawRect(new HudElement(new Vector2(barX, barY - 4), new Vector2(barW, 2),
+                    new Vector4(1f, 0.3f, 0f, 0.9f)));
+            }
+
+            break; // Only show first active boss
         }
     }
 
