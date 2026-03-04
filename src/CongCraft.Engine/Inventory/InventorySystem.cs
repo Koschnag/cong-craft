@@ -41,6 +41,11 @@ public sealed class InventorySystem : ISystem
         ("chain_mail", 0.06f),
         ("iron_greaves", 0.08f),
         ("wolf_pelt", 0.3f),
+        ("iron_ore", 0.2f),
+        ("herb", 0.25f),
+        ("leather", 0.15f),
+        ("wood", 0.1f),
+        ("cloth", 0.1f),
     };
 
     public void Initialize(ServiceLocator services)

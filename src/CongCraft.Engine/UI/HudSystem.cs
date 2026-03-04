@@ -2,6 +2,7 @@ using System.Numerics;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
+using CongCraft.Engine.Crafting;
 using CongCraft.Engine.Dialogue;
 using CongCraft.Engine.Dungeon;
 using CongCraft.Engine.Inventory;
@@ -145,6 +146,17 @@ public sealed class HudSystem : ISystem
         {
             // NPC proximity hint
             DrawNpcProximityHint(w, h);
+        }
+
+        // Crafting panel (center when open)
+        if (_world.TryGetSingleton<CraftingState>(out var craftState) && craftState!.IsOpen)
+        {
+            DrawCraftingPanel(craftState, w, h);
+        }
+        else
+        {
+            // Crafting station proximity hint
+            DrawCraftingStationHint(w, h);
         }
 
         // Quest tracker (top-left)
@@ -411,6 +423,121 @@ public sealed class HudSystem : ISystem
             }
 
             break; // Only show first player's quests
+        }
+    }
+
+    private void DrawCraftingPanel(CraftingState state, int screenW, int screenH)
+    {
+        float panelW = 280f;
+        float panelH = 300f;
+        float panelX = (screenW - panelW) / 2f;
+        float panelY = (screenH - panelH) / 2f;
+
+        // Panel background
+        DrawRect(new HudElement(new Vector2(panelX, panelY), new Vector2(panelW, panelH),
+            new Vector4(0.08f, 0.06f, 0.04f, 0.9f)));
+
+        // Border
+        DrawRect(new HudElement(new Vector2(panelX, panelY + panelH - 2), new Vector2(panelW, 2),
+            new Vector4(0.6f, 0.45f, 0.2f, 0.9f)));
+        DrawRect(new HudElement(new Vector2(panelX, panelY), new Vector2(panelW, 2),
+            new Vector4(0.6f, 0.45f, 0.2f, 0.9f)));
+
+        // Station type indicator (colored bar at top)
+        var stationColor = state.StationType switch
+        {
+            CraftingStationType.Anvil => new Vector4(0.6f, 0.6f, 0.7f, 0.8f),
+            CraftingStationType.Alchemy => new Vector4(0.3f, 0.7f, 0.4f, 0.8f),
+            _ => new Vector4(0.6f, 0.45f, 0.25f, 0.8f)
+        };
+        DrawRect(new HudElement(new Vector2(panelX + 8, panelY + panelH - 24), new Vector2(160, 16), stationColor));
+
+        // Get player inventory for ingredient checking
+        InventoryComponent? playerInv = null;
+        foreach (var (entity, player) in _world.Query<PlayerComponent>())
+        {
+            if (_world.HasComponent<InventoryComponent>(entity))
+                playerInv = _world.GetComponent<InventoryComponent>(entity);
+            break;
+        }
+
+        // Recipe list
+        float recipeY = panelY + panelH - 50;
+        for (int i = 0; i < state.AvailableRecipes.Count && i < 10; i++)
+        {
+            var recipe = state.AvailableRecipes[i];
+            bool selected = i == state.SelectedRecipe;
+            bool canCraft = playerInv != null && CraftingSystem.CanCraft(recipe, playerInv);
+
+            // Selection highlight
+            if (selected)
+            {
+                DrawRect(new HudElement(new Vector2(panelX + 4, recipeY - 2), new Vector2(panelW - 8, 28),
+                    new Vector4(0.3f, 0.25f, 0.15f, 0.6f)));
+            }
+
+            // Recipe name bar (green if craftable, red if not)
+            var nameColor = canCraft
+                ? new Vector4(0.2f, 0.6f, 0.2f, 0.8f)
+                : new Vector4(0.5f, 0.2f, 0.2f, 0.6f);
+            DrawRect(new HudElement(new Vector2(panelX + 8, recipeY + 10), new Vector2(120, 14), nameColor));
+
+            // Output item icon
+            var outputItem = ItemDatabase.Get(recipe.OutputItemId);
+            if (outputItem != null)
+            {
+                DrawRect(new HudElement(new Vector2(panelX + panelW - 30, recipeY + 6), new Vector2(18, 18),
+                    new Vector4(outputItem.IconR, outputItem.IconG, outputItem.IconB, 0.9f)));
+            }
+
+            // Ingredient dots (small squares showing required materials)
+            float dotX = panelX + 8;
+            for (int j = 0; j < recipe.Ingredients.Count; j++)
+            {
+                var ingredient = recipe.Ingredients[j];
+                var ingredientItem = ItemDatabase.Get(ingredient.ItemId);
+                bool hasEnough = playerInv != null && playerInv.CountOf(ingredient.ItemId) >= ingredient.Count;
+
+                if (ingredientItem != null)
+                {
+                    float alpha = hasEnough ? 0.9f : 0.3f;
+                    DrawRect(new HudElement(new Vector2(dotX, recipeY - 2), new Vector2(10, 10),
+                        new Vector4(ingredientItem.IconR, ingredientItem.IconG, ingredientItem.IconB, alpha)));
+                }
+                dotX += 14;
+            }
+
+            recipeY -= 34;
+        }
+
+        // Craft hint at bottom
+        DrawRect(new HudElement(new Vector2(panelX + 8, panelY + 8), new Vector2(80, 14),
+            new Vector4(0.5f, 0.4f, 0.2f, 0.7f))); // "Enter to Craft"
+        DrawRect(new HudElement(new Vector2(panelX + 100, panelY + 8), new Vector2(60, 14),
+            new Vector4(0.4f, 0.2f, 0.2f, 0.7f))); // "Esc to Close"
+    }
+
+    private void DrawCraftingStationHint(int screenW, int screenH)
+    {
+        Vector3 playerPos = Vector3.Zero;
+        foreach (var (entity, player, transform) in _world.Query<PlayerComponent, TransformComponent>())
+        {
+            playerPos = transform.Position;
+            break;
+        }
+
+        foreach (var (entity, station, transform) in _world.Query<CraftingComponent, TransformComponent>())
+        {
+            float dist = Vector3.Distance(playerPos, transform.Position);
+            if (dist < station.InteractionRadius)
+            {
+                // "Press C to craft" hint
+                DrawRect(new HudElement(
+                    new Vector2((screenW - 140) / 2f, 120),
+                    new Vector2(140, 20),
+                    new Vector4(0.35f, 0.25f, 0.1f, 0.7f)));
+                break;
+            }
         }
     }
 

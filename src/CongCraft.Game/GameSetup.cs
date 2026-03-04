@@ -7,6 +7,7 @@ using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
 using CongCraft.Engine.Terrain;
 using CongCraft.Engine.Combat;
+using CongCraft.Engine.Crafting;
 using CongCraft.Engine.Dialogue;
 using CongCraft.Engine.Dungeon;
 using CongCraft.Engine.ECS;
@@ -47,6 +48,7 @@ public static class GameSetup
         engine.RegisterSystem(new EnemyAISystem());
         engine.RegisterSystem(new InventorySystem());
         engine.RegisterSystem(new QuestSystem());
+        engine.RegisterSystem(new CraftingSystem());
         engine.RegisterSystem(new DungeonSystem());
         engine.RegisterSystem(new EnemySpawner());
         engine.RegisterSystem(new NpcSpawner());

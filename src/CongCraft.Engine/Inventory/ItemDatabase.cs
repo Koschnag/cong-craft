@@ -65,6 +65,42 @@ public static class ItemDatabase
             Slot = ItemSlot.None, Weight = 0.1f,
             IconR = 0.9f, IconG = 0.8f, IconB = 0.2f
         });
+        Register(new ItemData
+        {
+            Id = "iron_ore", Name = "Iron Ore", Type = ItemType.Material,
+            Slot = ItemSlot.None, Weight = 3f,
+            IconR = 0.45f, IconG = 0.45f, IconB = 0.5f
+        });
+        Register(new ItemData
+        {
+            Id = "herb", Name = "Herb", Type = ItemType.Material,
+            Slot = ItemSlot.None, Weight = 0.2f,
+            IconR = 0.2f, IconG = 0.7f, IconB = 0.2f
+        });
+        Register(new ItemData
+        {
+            Id = "leather", Name = "Leather", Type = ItemType.Material,
+            Slot = ItemSlot.None, Weight = 1f,
+            IconR = 0.55f, IconG = 0.35f, IconB = 0.15f
+        });
+        Register(new ItemData
+        {
+            Id = "wood", Name = "Wood", Type = ItemType.Material,
+            Slot = ItemSlot.None, Weight = 2f,
+            IconR = 0.5f, IconG = 0.35f, IconB = 0.2f
+        });
+        Register(new ItemData
+        {
+            Id = "cloth", Name = "Cloth", Type = ItemType.Material,
+            Slot = ItemSlot.None, Weight = 0.5f,
+            IconR = 0.75f, IconG = 0.7f, IconB = 0.6f
+        });
+        Register(new ItemData
+        {
+            Id = "strength_elixir", Name = "Strength Elixir", Type = ItemType.Consumable,
+            Slot = ItemSlot.None, Weight = 0.5f,
+            AttackBonus = 10f, IconR = 0.8f, IconG = 0.4f, IconB = 0.1f
+        });
     }
 
     private static void Register(ItemData item) => Items[item.Id] = item;
