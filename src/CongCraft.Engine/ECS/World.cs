@@ -17,6 +17,8 @@ public sealed class World
         return entity;
     }
 
+    public bool HasEntity(Entity entity) => _entities.ContainsKey(entity.Id);
+
     public void DestroyEntity(Entity entity)
     {
         _entities.Remove(entity.Id);

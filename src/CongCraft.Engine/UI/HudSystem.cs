@@ -2,6 +2,7 @@ using System.Numerics;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
+using CongCraft.Engine.Dialogue;
 using CongCraft.Engine.Inventory;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
@@ -133,6 +134,17 @@ public sealed class HudSystem : ISystem
             }
         }
 
+        // Dialogue panel (bottom-center when active)
+        if (_world.TryGetSingleton<DialogueState>(out var dialogueState) && dialogueState!.IsActive)
+        {
+            DrawDialoguePanel(dialogueState, w, h);
+        }
+        else
+        {
+            // NPC proximity hint
+            DrawNpcProximityHint(w, h);
+        }
+
         // Minimap placeholder (top-right)
         DrawRect(new HudElement(
             new Vector2(w - 170, h - 170),
@@ -226,6 +238,88 @@ public sealed class HudSystem : ISystem
             new Vector4(0.6f, 0.5f, 0.2f, 0.6f))); // "1-5 Equip"
         DrawRect(new HudElement(new Vector2(panelX + 65, hintY), new Vector2(40, 10),
             new Vector4(0.2f, 0.6f, 0.2f, 0.6f))); // "H Heal"
+    }
+
+    private void DrawDialoguePanel(DialogueState state, int screenW, int screenH)
+    {
+        var node = state.CurrentNode;
+        if (node == null) return;
+
+        float panelW = MathF.Min(600f, screenW - 40f);
+        float panelH = 180f;
+        float panelX = (screenW - panelW) / 2f;
+        float panelY = 20f;
+
+        // Dark panel background
+        DrawRect(new HudElement(new Vector2(panelX, panelY), new Vector2(panelW, panelH),
+            new Vector4(0.05f, 0.05f, 0.08f, 0.9f)));
+
+        // Gold border top & bottom
+        DrawRect(new HudElement(new Vector2(panelX, panelY + panelH - 2), new Vector2(panelW, 2),
+            new Vector4(0.7f, 0.55f, 0.2f, 0.9f)));
+        DrawRect(new HudElement(new Vector2(panelX, panelY), new Vector2(panelW, 2),
+            new Vector4(0.7f, 0.55f, 0.2f, 0.9f)));
+
+        // Speaker name indicator (colored bar at top)
+        DrawRect(new HudElement(new Vector2(panelX + 10, panelY + panelH - 20), new Vector2(150, 14),
+            new Vector4(0.5f, 0.4f, 0.2f, 0.8f)));
+
+        // Text area indicator (light area showing text exists)
+        DrawRect(new HudElement(new Vector2(panelX + 10, panelY + panelH - 60), new Vector2(panelW - 20, 30),
+            new Vector4(0.15f, 0.15f, 0.18f, 0.5f)));
+
+        // Choices or continue indicator
+        if (node.Choices.Count > 0)
+        {
+            float choiceY = panelY + panelH - 80;
+            for (int i = 0; i < node.Choices.Count; i++)
+            {
+                bool selected = i == state.SelectedChoice;
+                float choiceAlpha = selected ? 0.7f : 0.3f;
+
+                // Choice background
+                DrawRect(new HudElement(new Vector2(panelX + 20, choiceY - i * 26), new Vector2(panelW - 40, 22),
+                    new Vector4(0.2f, 0.18f, 0.12f, choiceAlpha)));
+
+                // Selection arrow
+                if (selected)
+                {
+                    DrawRect(new HudElement(new Vector2(panelX + 12, choiceY - i * 26 + 6), new Vector2(6, 10),
+                        new Vector4(0.9f, 0.7f, 0.2f, 0.9f)));
+                }
+            }
+        }
+        else
+        {
+            // Continue indicator (blinking dot)
+            DrawRect(new HudElement(new Vector2(panelX + panelW - 30, panelY + 10), new Vector2(12, 12),
+                new Vector4(0.7f, 0.55f, 0.2f, 0.7f)));
+        }
+    }
+
+    private void DrawNpcProximityHint(int screenW, int screenH)
+    {
+        // Check if player is near any NPC
+        Vector3 playerPos = Vector3.Zero;
+        foreach (var (entity, player, transform) in _world.Query<PlayerComponent, TransformComponent>())
+        {
+            playerPos = transform.Position;
+            break;
+        }
+
+        foreach (var (entity, npc, transform) in _world.Query<NpcComponent, TransformComponent>())
+        {
+            float dist = Vector3.Distance(playerPos, transform.Position);
+            if (dist < npc.InteractionRadius)
+            {
+                // Show "Press T to talk" indicator
+                DrawRect(new HudElement(
+                    new Vector2((screenW - 120) / 2f, 60),
+                    new Vector2(120, 20),
+                    new Vector4(0.3f, 0.3f, 0.15f, 0.7f)));
+                break;
+            }
+        }
     }
 
     private void DrawRect(HudElement element)
