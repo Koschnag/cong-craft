@@ -8,6 +8,7 @@ using CongCraft.Engine.Rendering;
 using CongCraft.Engine.Terrain;
 using CongCraft.Engine.Combat;
 using CongCraft.Engine.ECS;
+using CongCraft.Engine.Inventory;
 using CongCraft.Engine.UI;
 using CongCraft.Game.Systems;
 
@@ -36,8 +37,10 @@ public static class GameSetup
         engine.RegisterSystem(new TerrainSystem(viewDistance: 2));
         engine.RegisterSystem(new VegetationPlacer());
         engine.RegisterSystem(new SkyRenderer());
+        engine.RegisterSystem(new EquipmentSystem());
         engine.RegisterSystem(new CombatSystem());
         engine.RegisterSystem(new EnemyAISystem());
+        engine.RegisterSystem(new InventorySystem());
         engine.RegisterSystem(new EnemySpawner());
         engine.RegisterSystem(new RenderSystem());
         engine.RegisterSystem(new EnemyRenderSystem());
@@ -99,6 +102,15 @@ internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
             DodgeCooldown = 0.8f,
             DodgeDuration = 0.3f
         });
+
+        // Inventory and equipment
+        var inventory = new InventoryComponent();
+        var startSword = ItemDatabase.Get("rusty_sword");
+        if (startSword != null) inventory.TryAdd(startSword);
+        var startPotion = ItemDatabase.Get("health_potion");
+        if (startPotion != null) inventory.TryAdd(startPotion, 2);
+        _world.AddComponent(player, inventory);
+        _world.AddComponent(player, new EquipmentComponent());
 
         // Player capsule mesh
         var capsule = PrimitiveMeshBuilder.CreateCapsule(_gl, 0.3f, 1.8f, 12, 0.6f, 0.5f, 0.4f);
