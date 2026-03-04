@@ -9,6 +9,7 @@ using CongCraft.Engine.Inventory;
 using CongCraft.Engine.Leveling;
 using CongCraft.Engine.Magic;
 using CongCraft.Engine.Quest;
+using CongCraft.Engine.SaveLoad;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
 using Silk.NET.OpenGL;
@@ -231,6 +232,9 @@ public sealed class HudSystem : ISystem
 
         // Dungeon indicators
         DrawDungeonHints(w, h);
+
+        // Save/Load notification (top-center)
+        DrawSaveNotification(w, h);
 
         // Minimap placeholder (top-right)
         DrawRect(new HudElement(
@@ -679,6 +683,21 @@ public sealed class HudSystem : ISystem
         // Key hints
         DrawRect(new HudElement(new Vector2(panelX + 8, panelY + 8), new Vector2(50, 12),
             new Vector4(0.4f, 0.3f, 0.5f, 0.6f))); // "1/2/3"
+    }
+
+    private void DrawSaveNotification(int screenW, int screenH)
+    {
+        // Find SaveLoadSystem via world singleton pattern - check all systems
+        // Use a simple approach: look for notification state on entities
+        // Actually, we reference the system directly through a registered service
+        if (_world.TryGetSingleton<SaveNotification>(out var notif) && notif!.Timer > 0)
+        {
+            float alpha = MathF.Min(1f, notif.Timer);
+            DrawRect(new HudElement(
+                new Vector2((screenW - 200) / 2f, screenH - 40),
+                new Vector2(200, 24),
+                new Vector4(0.15f, 0.4f, 0.15f, 0.8f * alpha)));
+        }
     }
 
     private void DrawCraftingStationHint(int screenW, int screenH)

@@ -15,6 +15,7 @@ using CongCraft.Engine.Inventory;
 using CongCraft.Engine.Leveling;
 using CongCraft.Engine.Magic;
 using CongCraft.Engine.Quest;
+using CongCraft.Engine.SaveLoad;
 using CongCraft.Engine.UI;
 using CongCraft.Engine.VFX;
 using CongCraft.Game.Systems;
@@ -53,6 +54,7 @@ public static class GameSetup
         engine.RegisterSystem(new QuestSystem());
         engine.RegisterSystem(new CraftingSystem());
         engine.RegisterSystem(new LevelingSystem());
+        engine.RegisterSystem(new SaveLoadSystem());
         engine.RegisterSystem(new DungeonSystem());
         engine.RegisterSystem(new EnemySpawner());
         engine.RegisterSystem(new NpcSpawner());
