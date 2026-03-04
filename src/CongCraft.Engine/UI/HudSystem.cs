@@ -3,6 +3,7 @@ using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
 using CongCraft.Engine.Dialogue;
+using CongCraft.Engine.Dungeon;
 using CongCraft.Engine.Inventory;
 using CongCraft.Engine.Quest;
 using CongCraft.Engine.Procedural;
@@ -148,6 +149,9 @@ public sealed class HudSystem : ISystem
 
         // Quest tracker (top-left)
         DrawQuestTracker(w, h);
+
+        // Dungeon indicators
+        DrawDungeonHints(w, h);
 
         // Minimap placeholder (top-right)
         DrawRect(new HudElement(
@@ -323,6 +327,30 @@ public sealed class HudSystem : ISystem
                     new Vector4(0.3f, 0.3f, 0.15f, 0.7f)));
                 break;
             }
+        }
+    }
+
+    private void DrawDungeonHints(int screenW, int screenH)
+    {
+        // Check if player is near dungeon entrance (at 25, ?, 25)
+        Vector3 playerPos = Vector3.Zero;
+        foreach (var (entity, player, transform) in _world.Query<PlayerComponent, TransformComponent>())
+        {
+            playerPos = transform.Position;
+            break;
+        }
+
+        float distToEntrance = Vector2.Distance(
+            new Vector2(playerPos.X, playerPos.Z),
+            new Vector2(25f, 25f));
+
+        if (distToEntrance < 5f)
+        {
+            // "Press G to enter dungeon" hint
+            DrawRect(new HudElement(
+                new Vector2((screenW - 160) / 2f, 90),
+                new Vector2(160, 22),
+                new Vector4(0.3f, 0.15f, 0.1f, 0.8f)));
         }
     }
 
