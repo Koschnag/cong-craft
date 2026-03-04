@@ -46,15 +46,67 @@ public sealed class HudSystem : ISystem
         _hudShader.Use();
         _hudShader.SetUniform("uProjection", ortho);
 
-        // Render health bar for player
+        // Render health bar for player (using HealthComponent if available, fallback to PlayerComponent)
         foreach (var (entity, player) in _world.Query<PlayerComponent>())
         {
-            var (bg, fill) = HealthBar.Calculate(
-                player.Health, player.MaxHealth,
+            float health, maxHealth;
+            if (_world.HasComponent<HealthComponent>(entity))
+            {
+                var hc = _world.GetComponent<HealthComponent>(entity);
+                health = hc.Current;
+                maxHealth = hc.Max;
+
+                // Damage flash: red border when hit
+                if (hc.DamageFlashTimer > 0)
+                {
+                    DrawRect(new HudElement(new Vector2(0, 0), new Vector2(w, h),
+                        new Vector4(0.5f, 0f, 0f, hc.DamageFlashTimer * 0.3f)));
+                }
+            }
+            else
+            {
+                health = player.Health;
+                maxHealth = player.MaxHealth;
+            }
+
+            var (bg, fill) = HealthBar.Calculate(health, maxHealth,
                 new Vector2(20, 20), new Vector2(200, 20));
 
             DrawRect(bg);
             DrawRect(fill);
+
+            // Combat HUD hints
+            if (_world.HasComponent<CombatComponent>(entity))
+            {
+                var combat = _world.GetComponent<CombatComponent>(entity);
+
+                // Block indicator (blue bar when blocking)
+                if (combat.IsBlocking)
+                {
+                    DrawRect(new HudElement(new Vector2(20, 45), new Vector2(200, 5),
+                        new Vector4(0.2f, 0.4f, 0.8f, 0.8f)));
+                }
+
+                // Dodge cooldown indicator
+                if (combat.DodgeCooldownTimer > 0)
+                {
+                    float dodgeFill = 200f * (1f - combat.DodgeCooldownTimer / combat.DodgeCooldown);
+                    DrawRect(new HudElement(new Vector2(20, 55), new Vector2(200, 4),
+                        new Vector4(0.3f, 0.3f, 0.3f, 0.5f)));
+                    DrawRect(new HudElement(new Vector2(20, 55), new Vector2(dodgeFill, 4),
+                        new Vector4(0.8f, 0.8f, 0.2f, 0.7f)));
+                }
+            }
+        }
+
+        // Enemy HP bars (for nearby enemies)
+        foreach (var (entity, enemy, health) in _world.Query<EnemyComponent, HealthComponent>())
+        {
+            if (!health.IsAlive || enemy.State == EnemyState.Dead) continue;
+            if (!_world.HasComponent<TransformComponent>(entity)) continue;
+
+            // Simple enemy count indicator at top
+            // (World-space HP bars would need 3D-to-2D projection which is complex for HUD)
         }
 
         // Minimap placeholder (top-right)

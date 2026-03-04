@@ -6,6 +6,7 @@ using CongCraft.Engine.Input;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
 using CongCraft.Engine.Terrain;
+using CongCraft.Engine.Combat;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.UI;
 using CongCraft.Game.Systems;
@@ -35,7 +36,11 @@ public static class GameSetup
         engine.RegisterSystem(new TerrainSystem(viewDistance: 2));
         engine.RegisterSystem(new VegetationPlacer());
         engine.RegisterSystem(new SkyRenderer());
+        engine.RegisterSystem(new CombatSystem());
+        engine.RegisterSystem(new EnemyAISystem());
+        engine.RegisterSystem(new EnemySpawner());
         engine.RegisterSystem(new RenderSystem());
+        engine.RegisterSystem(new EnemyRenderSystem());
         engine.RegisterSystem(new WaterPlane());
         engine.RegisterSystem(new HudSystem());
         engine.RegisterSystem(new AudioSystem());
@@ -83,6 +88,17 @@ internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
             Scale = Vector3.One
         });
         _world.AddComponent(player, new PlayerComponent());
+        _world.AddComponent(player, new HealthComponent { Current = 100, Max = 100 });
+        _world.AddComponent(player, new CombatComponent
+        {
+            AttackDamage = 15f,
+            AttackRange = 2.5f,
+            AttackCooldown = 0.6f,
+            BlockDamageReduction = 0.7f,
+            DodgeDistance = 3f,
+            DodgeCooldown = 0.8f,
+            DodgeDuration = 0.3f
+        });
 
         // Player capsule mesh
         var capsule = PrimitiveMeshBuilder.CreateCapsule(_gl, 0.3f, 1.8f, 12, 0.6f, 0.5f, 0.4f);

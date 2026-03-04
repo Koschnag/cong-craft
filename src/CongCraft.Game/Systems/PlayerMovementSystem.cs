@@ -49,14 +49,33 @@ public sealed class PlayerMovementSystem : ISystem
         // Player movement
         foreach (var (entity, player, transform) in _world.Query<PlayerComponent, TransformComponent>())
         {
+            // Check combat state for movement modifiers
+            CombatComponent? combat = _world.HasComponent<CombatComponent>(entity)
+                ? _world.GetComponent<CombatComponent>(entity) : null;
+
             player.IsRunning = input.IsKeyDown(Key.ShiftLeft);
             float speed = player.IsRunning ? player.RunSpeed : player.MoveSpeed;
 
+            // Slow down while blocking
+            if (combat?.IsBlocking == true) speed *= 0.3f;
+            // Can't move while attacking
+            if (combat?.IsAttacking == true) speed *= 0.2f;
+
             var moveDir = Vector3.Zero;
-            if (input.IsKeyDown(Key.W)) moveDir += _camera.Forward;
-            if (input.IsKeyDown(Key.S)) moveDir -= _camera.Forward;
-            if (input.IsKeyDown(Key.A)) moveDir -= _camera.Right;
-            if (input.IsKeyDown(Key.D)) moveDir += _camera.Right;
+
+            // Dodge overrides normal movement
+            if (combat?.IsDodging == true)
+            {
+                moveDir = _camera.Forward; // Dodge forward
+                speed = combat.DodgeDistance / combat.DodgeDuration;
+            }
+            else
+            {
+                if (input.IsKeyDown(Key.W)) moveDir += _camera.Forward;
+                if (input.IsKeyDown(Key.S)) moveDir -= _camera.Forward;
+                if (input.IsKeyDown(Key.A)) moveDir -= _camera.Right;
+                if (input.IsKeyDown(Key.D)) moveDir += _camera.Right;
+            }
 
             if (moveDir.LengthSquared() > 0.001f)
             {
