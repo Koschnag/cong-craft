@@ -10,6 +10,7 @@ using CongCraft.Engine.Leveling;
 using CongCraft.Engine.Magic;
 using CongCraft.Engine.Quest;
 using CongCraft.Engine.SaveLoad;
+using CongCraft.Engine.Terrain;
 using CongCraft.Engine.Weather;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
@@ -32,6 +33,7 @@ public sealed class HudSystem : ISystem
     private Shader _hudShader = null!;
     private Mesh _quad = null!;
     private IWindow _window = null!;
+    private TerrainGenerator? _terrainGen;
 
     public void Initialize(ServiceLocator services)
     {
@@ -40,6 +42,7 @@ public sealed class HudSystem : ISystem
         _window = services.Get<IWindow>();
         _hudShader = new Shader(_gl, ShaderSources.HudVertex, ShaderSources.HudFragment);
         _quad = PrimitiveMeshBuilder.CreateUnitQuad(_gl);
+        services.TryGet(out _terrainGen);
     }
 
     public void Update(GameTime time) { }
@@ -240,11 +243,8 @@ public sealed class HudSystem : ISystem
         // Weather indicator (top-right, above minimap)
         DrawWeatherIndicator(w, h);
 
-        // Minimap placeholder (top-right)
-        DrawRect(new HudElement(
-            new Vector2(w - 170, h - 170),
-            new Vector2(150, 150),
-            new Vector4(0.1f, 0.1f, 0.1f, 0.5f)));
+        // Minimap (top-right)
+        DrawMinimap(w, h);
 
         _gl.Enable(EnableCap.DepthTest);
         _gl.Disable(EnableCap.Blend);
@@ -752,6 +752,131 @@ public sealed class HudSystem : ISystem
                     new Vector4(0.35f, 0.25f, 0.1f, 0.7f)));
                 break;
             }
+        }
+    }
+
+    private void DrawMinimap(int screenW, int screenH)
+    {
+        const float mapSize = MinimapData.MapSize;
+        const int res = MinimapData.Resolution;
+        const float range = MinimapData.WorldRange;
+        float mapX = screenW - mapSize - 20;
+        float mapY = screenH - mapSize - 20;
+        float cellSize = mapSize / res;
+
+        // Get player position for centering
+        Vector3 playerPos = Vector3.Zero;
+        foreach (var (entity, player, transform) in _world.Query<PlayerComponent, TransformComponent>())
+        {
+            playerPos = transform.Position;
+            break;
+        }
+
+        // Background
+        DrawRect(new HudElement(new Vector2(mapX - 2, mapY - 2), new Vector2(mapSize + 4, mapSize + 4),
+            new Vector4(0.05f, 0.05f, 0.05f, 0.7f)));
+
+        // Terrain grid
+        if (_terrainGen != null)
+        {
+            for (int z = 0; z < res; z++)
+            {
+                for (int x = 0; x < res; x++)
+                {
+                    float worldX = playerPos.X + (x - res / 2f) * (range * 2f / res);
+                    float worldZ = playerPos.Z + (z - res / 2f) * (range * 2f / res);
+                    float height = _terrainGen.GetHeightAt(worldX, worldZ);
+
+                    var color = HeightToColor(height);
+                    float px = mapX + x * cellSize;
+                    float py = mapY + (res - 1 - z) * cellSize;
+
+                    DrawRect(new HudElement(new Vector2(px, py), new Vector2(cellSize + 0.5f, cellSize + 0.5f), color));
+                }
+            }
+        }
+
+        // Player marker (white dot, center)
+        float playerMarkerX = mapX + mapSize / 2f - 3;
+        float playerMarkerY = mapY + mapSize / 2f - 3;
+        DrawRect(new HudElement(new Vector2(playerMarkerX, playerMarkerY), new Vector2(6, 6),
+            new Vector4(1f, 1f, 1f, 0.9f)));
+
+        // NPC markers (green)
+        foreach (var (entity, npc, transform) in _world.Query<NpcComponent, TransformComponent>())
+        {
+            var markerPos = WorldToMinimap(transform.Position, playerPos, mapX, mapY, mapSize, range);
+            if (markerPos.HasValue)
+            {
+                DrawRect(new HudElement(new Vector2(markerPos.Value.X - 2, markerPos.Value.Y - 2),
+                    new Vector2(5, 5), new Vector4(0.2f, 0.8f, 0.2f, 0.9f)));
+            }
+        }
+
+        // Enemy markers (red)
+        foreach (var (entity, enemy, health, transform) in QueryEnemiesForMinimap())
+        {
+            if (!health.IsAlive) continue;
+            var markerPos = WorldToMinimap(transform.Position, playerPos, mapX, mapY, mapSize, range);
+            if (markerPos.HasValue)
+            {
+                DrawRect(new HudElement(new Vector2(markerPos.Value.X - 2, markerPos.Value.Y - 2),
+                    new Vector2(4, 4), new Vector4(0.9f, 0.2f, 0.2f, 0.8f)));
+            }
+        }
+
+        // Crafting station markers (orange)
+        foreach (var (entity, station, transform) in _world.Query<CraftingComponent, TransformComponent>())
+        {
+            var markerPos = WorldToMinimap(transform.Position, playerPos, mapX, mapY, mapSize, range);
+            if (markerPos.HasValue)
+            {
+                DrawRect(new HudElement(new Vector2(markerPos.Value.X - 2, markerPos.Value.Y - 2),
+                    new Vector2(5, 5), new Vector4(0.9f, 0.6f, 0.1f, 0.8f)));
+            }
+        }
+
+        // Border
+        DrawRect(new HudElement(new Vector2(mapX - 2, mapY - 2), new Vector2(mapSize + 4, 2),
+            new Vector4(0.4f, 0.35f, 0.2f, 0.7f)));
+        DrawRect(new HudElement(new Vector2(mapX - 2, mapY + mapSize), new Vector2(mapSize + 4, 2),
+            new Vector4(0.4f, 0.35f, 0.2f, 0.7f)));
+    }
+
+    private static Vector4 HeightToColor(float height)
+    {
+        if (height < 1f) // Water
+            return new Vector4(0.15f, 0.25f, 0.5f, 0.8f);
+        if (height < 3f) // Beach/sand
+            return new Vector4(0.5f, 0.45f, 0.3f, 0.7f);
+        if (height < 8f) // Grass
+            return new Vector4(0.2f, 0.4f, 0.15f, 0.7f);
+        if (height < 15f) // Forest/hill
+            return new Vector4(0.15f, 0.3f, 0.1f, 0.7f);
+        // Mountain
+        return new Vector4(0.35f, 0.35f, 0.3f, 0.7f);
+    }
+
+    private static Vector2? WorldToMinimap(Vector3 worldPos, Vector3 playerPos,
+        float mapX, float mapY, float mapSize, float range)
+    {
+        float dx = worldPos.X - playerPos.X;
+        float dz = worldPos.Z - playerPos.Z;
+
+        if (MathF.Abs(dx) > range || MathF.Abs(dz) > range) return null;
+
+        float nx = (dx / range + 1f) * 0.5f; // 0..1
+        float nz = (dz / range + 1f) * 0.5f;
+
+        return new Vector2(mapX + nx * mapSize, mapY + (1f - nz) * mapSize);
+    }
+
+    private IEnumerable<(Entity, EnemyComponent, HealthComponent, TransformComponent)> QueryEnemiesForMinimap()
+    {
+        foreach (var (entity, enemy, health) in _world.Query<EnemyComponent, HealthComponent>())
+        {
+            if (_world.HasComponent<TransformComponent>(entity))
+                yield return (entity, enemy, health, _world.GetComponent<TransformComponent>(entity));
         }
     }
 
