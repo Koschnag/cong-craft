@@ -12,6 +12,7 @@ using CongCraft.Engine.ECS;
 using CongCraft.Engine.Inventory;
 using CongCraft.Engine.Quest;
 using CongCraft.Engine.UI;
+using CongCraft.Engine.VFX;
 using CongCraft.Game.Systems;
 
 namespace CongCraft.Game;
@@ -47,9 +48,12 @@ public static class GameSetup
         engine.RegisterSystem(new QuestSystem());
         engine.RegisterSystem(new EnemySpawner());
         engine.RegisterSystem(new NpcSpawner());
+        engine.RegisterSystem(new TorchSystem());
+        engine.RegisterSystem(new CombatVfxSystem());
         engine.RegisterSystem(new RenderSystem());
         engine.RegisterSystem(new EnemyRenderSystem());
         engine.RegisterSystem(new WaterPlane());
+        engine.RegisterSystem(new ParticleRenderSystem());
         engine.RegisterSystem(new HudSystem());
         engine.RegisterSystem(new AudioSystem());
 

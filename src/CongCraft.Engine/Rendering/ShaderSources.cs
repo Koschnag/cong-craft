@@ -257,4 +257,118 @@ void main()
     FragColor = uColor;
 }
 ";
+
+    public const string ParticleVertex = @"
+#version 330 core
+layout (location = 0) in vec2 aQuad;
+
+uniform mat4 uView;
+uniform mat4 uProjection;
+uniform vec3 uPosition;
+uniform float uSize;
+uniform vec3 uCameraRight;
+uniform vec3 uCameraUp;
+
+void main()
+{
+    vec3 worldPos = uPosition
+        + uCameraRight * aQuad.x * uSize
+        + uCameraUp * aQuad.y * uSize;
+    gl_Position = uProjection * uView * vec4(worldPos, 1.0);
+}
+";
+
+    public const string ParticleFragment = @"
+#version 330 core
+uniform vec4 uColor;
+
+out vec4 FragColor;
+
+void main()
+{
+    // Soft circle falloff
+    vec2 center = gl_PointCoord - vec2(0.5);
+    float dist = length(center) * 2.0;
+    float alpha = uColor.a * smoothstep(1.0, 0.3, dist);
+    FragColor = vec4(uColor.rgb, alpha);
+}
+";
+
+    public const string BasicVertexPointLights = @"
+#version 330 core
+layout (location = 0) in vec3 aPosition;
+layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec3 aColor;
+
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProjection;
+
+out vec3 FragPos;
+out vec3 Normal;
+out vec3 VertexColor;
+
+void main()
+{
+    vec4 worldPos = uModel * vec4(aPosition, 1.0);
+    FragPos = worldPos.xyz;
+    Normal = mat3(transpose(inverse(uModel))) * aNormal;
+    VertexColor = aColor;
+    gl_Position = uProjection * uView * worldPos;
+}
+";
+
+    public const string BasicFragmentPointLights = @"
+#version 330 core
+in vec3 FragPos;
+in vec3 Normal;
+in vec3 VertexColor;
+
+uniform vec3 uSunDirection;
+uniform vec3 uSunColor;
+uniform vec3 uAmbientColor;
+uniform float uSunIntensity;
+uniform float uFogDensity;
+uniform vec3 uFogColor;
+uniform vec3 uCameraPos;
+
+// Point lights
+uniform int uPointLightCount;
+uniform vec3 uPointLightPos[4];
+uniform vec3 uPointLightColor[4];
+uniform float uPointLightIntensity[4];
+uniform float uPointLightRadius[4];
+
+out vec4 FragColor;
+
+void main()
+{
+    vec3 norm = normalize(Normal);
+
+    // Directional light (sun)
+    float diff = max(dot(norm, normalize(-uSunDirection)), 0.0);
+    vec3 diffuse = diff * uSunColor * uSunIntensity;
+    vec3 lighting = (uAmbientColor + diffuse) * VertexColor;
+
+    // Point lights
+    for (int i = 0; i < uPointLightCount && i < 4; i++)
+    {
+        vec3 toLight = uPointLightPos[i] - FragPos;
+        float dist = length(toLight);
+        if (dist > uPointLightRadius[i]) continue;
+
+        float attenuation = 1.0 - (dist / uPointLightRadius[i]);
+        attenuation = attenuation * attenuation; // Quadratic falloff
+        float pointDiff = max(dot(norm, normalize(toLight)), 0.0);
+        lighting += pointDiff * uPointLightColor[i] * uPointLightIntensity[i] * attenuation * VertexColor;
+    }
+
+    // Distance fog
+    float fogDist = length(FragPos - uCameraPos);
+    float fog = 1.0 - exp(-fogDist * uFogDensity);
+    lighting = mix(lighting, uFogColor, clamp(fog, 0.0, 1.0));
+
+    FragColor = vec4(lighting, 1.0);
+}
+";
 }
