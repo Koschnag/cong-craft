@@ -7,6 +7,7 @@ using CongCraft.Engine.Dialogue;
 using CongCraft.Engine.Dungeon;
 using CongCraft.Engine.Inventory;
 using CongCraft.Engine.Leveling;
+using CongCraft.Engine.Magic;
 using CongCraft.Engine.Quest;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
@@ -81,6 +82,37 @@ public sealed class HudSystem : ISystem
 
             DrawRect(bg);
             DrawRect(fill);
+
+            // Mana bar (below health bar)
+            if (_world.HasComponent<ManaComponent>(entity))
+            {
+                var mana = _world.GetComponent<ManaComponent>(entity);
+                // Mana bar background
+                DrawRect(new HudElement(new Vector2(20, 44), new Vector2(200, 12),
+                    new Vector4(0.1f, 0.1f, 0.15f, 0.7f)));
+                // Mana bar fill (blue)
+                float manaWidth = 200f * mana.Percentage;
+                DrawRect(new HudElement(new Vector2(20, 44), new Vector2(manaWidth, 12),
+                    new Vector4(0.2f, 0.3f, 0.9f, 0.8f)));
+
+                // Shield active indicator (cyan glow)
+                if (_world.HasComponent<SpellState>(entity))
+                {
+                    var spellState = _world.GetComponent<SpellState>(entity);
+                    if (spellState.HasActiveShield)
+                    {
+                        DrawRect(new HudElement(new Vector2(16, 16), new Vector2(208, 44),
+                            new Vector4(0.3f, 0.5f, 1f, 0.15f)));
+                    }
+                }
+            }
+
+            // Spell hotbar (bottom center)
+            if (_world.HasComponent<SpellState>(entity) && _world.HasComponent<ManaComponent>(entity))
+            {
+                DrawSpellHotbar(_world.GetComponent<SpellState>(entity),
+                    _world.GetComponent<ManaComponent>(entity), w, h);
+            }
 
             // Combat HUD hints
             if (_world.HasComponent<CombatComponent>(entity))
@@ -550,6 +582,52 @@ public sealed class HudSystem : ISystem
             new Vector4(0.5f, 0.4f, 0.2f, 0.7f))); // "Enter to Craft"
         DrawRect(new HudElement(new Vector2(panelX + 100, panelY + 8), new Vector2(60, 14),
             new Vector4(0.4f, 0.2f, 0.2f, 0.7f))); // "Esc to Close"
+    }
+
+    private void DrawSpellHotbar(SpellState state, ManaComponent mana, int screenW, int screenH)
+    {
+        var spells = SpellDatabase.GetSpellBar();
+        float slotSize = 36f;
+        float gap = 6f;
+        float totalWidth = spells.Length * slotSize + (spells.Length - 1) * gap;
+        float startX = (screenW - totalWidth) / 2f;
+        float y = 60f;
+
+        for (int i = 0; i < spells.Length; i++)
+        {
+            var spell = spells[i];
+            float x = startX + i * (slotSize + gap);
+            bool selected = i == state.SelectedSpell;
+            bool onCooldown = state.Cooldowns[i] > 0;
+            bool canAfford = mana.CanSpend(spell.ManaCost);
+
+            // Slot background
+            var bgColor = selected
+                ? new Vector4(0.25f, 0.2f, 0.3f, 0.8f)
+                : new Vector4(0.1f, 0.1f, 0.15f, 0.7f);
+            DrawRect(new HudElement(new Vector2(x, y), new Vector2(slotSize, slotSize), bgColor));
+
+            // Spell color icon
+            float iconAlpha = (onCooldown || !canAfford) ? 0.3f : 0.9f;
+            DrawRect(new HudElement(new Vector2(x + 4, y + 4), new Vector2(slotSize - 8, slotSize - 8),
+                new Vector4(spell.VfxR, spell.VfxG, spell.VfxB, iconAlpha)));
+
+            // Cooldown overlay
+            if (onCooldown)
+            {
+                float cdFill = state.Cooldowns[i] / spell.Cooldown;
+                float cdHeight = (slotSize - 8) * cdFill;
+                DrawRect(new HudElement(new Vector2(x + 4, y + 4), new Vector2(slotSize - 8, cdHeight),
+                    new Vector4(0f, 0f, 0f, 0.5f)));
+            }
+
+            // Selection border
+            if (selected)
+            {
+                DrawRect(new HudElement(new Vector2(x, y + slotSize - 2), new Vector2(slotSize, 2),
+                    new Vector4(0.8f, 0.7f, 0.3f, 0.9f)));
+            }
+        }
     }
 
     private void DrawSkillMenu(LevelComponent level, SkillTree skills, int screenW, int screenH)

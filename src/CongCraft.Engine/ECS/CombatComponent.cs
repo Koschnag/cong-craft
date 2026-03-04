@@ -28,4 +28,8 @@ public sealed class CombatComponent : IComponent
 
     public float EffectiveAttackDamage => AttackDamage + SkillAttackBonus;
     public float EffectiveAttackCooldown => MathF.Max(0.2f, AttackCooldown - SkillCooldownReduction);
+
+    // Magic shield (set by MagicSystem each frame)
+    public bool MagicShieldActive { get; set; }
+    public float MagicShieldReduction { get; set; } = 0.5f;
 }

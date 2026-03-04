@@ -198,6 +198,12 @@ public sealed class EnemyAISystem : ISystem
             damage = 0;
         }
 
+        // Magic shield reduces damage
+        if (playerCombat != null && playerCombat.MagicShieldActive)
+        {
+            damage *= (1f - playerCombat.MagicShieldReduction);
+        }
+
         if (damage > 0)
         {
             playerHealth.TakeDamage(damage);
