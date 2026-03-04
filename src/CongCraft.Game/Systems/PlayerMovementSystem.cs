@@ -54,7 +54,7 @@ public sealed class PlayerMovementSystem : ISystem
                 ? _world.GetComponent<CombatComponent>(entity) : null;
 
             player.IsRunning = input.IsKeyDown(Key.ShiftLeft);
-            float speed = player.IsRunning ? player.RunSpeed : player.MoveSpeed;
+            float speed = player.IsRunning ? player.EffectiveRunSpeed : player.EffectiveMoveSpeed;
 
             // Slow down while blocking
             if (combat?.IsBlocking == true) speed *= 0.3f;

@@ -6,6 +6,7 @@ using CongCraft.Engine.Crafting;
 using CongCraft.Engine.Dialogue;
 using CongCraft.Engine.Dungeon;
 using CongCraft.Engine.Inventory;
+using CongCraft.Engine.Leveling;
 using CongCraft.Engine.Quest;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
@@ -133,6 +134,40 @@ public sealed class HudSystem : ISystem
                         new Vector4(0.15f, 0.15f, 0.15f, 0.6f)));
                     DrawRect(new HudElement(new Vector2(20, 100), new Vector2(countWidth, 12),
                         new Vector4(0.4f, 0.35f, 0.2f, 0.7f)));
+                }
+            }
+
+            // XP bar and level indicator
+            if (_world.HasComponent<LevelComponent>(entity))
+            {
+                var level = _world.GetComponent<LevelComponent>(entity);
+
+                // XP bar background (bottom, above health)
+                DrawRect(new HudElement(new Vector2(20, 8), new Vector2(200, 8),
+                    new Vector4(0.15f, 0.1f, 0.2f, 0.6f)));
+
+                // XP bar fill (purple)
+                float xpWidth = 200f * level.LevelProgress;
+                DrawRect(new HudElement(new Vector2(20, 8), new Vector2(xpWidth, 8),
+                    new Vector4(0.5f, 0.2f, 0.8f, 0.8f)));
+
+                // Level number indicator (small square, wider = higher level)
+                float levelWidth = MathF.Min(40f, level.Level * 4f);
+                DrawRect(new HudElement(new Vector2(225, 8), new Vector2(levelWidth, 8),
+                    new Vector4(0.7f, 0.5f, 0.9f, 0.8f)));
+
+                // Skill point available indicator (blinking gold dot)
+                if (level.SkillPoints > 0)
+                {
+                    float pointWidth = MathF.Min(30f, level.SkillPoints * 6f);
+                    DrawRect(new HudElement(new Vector2(225, 20), new Vector2(pointWidth, 10),
+                        new Vector4(0.9f, 0.8f, 0.2f, 0.8f)));
+                }
+
+                // Skill menu (left side when open)
+                if (level.IsSkillMenuOpen && _world.HasComponent<SkillTree>(entity))
+                {
+                    DrawSkillMenu(level, _world.GetComponent<SkillTree>(entity), w, h);
                 }
             }
         }
@@ -515,6 +550,57 @@ public sealed class HudSystem : ISystem
             new Vector4(0.5f, 0.4f, 0.2f, 0.7f))); // "Enter to Craft"
         DrawRect(new HudElement(new Vector2(panelX + 100, panelY + 8), new Vector2(60, 14),
             new Vector4(0.4f, 0.2f, 0.2f, 0.7f))); // "Esc to Close"
+    }
+
+    private void DrawSkillMenu(LevelComponent level, SkillTree skills, int screenW, int screenH)
+    {
+        float panelW = 200f;
+        float panelH = 180f;
+        float panelX = 20f;
+        float panelY = screenH - panelH - 60f;
+
+        // Panel background
+        DrawRect(new HudElement(new Vector2(panelX, panelY), new Vector2(panelW, panelH),
+            new Vector4(0.06f, 0.04f, 0.1f, 0.85f)));
+
+        // Border
+        DrawRect(new HudElement(new Vector2(panelX, panelY + panelH - 2), new Vector2(panelW, 2),
+            new Vector4(0.5f, 0.3f, 0.7f, 0.8f)));
+        DrawRect(new HudElement(new Vector2(panelX, panelY), new Vector2(panelW, 2),
+            new Vector4(0.5f, 0.3f, 0.7f, 0.8f)));
+
+        // Skill points available indicator
+        float spWidth = MathF.Min(80f, level.SkillPoints * 16f);
+        DrawRect(new HudElement(new Vector2(panelX + 8, panelY + panelH - 22), new Vector2(spWidth, 14),
+            new Vector4(0.9f, 0.8f, 0.2f, 0.8f)));
+
+        // Strength bar (red) - Key 1
+        float strY = panelY + panelH - 50;
+        DrawRect(new HudElement(new Vector2(panelX + 8, strY), new Vector2(panelW - 16, 24),
+            new Vector4(0.15f, 0.08f, 0.08f, 0.6f)));
+        float strFill = (panelW - 16) * (skills.Strength / (float)SkillTree.MaxSkillLevel);
+        DrawRect(new HudElement(new Vector2(panelX + 8, strY), new Vector2(strFill, 24),
+            new Vector4(0.8f, 0.2f, 0.2f, 0.7f)));
+
+        // Endurance bar (green) - Key 2
+        float endY = strY - 34;
+        DrawRect(new HudElement(new Vector2(panelX + 8, endY), new Vector2(panelW - 16, 24),
+            new Vector4(0.08f, 0.15f, 0.08f, 0.6f)));
+        float endFill = (panelW - 16) * (skills.Endurance / (float)SkillTree.MaxSkillLevel);
+        DrawRect(new HudElement(new Vector2(panelX + 8, endY), new Vector2(endFill, 24),
+            new Vector4(0.2f, 0.8f, 0.2f, 0.7f)));
+
+        // Agility bar (blue) - Key 3
+        float agiY = endY - 34;
+        DrawRect(new HudElement(new Vector2(panelX + 8, agiY), new Vector2(panelW - 16, 24),
+            new Vector4(0.08f, 0.08f, 0.15f, 0.6f)));
+        float agiFill = (panelW - 16) * (skills.Agility / (float)SkillTree.MaxSkillLevel);
+        DrawRect(new HudElement(new Vector2(panelX + 8, agiY), new Vector2(agiFill, 24),
+            new Vector4(0.2f, 0.4f, 0.8f, 0.7f)));
+
+        // Key hints
+        DrawRect(new HudElement(new Vector2(panelX + 8, panelY + 8), new Vector2(50, 12),
+            new Vector4(0.4f, 0.3f, 0.5f, 0.6f))); // "1/2/3"
     }
 
     private void DrawCraftingStationHint(int screenW, int screenH)

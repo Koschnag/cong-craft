@@ -23,6 +23,10 @@ public sealed class HealthComponent : IComponent
 
     public void Heal(float amount)
     {
-        Current = MathF.Min(Max, Current + amount);
+        Current = MathF.Min(EffectiveMax, Current + amount);
     }
+
+    // Skill bonus (set by LevelingSystem each frame)
+    public float SkillMaxHealthBonus { get; set; }
+    public float EffectiveMax => Max + SkillMaxHealthBonus;
 }

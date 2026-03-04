@@ -63,7 +63,7 @@ public sealed class CombatSystem : ISystem
             // Update attack animation
             if (combat.IsAttacking)
             {
-                combat.AttackAnimationProgress += dt / combat.AttackCooldown;
+                combat.AttackAnimationProgress += dt / combat.EffectiveAttackCooldown;
                 if (combat.AttackAnimationProgress >= 1f)
                 {
                     combat.IsAttacking = false;
@@ -90,7 +90,7 @@ public sealed class CombatSystem : ISystem
     private void StartAttack(CombatComponent combat)
     {
         combat.IsAttacking = true;
-        combat.AttackTimer = combat.AttackCooldown;
+        combat.AttackTimer = combat.EffectiveAttackCooldown;
         combat.AttackAnimationProgress = 0;
     }
 
@@ -123,7 +123,7 @@ public sealed class CombatSystem : ISystem
             }
 
             // Hit!
-            enemyHealth.TakeDamage(playerCombat.AttackDamage);
+            enemyHealth.TakeDamage(playerCombat.EffectiveAttackDamage);
 
             if (!enemyHealth.IsAlive)
             {

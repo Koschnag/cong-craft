@@ -21,4 +21,11 @@ public sealed class CombatComponent : IComponent
     public bool IsBlocking { get; set; }
     public bool IsDodging { get; set; }
     public float AttackAnimationProgress { get; set; } // 0..1
+
+    // Skill bonuses (set by LevelingSystem each frame)
+    public float SkillAttackBonus { get; set; }
+    public float SkillCooldownReduction { get; set; }
+
+    public float EffectiveAttackDamage => AttackDamage + SkillAttackBonus;
+    public float EffectiveAttackCooldown => MathF.Max(0.2f, AttackCooldown - SkillCooldownReduction);
 }
