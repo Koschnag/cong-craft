@@ -1,0 +1,75 @@
+name: Auto-resolve Issues
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  resolve:
+    if: >
+      contains(github.event.issue.labels.*.name, 'auto') ||
+      contains(github.event.issue.labels.*.name, 'bug') ||
+      contains(github.event.issue.labels.*.name, 'enhancement')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Create branch and fix
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          BRANCH="claude/issue-${ISSUE_NUMBER}"
+          git checkout -b "$BRANCH"
+
+          claude -p "You are working on a .NET 8 game project (CongCraft). \
+            Fix the following GitHub issue and commit your changes. \
+            Run 'dotnet build' and 'dotnet test' to verify your fix. \
+            Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE} \
+            \
+            ${ISSUE_BODY}" \
+            --allowedTools "Edit,Write,Read,Glob,Grep,Bash" \
+            --max-turns 30
+
+          # Push and create PR if there are changes
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "fix: resolve issue #${ISSUE_NUMBER} - ${ISSUE_TITLE}"
+            git push -u origin "$BRANCH"
+
+            gh pr create \
+              --title "fix: #${ISSUE_NUMBER} - ${ISSUE_TITLE}" \
+              --body "$(cat <<EOF
+          ## Auto-generated fix for #${ISSUE_NUMBER}
+
+          This PR was automatically created by Claude to resolve:
+          **${ISSUE_TITLE}**
+
+          ${ISSUE_BODY}
+
+          ---
+          *Review carefully before merging.*
+          EOF
+          )" \
+              --base main \
+              --head "$BRANCH"
+
+            gh issue comment "$ISSUE_NUMBER" \
+              --body "A fix has been proposed automatically. Please review the linked PR."
+          else
+            gh issue comment "$ISSUE_NUMBER" \
+              --body "Attempted auto-fix but no code changes were needed. Manual investigation may be required."
+          fi
