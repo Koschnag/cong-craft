@@ -20,7 +20,10 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Build & count
+      - name: Restore & build
+        run: dotnet restore && dotnet build --configuration Release --no-restore
+
+      - name: Count stats
         id: stats
         run: |
           echo "src_files=$(find src -name '*.cs' | wc -l)" >> "$GITHUB_OUTPUT"
@@ -31,7 +34,7 @@ jobs:
       - name: Run tests and count
         id: tests
         run: |
-          OUTPUT=$(dotnet test --configuration Release --verbosity minimal 2>&1 || true)
+          OUTPUT=$(dotnet test --configuration Release --no-build --verbosity minimal 2>&1 || true)
           PASSED=$(echo "$OUTPUT" | grep -oP 'Passed:\s*\K\d+' || echo "0")
           FAILED=$(echo "$OUTPUT" | grep -oP 'Failed:\s*\K\d+' || echo "0")
           echo "passed=$PASSED" >> "$GITHUB_OUTPUT"
@@ -43,19 +46,20 @@ jobs:
           script: |
             const title = 'Weekly Project Metrics';
             const date = new Date().toISOString().split('T')[0];
-            const body = `## Project Metrics - ${date}
-
-            | Metric | Value |
-            |--------|-------|
-            | Source Files | ${{ steps.stats.outputs.src_files }} |
-            | Test Files | ${{ steps.stats.outputs.test_files }} |
-            | Source Lines | ${{ steps.stats.outputs.src_lines }} |
-            | Test Lines | ${{ steps.stats.outputs.test_lines }} |
-            | Tests Passed | ${{ steps.tests.outputs.passed }} |
-            | Tests Failed | ${{ steps.tests.outputs.failed }} |
-
-            [View full run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
-            `;
+            const body = [
+              `## Project Metrics - ${date}`,
+              '',
+              '| Metric | Value |',
+              '|--------|-------|',
+              `| Source Files | ${{ steps.stats.outputs.src_files }} |`,
+              `| Test Files | ${{ steps.stats.outputs.test_files }} |`,
+              `| Source Lines | ${{ steps.stats.outputs.src_lines }} |`,
+              `| Test Lines | ${{ steps.stats.outputs.test_lines }} |`,
+              `| Tests Passed | ${{ steps.tests.outputs.passed }} |`,
+              `| Tests Failed | ${{ steps.tests.outputs.failed }} |`,
+              '',
+              `[View full run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+            ].join('\n');
 
             const existing = await github.rest.issues.listForRepo({
               owner: context.repo.owner,

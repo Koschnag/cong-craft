@@ -13,11 +13,14 @@ on:
 permissions:
   issues: write
   contents: read
+  actions: write
 
 jobs:
   request-feedback:
     name: Request User Feedback
     runs-on: ubuntu-latest
+    # Only for full releases, not pre-releases
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
     steps:
       - uses: actions/github-script@v7
         with:
@@ -53,40 +56,39 @@ jobs:
               }
             }
 
-            const body = `## Release ${version} - Feedback Required
-
-            A new release has been published and needs your review.
-
-            **Release**: [${version}](${releaseUrl})
-
-            ### Changes Since Last Release
-            ${changeLog || 'First release or changelog unavailable.'}
-
-            ---
-
-            ### Please Test & Review
-
-            Download the release and test the following:
-
-            - [ ] Game starts without crashes
-            - [ ] Movement and controls work
-            - [ ] Combat system functional
-            - [ ] Magic spells work
-            - [ ] Save/Load works
-            - [ ] No visual glitches
-            - [ ] Performance acceptable
-
-            ### Your Feedback
-
-            Please comment on this issue with:
-            1. **Bugs found** (if any)
-            2. **Ideas / Vision** for next iteration
-            3. **Approval**: React with :+1: to approve, :-1: if changes needed
-
-            ---
-            > This issue will stay open until you provide feedback.
-            > All development pauses until approval.
-            > React with :+1: to approve and trigger the next development cycle.`;
+            const body = [
+              `## Release ${version} - Feedback Required`,
+              '',
+              `**Release**: [${version}](${releaseUrl})`,
+              '',
+              '### Changes Since Last Release',
+              changeLog || 'First release or changelog unavailable.',
+              '',
+              '---',
+              '',
+              '### Please Test & Review',
+              '',
+              'Download the release and test:',
+              '',
+              '- [ ] Game starts without crashes',
+              '- [ ] Movement and controls work',
+              '- [ ] Combat system functional',
+              '- [ ] Magic spells work',
+              '- [ ] Save/Load works',
+              '- [ ] No visual glitches',
+              '- [ ] Performance acceptable',
+              '',
+              '### Your Feedback',
+              '',
+              'Comment on this issue with:',
+              '1. **Bugs found**: Use `Bug: description` or `Fehler: description`',
+              '2. **Ideas / Vision**: Use `Idee: description` or `Feature: description`',
+              '3. **Approval**: React with :+1: or comment "passt" / "genehmigt"',
+              '',
+              '---',
+              '> This issue stays open until you provide feedback.',
+              '> React with :+1: or comment "passt" to approve and trigger the next cycle.',
+            ].join('\n');
 
             const issue = await github.rest.issues.create({
               owner, repo,
@@ -98,25 +100,7 @@ jobs:
 
             core.info(`Feedback issue created: #${issue.data.number}`);
 
-  # Wait for approval before allowing next development cycle
-  track-approval:
-    name: Track Feedback Status
-    runs-on: ubuntu-latest
-    needs: request-feedback
-    steps:
-      - uses: actions/github-script@v7
-        with:
-          script: |
-            // Create a deployment status to track approval
-            const { owner, repo } = context.repo;
-            let version;
-            if (context.eventName === 'release') {
-              version = context.payload.release.tag_name;
-            } else {
-              version = '${{ github.event.inputs.version }}';
-            }
-
-            // Set a repository variable to signal "awaiting feedback"
+            // Set awaiting feedback flag
             try {
               await github.rest.actions.createOrUpdateRepoVariable({
                 owner, repo,

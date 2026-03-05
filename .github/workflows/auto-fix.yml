@@ -1,7 +1,6 @@
 name: Auto-Fix Common Issues
 
 on:
-  # Triggered when self-test or nightly finds issues
   workflow_run:
     workflows: ["Continuous Self-Test Loop", "Nightly Health Check"]
     types: [completed]
@@ -27,6 +26,9 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Restore
+        run: dotnet restore
+
       - name: Auto-format code
         id: format
         run: |
@@ -34,13 +36,10 @@ jobs:
           CHANGED=$(git diff --name-only | wc -l)
           echo "formatted=$CHANGED" >> "$GITHUB_OUTPUT"
 
-      - name: Restore packages
-        run: dotnet restore
-
       - name: Try build
         id: build
         run: |
-          if dotnet build --configuration Release 2>&1 | tee build-log.txt; then
+          if dotnet build --configuration Release --no-restore 2>&1 | tee build-log.txt; then
             echo "status=success" >> "$GITHUB_OUTPUT"
           else
             echo "status=failure" >> "$GITHUB_OUTPUT"
@@ -58,6 +57,8 @@ jobs:
 
       - name: Create fix PR if changes exist
         if: steps.format.outputs.formatted != '0' && steps.build.outputs.status == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BRANCH="auto-fix/format-$(date +%Y%m%d-%H%M%S)"
           git checkout -b "$BRANCH"
@@ -69,22 +70,30 @@ jobs:
           Applied dotnet format to fix code style issues.
           Triggered by failed self-test run."
           git push -u origin "$BRANCH"
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
 
-      - name: Create PR via GitHub API
+      - name: Create PR
         if: steps.format.outputs.formatted != '0' && steps.build.outputs.status == 'success'
         uses: actions/github-script@v7
         with:
           script: |
-            const branch = (await require('child_process').execSync('git branch --show-current').toString()).trim();
-            if (!branch.startsWith('auto-fix/')) return;
+            const branch = process.env.BRANCH;
+            if (!branch) return;
 
             const pr = await github.rest.pulls.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: 'style: auto-format code',
-              body: `## Auto-Fix PR\n\nThis PR was automatically created to fix code formatting issues detected by the self-test loop.\n\n- Applied \`dotnet format\`\n- Build: :white_check_mark: passing\n- Tests: ${{ steps.test.outputs.status == 'success' && ':white_check_mark: passing' || ':warning: check results' }}\n\nThis PR will be auto-merged if all checks pass.`,
+              body: '## Auto-Fix PR\n\nAutomatically created to fix code formatting issues detected by the self-test loop.\n\n- Applied `dotnet format`\n- Build: passing\n\nThis PR will be auto-merged if all checks pass.',
               head: branch,
-              base: 'main',
+              base: 'main'
+            });
+
+            // Add labels after creation
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.data.number,
               labels: ['automated', 'ci-cd']
             });
 
@@ -97,7 +106,7 @@ jobs:
           script: |
             const fs = require('fs');
             const buildLog = fs.readFileSync('build-log.txt', 'utf8');
-            const errors = buildLog.split('\n').filter(l => l.includes('error ')).slice(0, 20);
+            const errors = buildLog.split('\n').filter(l => l.includes(': error ')).slice(0, 20);
 
             const existing = await github.rest.issues.listForRepo({
               owner: context.repo.owner,

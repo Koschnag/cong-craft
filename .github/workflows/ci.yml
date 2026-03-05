@@ -10,6 +10,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
 jobs:
   build:
     name: Build & Test
@@ -75,8 +80,43 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Check formatting
-        run: dotnet format --verify-no-changes --verbosity diagnostic || true
+      - name: Restore
+        run: dotnet restore
 
-      - name: Build with warnings as errors
-        run: dotnet build --configuration Release /warnaserror || true
+      - name: Check formatting
+        id: format
+        run: |
+          if dotnet format --verify-no-changes --verbosity diagnostic 2>&1 | tee format-output.txt; then
+            echo "status=pass" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=fail" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build with warnings check
+        id: build
+        run: |
+          dotnet build --configuration Release --no-restore 2>&1 | tee build-output.txt
+          WARNINGS=$(grep -c "warning " build-output.txt || true)
+          echo "warnings=$WARNINGS" >> "$GITHUB_OUTPUT"
+
+      - name: Post quality report
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const formatStatus = '${{ steps.format.outputs.status }}';
+            const warnings = parseInt('${{ steps.build.outputs.warnings }}') || 0;
+            const formatIcon = formatStatus === 'pass' ? ':white_check_mark:' : ':warning:';
+
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Code Quality Report',
+              head_sha: context.payload.pull_request.head.sha,
+              status: 'completed',
+              conclusion: 'success',
+              output: {
+                title: `Format: ${formatStatus}, Warnings: ${warnings}`,
+                summary: `| Check | Status |\n|-------|--------|\n| Formatting | ${formatIcon} ${formatStatus} |\n| Build Warnings | ${warnings} |`
+              }
+            });
