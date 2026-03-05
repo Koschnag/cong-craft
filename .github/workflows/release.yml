@@ -50,7 +50,7 @@ jobs:
           chmod +x CongCraft.Game
           find . -maxdepth 1 \( -name '*.dylib' -o -name '*.so' -o -name 'CongCraft.Game' \) | xargs zip -r ../CongCraft-macOS-arm64.zip
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: CongCraft-macOS-arm64
           path: CongCraft-macOS-arm64.zip
@@ -148,7 +148,7 @@ jobs:
         shell: pwsh
         run: Compress-Archive -Path ./publish/* -DestinationPath ./${{ matrix.name }}.zip
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.name }}
           path: ${{ matrix.name }}.zip
