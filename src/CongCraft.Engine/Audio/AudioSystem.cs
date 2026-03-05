@@ -6,8 +6,9 @@ using Silk.NET.OpenAL;
 namespace CongCraft.Engine.Audio;
 
 /// <summary>
-/// Manages OpenAL audio context and plays background music.
+/// Manages OpenAL audio context, background music, and sound effects.
 /// Switches between menu/exploration/combat themes based on GameMode.
+/// Provides SFX playback for UI interactions and gameplay.
 /// </summary>
 public sealed class AudioSystem : ISystem
 {
@@ -25,12 +26,25 @@ public sealed class AudioSystem : ISystem
     private uint _explorationSource, _explorationBuffer;
     private uint _combatSource, _combatBuffer;
 
+    // SFX (one-shot sources, pooled)
+    private uint _sfxClickBuffer;
+    private uint _sfxHoverBuffer;
+    private uint _sfxSelectBuffer;
+    private readonly uint[] _sfxSources = new uint[8];
+    private int _nextSfxSource;
+
     private GameMode _currentPlaying = (GameMode)(-1);
     private const float MusicVolume = 0.4f;
+    private const float SfxVolume = 0.6f;
+
+    // Singleton accessor for other systems to trigger SFX
+    private static AudioSystem? _instance;
+    public static AudioSystem? Instance => _instance;
 
     public void Initialize(ServiceLocator services)
     {
         _world = services.Get<World>();
+        _instance = this;
 
         try
         {
@@ -58,7 +72,16 @@ public sealed class AudioSystem : ISystem
             LoadTrack(ProceduralMusic.GenerateExplorationTheme(45), out _explorationBuffer, out _explorationSource);
             LoadTrack(ProceduralMusic.GenerateCombatTheme(30), out _combatBuffer, out _combatSource);
 
-            DevLog.Info("Audio tracks loaded (menu, exploration, combat)");
+            // Generate SFX
+            LoadSfxBuffer(ProceduralMusic.GenerateClickSfx(), out _sfxClickBuffer);
+            LoadSfxBuffer(ProceduralMusic.GenerateHoverSfx(), out _sfxHoverBuffer);
+            LoadSfxBuffer(ProceduralMusic.GenerateSelectSfx(), out _sfxSelectBuffer);
+
+            // Create SFX source pool
+            for (int i = 0; i < _sfxSources.Length; i++)
+                _sfxSources[i] = _al.GenSource();
+
+            DevLog.Info("Audio tracks and SFX loaded");
 
             // Start with menu music
             _al.SetSourceProperty(_menuSource, SourceFloat.Gain, MusicVolume);
@@ -89,6 +112,40 @@ public sealed class AudioSystem : ISystem
         _al.SetSourceProperty(source, SourceInteger.Buffer, (int)buffer);
         _al.SetSourceProperty(source, SourceBoolean.Looping, true);
         _al.SetSourceProperty(source, SourceFloat.Gain, 0f);
+    }
+
+    private unsafe void LoadSfxBuffer(short[] data, out uint buffer)
+    {
+        buffer = _al!.GenBuffer();
+        fixed (short* p = data)
+        {
+            _al.BufferData(buffer, BufferFormat.Mono16, p,
+                data.Length * sizeof(short), 44100);
+        }
+    }
+
+    /// <summary>Play a one-shot SFX using a round-robin source pool.</summary>
+    public void PlaySfx(SfxType type)
+    {
+        if (!_initialized || _al == null) return;
+
+        uint buffer = type switch
+        {
+            SfxType.Click => _sfxClickBuffer,
+            SfxType.Hover => _sfxHoverBuffer,
+            SfxType.Select => _sfxSelectBuffer,
+            _ => 0
+        };
+        if (buffer == 0) return;
+
+        uint src = _sfxSources[_nextSfxSource];
+        _nextSfxSource = (_nextSfxSource + 1) % _sfxSources.Length;
+
+        _al.SourceStop(src);
+        _al.SetSourceProperty(src, SourceInteger.Buffer, (int)buffer);
+        _al.SetSourceProperty(src, SourceBoolean.Looping, false);
+        _al.SetSourceProperty(src, SourceFloat.Gain, SfxVolume);
+        _al.SourcePlay(src);
     }
 
     public void Update(GameTime time)
@@ -142,6 +199,7 @@ public sealed class AudioSystem : ISystem
 
     public void Dispose()
     {
+        _instance = null;
         if (!_initialized || _al == null || _alc == null) return;
 
         void Cleanup(uint source, uint buffer)
@@ -154,6 +212,13 @@ public sealed class AudioSystem : ISystem
         Cleanup(_explorationSource, _explorationBuffer);
         Cleanup(_combatSource, _combatBuffer);
 
+        foreach (var src in _sfxSources)
+            if (src != 0) { _al.SourceStop(src); _al.DeleteSource(src); }
+
+        if (_sfxClickBuffer != 0) _al.DeleteBuffer(_sfxClickBuffer);
+        if (_sfxHoverBuffer != 0) _al.DeleteBuffer(_sfxHoverBuffer);
+        if (_sfxSelectBuffer != 0) _al.DeleteBuffer(_sfxSelectBuffer);
+
         unsafe
         {
             _alc.DestroyContext(_context);
@@ -163,4 +228,12 @@ public sealed class AudioSystem : ISystem
         _al.Dispose();
         _alc.Dispose();
     }
+}
+
+/// <summary>Types of sound effects available.</summary>
+public enum SfxType
+{
+    Click,
+    Hover,
+    Select
 }

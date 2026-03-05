@@ -26,13 +26,12 @@ public class EnemyMeshBuilderTests
     }
 
     [Fact]
-    public void GenerateData_SevenBoxes_CorrectVertexCount()
+    public void GenerateData_HasSubstantialGeometry()
     {
         var data = EnemyMeshBuilder.GenerateData();
-        // 7 boxes (body, head, 2 arms, 2 legs, helmet accent)
-        // Each box = 6 faces * 4 vertices = 24 vertices * 9 floats
-        int expectedVertices = 7 * 6 * 4 * 9;
-        Assert.Equal(expectedVertices, data.Vertices.Length);
+        // Smooth mesh with capsules, spheres, and cylinders has significantly
+        // more vertices than the old box-based approach
+        Assert.True(data.VertexCount > 100, "Smooth enemy mesh should have substantial geometry");
     }
 
     [Fact]

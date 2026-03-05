@@ -141,7 +141,7 @@ internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
         _world.AddComponent(player, new SpellState());
 
         // Player capsule mesh
-        var capsule = PrimitiveMeshBuilder.CreateCapsule(_gl, 0.3f, 1.8f, 12, 0.6f, 0.5f, 0.4f);
+        var capsule = PrimitiveMeshBuilder.CreateCapsule(_gl, 0.3f, 1.8f, 16, 0.6f, 0.5f, 0.4f);
         var shader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _world.AddComponent(player, new MeshRendererComponent
         {
