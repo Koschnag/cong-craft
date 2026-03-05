@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   tag:
@@ -44,3 +45,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "$NEW_TAG"
           git push origin "$NEW_TAG"
+
+          # Tags pushed with GITHUB_TOKEN don't trigger other workflows,
+          # so we explicitly trigger the release workflow on the new tag
+          gh workflow run release.yml --ref "$NEW_TAG"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
