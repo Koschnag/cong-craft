@@ -107,6 +107,60 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 - **Releases**: Automated multi-platform builds on version tags
 - **Monitoring**: Nightly health checks, weekly metrics, dependency updates via Dependabot
 
+### Vision System
+
+Mit dem Vision System kannst du mehrere Feature-Ideen auf einmal einreichen. Der Vision Parser erstellt automatisch einzelne Issues daraus.
+
+**Neues Vision-Issue erstellen:**
+
+1. Gehe zu [Issues > New Issue](https://github.com/Koschnag/cong-craft/issues/new)
+2. Titel: `[VISION] Dein Visions-Titel`
+3. Body mit Bullet Points:
+   ```
+   - Groessere Spielwelt mit mehreren Regionen
+   - Reittiere zum schnelleren Reisen
+   - NPC-Siedlungen mit Wirtschaftssystem
+   ```
+4. Der Vision Parser erstellt automatisch ein Feature-Issue pro Bullet Point
+
+**Vision Parser manuell triggern (z.B. fuer Issue #34):**
+
+Falls der automatische Trigger nicht greift (z.B. bei Bot-erstellten Issues), kannst du den Parser manuell starten:
+
+1. Gehe zu [Actions > Vision Parser](https://github.com/Koschnag/cong-craft/actions/workflows/vision-parser.yml)
+2. Klicke **"Run workflow"**
+3. Gib die Issue-Nummer ein (z.B. `34`)
+4. Klicke **"Run workflow"** zur Bestaetigung
+
+Der Parser erkennt Duplikate automatisch und ueberspringt bereits verarbeitete Vision-Issues.
+
+### Inline-Befehle in Issue-Kommentaren
+
+| Befehl | Aktion |
+|--------|--------|
+| `Bug: Beschreibung` | Erstellt ein Bug-Issue |
+| `Fehler: Beschreibung` | Erstellt ein Bug-Issue |
+| `Idee: Beschreibung` | Erstellt ein Feature-Issue |
+| `Feature: Beschreibung` | Erstellt ein Feature-Issue |
+| `/priority critical\|high\|medium\|low` | Aendert die Prioritaet |
+| `/label name` | Fuegt ein Label hinzu |
+| `/close` oder `/done` | Schliesst das Issue |
+| `/reopen` | Oeffnet das Issue wieder |
+| `/duplicate #N` | Markiert als Duplikat |
+
+### Release-Feedback
+
+Nach einem Release bekommst du ein Feedback-Issue. Genehmige mit:
+- Thumbs-up Reaktion, oder
+- Kommentar: `passt`, `genehmigt`, `approved`, `lgtm`, `weiter`
+
+Bugs und Features kannst du direkt im selben Kommentar melden (jeweils eigene Zeile):
+```
+Bug: Spieler bleibt an Waenden haengen
+Idee: Schnellreise zwischen Lagerfeuern
+passt
+```
+
 ## License
 
 MIT

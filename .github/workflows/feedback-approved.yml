@@ -25,6 +25,19 @@ jobs:
             const { owner, repo } = context.repo;
             const issue = context.payload.issue;
 
+            // Prevent duplicate processing: if "Feedback Approved" comment already exists, skip
+            const existingComments = await github.rest.issues.listComments({
+              owner, repo,
+              issue_number: issue.number
+            });
+            const alreadyProcessed = existingComments.data.some(c =>
+              c.user.type === 'Bot' && c.body.includes('Feedback Approved')
+            );
+            if (alreadyProcessed) {
+              core.info('Feedback already processed - skipping to prevent duplicates.');
+              return;
+            }
+
             // Check for thumbs-up reaction or explicit approval comment
             const reactions = await github.rest.reactions.listForIssue({
               owner, repo,
@@ -90,6 +103,14 @@ jobs:
                 issue_number: issue.number
               });
 
+              // Fetch existing open issues to prevent duplicates
+              const existingIssues = await github.rest.issues.listForRepo({
+                owner, repo,
+                state: 'all',
+                per_page: 100
+              });
+              const existingTitles = new Set(existingIssues.data.map(i => i.title.toLowerCase()));
+
               for (const comment of comments.data) {
                 if (comment.user.login === repoOwner && comment.user.type !== 'Bot') {
                   const lines = comment.body.split('\n');
@@ -99,21 +120,29 @@ jobs:
                     const ideaMatch = line.match(/^(?:idea|idee|feature|vision):\s*(.+)/i);
 
                     if (bugMatch) {
-                      await github.rest.issues.create({
-                        owner, repo,
-                        title: bugMatch[1].trim(),
-                        body: `Auto-created from feedback on release.\n\nSource: #${issue.number}`,
-                        labels: ['bug', 'needs-triage']
-                      });
+                      const title = bugMatch[1].trim();
+                      if (!existingTitles.has(title.toLowerCase())) {
+                        await github.rest.issues.create({
+                          owner, repo,
+                          title,
+                          body: `Auto-created from feedback on release.\n\nSource: #${issue.number}`,
+                          labels: ['bug', 'needs-triage']
+                        });
+                        existingTitles.add(title.toLowerCase());
+                      }
                     }
 
                     if (ideaMatch) {
-                      await github.rest.issues.create({
-                        owner, repo,
-                        title: ideaMatch[1].trim(),
-                        body: `Auto-created from feedback on release.\n\nSource: #${issue.number}`,
-                        labels: ['enhancement', 'needs-triage']
-                      });
+                      const title = ideaMatch[1].trim();
+                      if (!existingTitles.has(title.toLowerCase())) {
+                        await github.rest.issues.create({
+                          owner, repo,
+                          title,
+                          body: `Auto-created from feedback on release.\n\nSource: #${issue.number}`,
+                          labels: ['enhancement', 'needs-triage']
+                        });
+                        existingTitles.add(title.toLowerCase());
+                      }
                     }
                   }
                 }

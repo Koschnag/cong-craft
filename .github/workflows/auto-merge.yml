@@ -76,6 +76,16 @@ jobs:
               return;
             }
 
+            // Security: Only auto-merge PRs from repo owner or bots (not external forks)
+            const prAuthor = pr.data.user.login;
+            const isOwner = prAuthor === context.repo.owner;
+            const isBot = pr.data.user.type === 'Bot';
+            const isSameRepo = pr.data.head.repo?.full_name === `${owner}/${repo}`;
+            if (!isOwner && !isBot && !isSameRepo) {
+              core.info(`PR author ${prAuthor} is external - requires manual review, skipping auto-merge.`);
+              return;
+            }
+
             // Skip PRs with blocking labels
             const labels = pr.data.labels.map(l => l.name);
             if (labels.includes('work-in-progress') || labels.includes('blocked')) {
