@@ -12,6 +12,7 @@ namespace CongCraft.Engine.Core;
 
 /// <summary>
 /// Top-level engine coordinator. Owns the window, GL context, game loop, and system lifecycle.
+/// Now includes shadow mapping and post-processing pipeline.
 /// </summary>
 public sealed class GameEngine : IDisposable
 {
@@ -26,6 +27,9 @@ public sealed class GameEngine : IDisposable
     private InputSystem? _inputSystem;
     private long _frameCount;
 
+    private ShadowMap? _shadowMap;
+    private PostProcessing? _postProcessing;
+
     public World World => _world;
     public ServiceLocator Services => _services;
     public Camera Camera => _camera;
@@ -38,7 +42,7 @@ public sealed class GameEngine : IDisposable
             _inputSystem = inputSys;
     }
 
-    public void Run(string title = "CongCraft", int width = 1280, int height = 720)
+    public void Run(string title = "CongCraft", int width = 1920, int height = 1080)
     {
         DevLog.Section("Window Creation");
         DevLog.Info($"Creating window: {title} ({width}x{height})");
@@ -108,8 +112,14 @@ public sealed class GameEngine : IDisposable
         _services.Register(_camera);
         _services.Register(_lighting);
 
+        // Initialize shadow map and post-processing
+        _shadowMap = new ShadowMap(_gl);
+        _services.Register(_shadowMap);
+
+        _postProcessing = new PostProcessing(_gl, _window.Size.X, _window.Size.Y);
+        _services.Register(_postProcessing);
+
         DevLog.Section("System Init");
-        // Initialize all registered systems (with per-system error handling)
         _systems.InitializeAll(_services);
 
         DevLog.Info("All systems initialized — entering game loop");
@@ -126,24 +136,42 @@ public sealed class GameEngine : IDisposable
 
     private void OnRender(double deltaTime)
     {
+        if (_shadowMap == null || _postProcessing == null) return;
+
+        // Update shadow map light matrix
+        _shadowMap.UpdateLightMatrix(_lighting.SunDirection, _camera.Target);
+
+        // --- Shadow pass ---
+        _shadowMap.BeginPass();
+        _systems.RenderShadowPass(_shadowMap);
+        _shadowMap.EndPass(_window.Size.X, _window.Size.Y);
+
+        // --- Scene pass (into HDR FBO) ---
+        _postProcessing.BeginScene();
         _gl.Clear((uint)(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit));
         _systems.RenderAll(_gameTime);
+        _postProcessing.EndSceneAndApply();
     }
 
     private void OnResize(Vector2D<int> size)
     {
         _gl.Viewport(size);
         _camera.AspectRatio = (float)size.X / size.Y;
+        _postProcessing?.Resize(size.X, size.Y);
     }
 
     private void OnClosing()
     {
         DevLog.Section("Shutdown");
         _systems.Dispose();
+        _shadowMap?.Dispose();
+        _postProcessing?.Dispose();
     }
 
     public void Dispose()
     {
         _systems.Dispose();
+        _shadowMap?.Dispose();
+        _postProcessing?.Dispose();
     }
 }

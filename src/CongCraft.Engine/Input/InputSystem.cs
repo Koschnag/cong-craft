@@ -16,16 +16,18 @@ public sealed class InputSystem : ISystem
     public int Priority => 0;
 
     private World _world = null!;
+    private IWindow _window = null!;
     private IInputContext? _input;
     private InputState _state = null!;
     private Vector2 _lastMousePos;
     private bool _firstMouse = true;
+    private bool _lastCapturedState;
 
     public void Initialize(ServiceLocator services)
     {
         _world = services.Get<World>();
-        var window = services.Get<IWindow>();
-        _input = window.CreateInput();
+        _window = services.Get<IWindow>();
+        _input = _window.CreateInput();
         _state = new InputState();
         _world.SetSingleton(_state);
 
@@ -39,20 +41,13 @@ public sealed class InputSystem : ISystem
         {
             mouse.MouseMove += OnMouseMove;
             mouse.Scroll += OnScroll;
-
-            // CursorMode.Raw can crash on some macOS versions — fall back to Disabled
-            try
-            {
-                mouse.Cursor.CursorMode = CursorMode.Raw;
-            }
-            catch
-            {
-                DevLog.Warn("CursorMode.Raw not supported, falling back to Disabled");
-                mouse.Cursor.CursorMode = CursorMode.Disabled;
-            }
+            mouse.MouseDown += OnMouseDown;
+            mouse.MouseUp += OnMouseUp;
         }
 
-        _state.IsMouseCaptured = true;
+        // Start with mouse free for main menu
+        _state.IsMouseCaptured = false;
+        SetCursorMode(false);
     }
 
     private void OnKeyDown(IKeyboard keyboard, Key key, int scancode)
@@ -82,14 +77,56 @@ public sealed class InputSystem : ISystem
         _lastMousePos = position;
     }
 
+    private void OnMouseDown(IMouse mouse, MouseButton button)
+    {
+        if (!_state.MouseButtonsDown.Contains(button))
+            _state.MouseButtonsPressed.Add(button);
+        _state.MouseButtonsDown.Add(button);
+    }
+
+    private void OnMouseUp(IMouse mouse, MouseButton button)
+    {
+        _state.MouseButtonsDown.Remove(button);
+        _state.MouseButtonsReleased.Add(button);
+    }
+
     private void OnScroll(IMouse mouse, ScrollWheel scroll)
     {
         _state.ScrollDelta += scroll.Y;
     }
 
+    private void SetCursorMode(bool captured)
+    {
+        if (_input == null) return;
+        foreach (var mouse in _input.Mice)
+        {
+            if (captured)
+            {
+                try
+                {
+                    mouse.Cursor.CursorMode = CursorMode.Raw;
+                }
+                catch
+                {
+                    mouse.Cursor.CursorMode = CursorMode.Disabled;
+                }
+            }
+            else
+            {
+                mouse.Cursor.CursorMode = CursorMode.Normal;
+            }
+        }
+    }
+
     public void Update(GameTime time)
     {
-        // InputState is updated via callbacks, we just need to clear per-frame data at start
+        // Sync cursor mode with IsMouseCaptured state
+        if (_state.IsMouseCaptured != _lastCapturedState)
+        {
+            SetCursorMode(_state.IsMouseCaptured);
+            _lastCapturedState = _state.IsMouseCaptured;
+            _firstMouse = true; // Reset to avoid delta jump
+        }
     }
 
     public void Render(GameTime time) { }

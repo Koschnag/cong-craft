@@ -116,7 +116,14 @@ public sealed class MenuSystem : ISystem
                 if (_inputState.KeysPressed.Contains(Key.Down) || _inputState.KeysPressed.Contains(Key.S))
                     _selectedItem = (_selectedItem + 1) % itemCount;
 
-                if (_inputState.KeysPressed.Contains(Key.Enter) || _inputState.KeysPressed.Contains(Key.Space))
+                // Mouse hover selection
+                int hoveredItem = GetMenuItemAtMouse(itemCount);
+                if (hoveredItem >= 0)
+                    _selectedItem = hoveredItem;
+
+                // Activate on Enter/Space or left mouse click
+                if (_inputState.KeysPressed.Contains(Key.Enter) || _inputState.KeysPressed.Contains(Key.Space)
+                    || _inputState.IsMouseButtonPressed(MouseButton.Left))
                 {
                     HandleMenuSelect();
                 }
@@ -140,6 +147,47 @@ public sealed class MenuSystem : ISystem
                 e.Vx += (float)(_rng.NextDouble() - 0.5) * 20f * time.DeltaTimeF;
             }
         }
+    }
+
+    private int GetMenuItemAtMouse(int itemCount)
+    {
+        if (_inputState == null) return -1;
+        int w = _window.Size.X, h = _window.Size.Y;
+        // Convert mouse position: Silk.NET gives top-left origin, our UI uses bottom-left
+        float mouseX = _inputState.MousePosition.X;
+        float mouseY = h - _inputState.MousePosition.Y;
+
+        float frameW, frameH, frameX, frameY, itemStartY, itemSpacing, itemHeight;
+        if (_gameState.CurrentMode == GameMode.MainMenu)
+        {
+            frameW = MathF.Min(500, w - 80);
+            frameH = MathF.Min(400, h - 80);
+            frameX = (w - frameW) / 2f;
+            frameY = (h - frameH) / 2f;
+            float titleY = frameY + frameH - 85;
+            itemStartY = titleY - 80;
+            itemSpacing = 45f;
+            itemHeight = 32f;
+        }
+        else
+        {
+            frameW = MathF.Min(380, w - 60);
+            frameH = MathF.Min(320, h - 60);
+            frameX = (w - frameW) / 2f;
+            frameY = (h - frameH) / 2f;
+            itemStartY = frameY + frameH - 110;
+            itemSpacing = 40f;
+            itemHeight = 28f;
+        }
+
+        for (int i = 0; i < itemCount; i++)
+        {
+            float iy = itemStartY - i * itemSpacing;
+            if (mouseX >= frameX + 25 && mouseX <= frameX + frameW - 25 &&
+                mouseY >= iy - 5 && mouseY <= iy + itemHeight)
+                return i;
+        }
+        return -1;
     }
 
     private void HandleMenuSelect()
@@ -173,6 +221,8 @@ public sealed class MenuSystem : ISystem
                     break;
                 case 2: // Quit to Menu
                     _gameState.SetMode(GameMode.MainMenu);
+                    if (_inputState != null)
+                        _inputState.IsMouseCaptured = false;
                     _selectedItem = 0;
                     break;
             }
@@ -301,7 +351,7 @@ public sealed class MenuSystem : ISystem
         }
 
         // Bottom hint
-        string hint = "Arrow Keys + Enter";
+        string hint = "Arrow Keys + Enter  or  Mouse Click";
         float hintW = TextRenderer.MeasureWidth(hint, 1.5f);
         _textRenderer.DrawText(hint, (w - hintW) / 2f, frameY + 25, 1.5f,
             new Vector4(0.5f, 0.45f, 0.35f, 0.5f), ortho);

@@ -36,20 +36,29 @@ public sealed class AudioSystem : ISystem
         {
             _alc = ALContext.GetApi();
             _al = AL.GetApi();
+            DevLog.Info("OpenAL API acquired");
 
             unsafe
             {
                 _device = _alc.OpenDevice(null);
-                if (_device == null) return;
+                if (_device == null)
+                {
+                    DevLog.Warn("OpenAL: Failed to open audio device — audio disabled");
+                    return;
+                }
 
                 _context = _alc.CreateContext(_device, null);
                 _alc.MakeContextCurrent(_context);
             }
 
+            DevLog.Info("OpenAL device and context created");
+
             // Generate all music themes
             LoadTrack(ProceduralMusic.GenerateMenuTheme(40), out _menuBuffer, out _menuSource);
             LoadTrack(ProceduralMusic.GenerateExplorationTheme(45), out _explorationBuffer, out _explorationSource);
             LoadTrack(ProceduralMusic.GenerateCombatTheme(30), out _combatBuffer, out _combatSource);
+
+            DevLog.Info("Audio tracks loaded (menu, exploration, combat)");
 
             // Start with menu music
             _al.SetSourceProperty(_menuSource, SourceFloat.Gain, MusicVolume);
@@ -57,9 +66,11 @@ public sealed class AudioSystem : ISystem
             _currentPlaying = GameMode.MainMenu;
 
             _initialized = true;
+            DevLog.Info("AudioSystem initialized successfully");
         }
-        catch
+        catch (Exception ex)
         {
+            DevLog.Warn($"AudioSystem init failed: {ex.Message} — audio disabled");
             _initialized = false;
         }
     }

@@ -8,11 +8,11 @@ using Shader = CongCraft.Engine.Rendering.Shader;
 namespace CongCraft.Engine.Environment;
 
 /// <summary>
-/// Renders a full-screen gradient sky. Colors come from DayNightCycle.
+/// Renders a full-screen gradient sky with procedural clouds and atmospheric scattering.
 /// </summary>
 public sealed class SkyRenderer : ISystem
 {
-    public int Priority => 95; // Render before terrain but after update systems
+    public int Priority => 95;
 
     private GL _gl = null!;
     private Shader _skyShader = null!;
@@ -38,6 +38,7 @@ public sealed class SkyRenderer : ISystem
         _skyShader.SetUniform("uZenithColor", _dayNight.ZenithColor);
         _skyShader.SetUniform("uHorizonColor", _dayNight.HorizonColor);
         _skyShader.SetUniform("uSunDirection", _dayNight.SunDirection);
+        _skyShader.SetUniform("uTime", time.TotalTimeF);
         _quad.Draw();
 
         _gl.Enable(EnableCap.DepthTest);

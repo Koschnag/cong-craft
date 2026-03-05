@@ -1,4 +1,5 @@
 using CongCraft.Engine.Core;
+using CongCraft.Engine.Rendering;
 
 namespace CongCraft.Engine.ECS.Systems;
 
@@ -58,6 +59,21 @@ public sealed class SystemManager : IDisposable
         {
             if (_failedSystems.Contains(system)) continue;
             system.Render(time);
+        }
+    }
+
+    /// <summary>
+    /// Render shadow-casting geometry into the shadow map.
+    /// Systems that implement IShadowCaster will be called.
+    /// </summary>
+    public void RenderShadowPass(ShadowMap shadowMap)
+    {
+        if (!_initialized) return;
+        foreach (var system in _systems)
+        {
+            if (_failedSystems.Contains(system)) continue;
+            if (system is IShadowCaster caster)
+                caster.RenderShadowPass(shadowMap);
         }
     }
 
