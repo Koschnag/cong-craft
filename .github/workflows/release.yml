@@ -81,9 +81,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
-          path: |
-            ${{ matrix.name }}.${{ matrix.archive }}
-            CongCraft-macOS-arm64.dmg
+          path: ${{ matrix.name }}.${{ matrix.archive }}
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.rid == 'osx-arm64'
+        with:
+          name: CongCraft-macOS-arm64-dmg
+          path: CongCraft-macOS-arm64.dmg
 
   release:
     needs: build-release
