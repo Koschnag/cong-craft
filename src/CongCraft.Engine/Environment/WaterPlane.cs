@@ -61,22 +61,22 @@ public sealed class WaterPlane : ISystem
         var inds = new List<uint>();
 
         for (int z = 0; z <= divisions; z++)
-        for (int x = 0; x <= divisions; x++)
-        {
-            verts.Add(-h + x * step); // x
-            verts.Add(0);              // y (modified in shader)
-            verts.Add(-h + z * step); // z
-        }
+            for (int x = 0; x <= divisions; x++)
+            {
+                verts.Add(-h + x * step); // x
+                verts.Add(0);              // y (modified in shader)
+                verts.Add(-h + z * step); // z
+            }
 
         for (int z = 0; z < divisions; z++)
-        for (int x = 0; x < divisions; x++)
-        {
-            uint tl = (uint)(z * (divisions + 1) + x);
-            uint tr = tl + 1;
-            uint bl = tl + (uint)(divisions + 1);
-            uint br = bl + 1;
-            inds.AddRange(new[] { tl, bl, br, tl, br, tr });
-        }
+            for (int x = 0; x < divisions; x++)
+            {
+                uint tl = (uint)(z * (divisions + 1) + x);
+                uint tr = tl + 1;
+                uint bl = tl + (uint)(divisions + 1);
+                uint br = bl + 1;
+                inds.AddRange(new[] { tl, bl, br, tl, br, tr });
+            }
 
         return new Mesh(gl, verts.ToArray(), inds.ToArray(), VertexLayout.Position3D);
     }

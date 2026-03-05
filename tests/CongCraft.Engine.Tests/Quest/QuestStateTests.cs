@@ -10,7 +10,9 @@ public class QuestStateTests
         {
             Quest = new QuestData
             {
-                Id = "test_kill", Title = "Test Kill", Description = "Kill stuff",
+                Id = "test_kill",
+                Title = "Test Kill",
+                Description = "Kill stuff",
                 Objectives = new() { new QuestObjective { Id = "kill", Description = "Kill", Type = QuestObjectiveType.Kill, RequiredCount = required } }
             },
             Objectives = new()
@@ -69,7 +71,9 @@ public class QuestStateTests
         {
             Quest = new QuestData
             {
-                Id = "test", Title = "Test", Description = "Test",
+                Id = "test",
+                Title = "Test",
+                Description = "Test",
                 Objectives = new() { new QuestObjective { Id = "collect_pelts", Description = "Pelts", Type = QuestObjectiveType.Collect, TargetId = "wolf_pelt", RequiredCount = 3 } }
             },
             Objectives = new()

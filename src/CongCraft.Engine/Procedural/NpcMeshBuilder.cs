@@ -1,5 +1,5 @@
-using Silk.NET.OpenGL;
 using CongCraft.Engine.Rendering;
+using Silk.NET.OpenGL;
 
 namespace CongCraft.Engine.Procedural;
 
@@ -117,7 +117,7 @@ public static class NpcMeshBuilder
                 verts.AddRange(normal);
                 verts.AddRange(new[] { r, g, b });
             }
-            inds.AddRange(new[] { fi, fi+1, fi+2, fi, fi+2, fi+3 });
+            inds.AddRange(new[] { fi, fi + 1, fi + 2, fi, fi + 2, fi + 3 });
         }
     }
 }

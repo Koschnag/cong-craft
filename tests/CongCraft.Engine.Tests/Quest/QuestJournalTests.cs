@@ -6,7 +6,9 @@ public class QuestJournalTests
 {
     private static QuestData MakeQuest(string id = "test") => new()
     {
-        Id = id, Title = $"Quest {id}", Description = "Test quest",
+        Id = id,
+        Title = $"Quest {id}",
+        Description = "Test quest",
         Objectives = new()
         {
             new QuestObjective { Id = "obj", Description = "Do thing", Type = QuestObjectiveType.Kill, RequiredCount = 1 }

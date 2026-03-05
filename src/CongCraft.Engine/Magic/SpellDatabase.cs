@@ -11,35 +11,53 @@ public static class SpellDatabase
     {
         Register(new SpellData
         {
-            Id = "fireball", Name = "Fireball",
+            Id = "fireball",
+            Name = "Fireball",
             Type = SpellType.Projectile,
-            ManaCost = 15f, Cooldown = 1.5f,
-            Damage = 35f, Range = 12f,
-            VfxR = 1f, VfxG = 0.4f, VfxB = 0.1f
+            ManaCost = 15f,
+            Cooldown = 1.5f,
+            Damage = 35f,
+            Range = 12f,
+            VfxR = 1f,
+            VfxG = 0.4f,
+            VfxB = 0.1f
         });
         Register(new SpellData
         {
-            Id = "heal", Name = "Heal",
+            Id = "heal",
+            Name = "Heal",
             Type = SpellType.SelfHeal,
-            ManaCost = 20f, Cooldown = 3f,
+            ManaCost = 20f,
+            Cooldown = 3f,
             HealAmount = 40f,
-            VfxR = 0.3f, VfxG = 1f, VfxB = 0.4f
+            VfxR = 0.3f,
+            VfxG = 1f,
+            VfxB = 0.4f
         });
         Register(new SpellData
         {
-            Id = "shield", Name = "Magic Shield",
+            Id = "shield",
+            Name = "Magic Shield",
             Type = SpellType.Shield,
-            ManaCost = 12f, Cooldown = 5f,
+            ManaCost = 12f,
+            Cooldown = 5f,
             Duration = 4f,
-            VfxR = 0.3f, VfxG = 0.5f, VfxB = 1f
+            VfxR = 0.3f,
+            VfxG = 0.5f,
+            VfxB = 1f
         });
         Register(new SpellData
         {
-            Id = "ice_nova", Name = "Ice Nova",
+            Id = "ice_nova",
+            Name = "Ice Nova",
             Type = SpellType.AreaEffect,
-            ManaCost = 25f, Cooldown = 4f,
-            Damage = 20f, Range = 5f,
-            VfxR = 0.6f, VfxG = 0.8f, VfxB = 1f
+            ManaCost = 25f,
+            Cooldown = 4f,
+            Damage = 20f,
+            Range = 5f,
+            VfxR = 0.6f,
+            VfxG = 0.8f,
+            VfxB = 1f
         });
     }
 

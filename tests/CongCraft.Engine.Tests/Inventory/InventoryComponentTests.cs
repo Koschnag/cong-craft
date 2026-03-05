@@ -6,7 +6,9 @@ public class InventoryComponentTests
 {
     private static ItemData MakeItem(string id = "test_item") => new()
     {
-        Id = id, Name = "Test Item", Type = ItemType.Material
+        Id = id,
+        Name = "Test Item",
+        Type = ItemType.Material
     };
 
     [Fact]

@@ -1,5 +1,5 @@
-using Silk.NET.OpenGL;
 using CongCraft.Engine.Rendering;
+using Silk.NET.OpenGL;
 
 namespace CongCraft.Engine.Procedural;
 
@@ -66,7 +66,7 @@ public static class SwordMeshBuilder
                 verts.AddRange(normal);
                 verts.AddRange(new[] { r, g, b });
             }
-            inds.AddRange(new[] { fi, fi+1, fi+2, fi, fi+2, fi+3 });
+            inds.AddRange(new[] { fi, fi + 1, fi + 2, fi, fi + 2, fi + 3 });
         }
     }
 
@@ -84,14 +84,14 @@ public static class SwordMeshBuilder
 
         float bw = baseWidth, tw = tipWidth;
         float hd = depth;
-        float[] bl = { cx-bw, cy, cz-hd };
-        float[] br = { cx+bw, cy, cz-hd };
-        float[] fr = { cx+bw, cy, cz+hd };
-        float[] fl = { cx-bw, cy, cz+hd };
-        float[] tbl = { cx-tw, cy+height, cz-hd*0.5f };
-        float[] tbr = { cx+tw, cy+height, cz-hd*0.5f };
-        float[] tfr = { cx+tw, cy+height, cz+hd*0.5f };
-        float[] tfl = { cx-tw, cy+height, cz+hd*0.5f };
+        float[] bl = { cx - bw, cy, cz - hd };
+        float[] br = { cx + bw, cy, cz - hd };
+        float[] fr = { cx + bw, cy, cz + hd };
+        float[] fl = { cx - bw, cy, cz + hd };
+        float[] tbl = { cx - tw, cy + height, cz - hd * 0.5f };
+        float[] tbr = { cx + tw, cy + height, cz - hd * 0.5f };
+        float[] tfr = { cx + tw, cy + height, cz + hd * 0.5f };
+        float[] tfl = { cx - tw, cy + height, cz + hd * 0.5f };
 
         float[][] corners = { bl, br, fr, fl, tbl, tbr, tfr, tfl };
 
@@ -119,7 +119,7 @@ public static class SwordMeshBuilder
                     Math.Min(1f, b * brightFactor)
                 });
             }
-            inds.AddRange(new[] { fi, fi+1, fi+2, fi, fi+2, fi+3 });
+            inds.AddRange(new[] { fi, fi + 1, fi + 2, fi, fi + 2, fi + 3 });
         }
     }
 }

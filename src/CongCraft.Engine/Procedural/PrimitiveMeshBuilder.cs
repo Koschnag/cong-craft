@@ -1,5 +1,5 @@
-using Silk.NET.OpenGL;
 using CongCraft.Engine.Rendering;
+using Silk.NET.OpenGL;
 
 namespace CongCraft.Engine.Procedural;
 
@@ -36,25 +36,25 @@ public static class PrimitiveMeshBuilder
             float cx = nx * h, cy = ny * h, cz = nz * h;
 
             for (int i = -1; i <= 1; i += 2)
-            for (int j = -1; j <= 1; j += 2)
-            {
-                verts.AddRange(new[]
+                for (int j = -1; j <= 1; j += 2)
                 {
+                    verts.AddRange(new[]
+                    {
                     cx + ax * i * h + bx * j * h,
                     cy + ay * i * h + by * j * h,
                     cz + az * i * h + bz * j * h,
                     nx, ny, nz, r, g, b
                 });
-            }
+                }
             inds.AddRange(new[] { baseIdx, baseIdx + 1, baseIdx + 3, baseIdx, baseIdx + 3, baseIdx + 2 });
         }
 
-        AddFace( 0,  1,  0,  1, 0, 0,  0, 0, 1); // top
-        AddFace( 0, -1,  0,  1, 0, 0,  0, 0, 1); // bottom
-        AddFace( 1,  0,  0,  0, 1, 0,  0, 0, 1); // right
-        AddFace(-1,  0,  0,  0, 1, 0,  0, 0, 1); // left
-        AddFace( 0,  0,  1,  1, 0, 0,  0, 1, 0); // front
-        AddFace( 0,  0, -1,  1, 0, 0,  0, 1, 0); // back
+        AddFace(0, 1, 0, 1, 0, 0, 0, 0, 1); // top
+        AddFace(0, -1, 0, 1, 0, 0, 0, 0, 1); // bottom
+        AddFace(1, 0, 0, 0, 1, 0, 0, 0, 1); // right
+        AddFace(-1, 0, 0, 0, 1, 0, 0, 0, 1); // left
+        AddFace(0, 0, 1, 1, 0, 0, 0, 1, 0); // front
+        AddFace(0, 0, -1, 1, 0, 0, 0, 1, 0); // back
 
         return new Mesh(gl, verts.ToArray(), inds.ToArray(), VertexLayout.PositionNormalColor);
     }
@@ -76,7 +76,7 @@ public static class PrimitiveMeshBuilder
             // Bottom vertex
             verts.AddRange(new[] { cos * radius, -halfH, sin * radius, nx, 0f, nz, r, g, b });
             // Top vertex
-            verts.AddRange(new[] { cos * radius,  halfH, sin * radius, nx, 0f, nz, r, g, b });
+            verts.AddRange(new[] { cos * radius, halfH, sin * radius, nx, 0f, nz, r, g, b });
         }
 
         for (uint i = 0; i < (uint)segments; i++)
@@ -187,7 +187,7 @@ public static class PrimitiveMeshBuilder
     /// </summary>
     public static Mesh CreateFullScreenQuad(GL gl)
     {
-        float[] vertices = { -1, -1,  1, -1,  1, 1,  -1, 1 };
+        float[] vertices = { -1, -1, 1, -1, 1, 1, -1, 1 };
         uint[] indices = { 0, 1, 2, 0, 2, 3 };
         return new Mesh(gl, vertices, indices, VertexLayout.Position2D);
     }
@@ -197,7 +197,7 @@ public static class PrimitiveMeshBuilder
     /// </summary>
     public static Mesh CreateUnitQuad(GL gl)
     {
-        float[] vertices = { 0, 0,  1, 0,  1, 1,  0, 1 };
+        float[] vertices = { 0, 0, 1, 0, 1, 1, 0, 1 };
         uint[] indices = { 0, 1, 2, 0, 2, 3 };
         return new Mesh(gl, vertices, indices, VertexLayout.Position2D);
     }

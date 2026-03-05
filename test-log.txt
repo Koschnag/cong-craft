@@ -1,0 +1,19 @@
+Build started 03/05/2026 14:12:16.
+     1>Project "/home/runner/work/cong-craft/cong-craft/CongCraft.sln" on node 1 (VSTest target(s)).
+     1>ValidateSolutionConfiguration:
+         Building solution configuration "Release|Any CPU".
+Test run for /home/runner/work/cong-craft/cong-craft/tests/CongCraft.Engine.Tests/bin/Release/net8.0/CongCraft.Engine.Tests.dll (.NETCoreApp,Version=v8.0)
+VSTest version 18.0.1 (x64)
+
+The argument /home/runner/work/cong-craft/cong-craft/tests/CongCraft.Engine.Tests/bin/Release/net8.0/CongCraft.Engine.Tests.dll is invalid. Please use the /help option to check the list of valid arguments.
+     1>Project "/home/runner/work/cong-craft/cong-craft/CongCraft.sln" (1) is building "/home/runner/work/cong-craft/cong-craft/tests/CongCraft.Engine.Tests/CongCraft.Engine.Tests.csproj" (4) on node 3 (VSTest target(s)).
+     4>_VSTestConsole:
+         MSB4181: The "VSTestTask" task returned false but did not log an error.
+     4>Done Building Project "/home/runner/work/cong-craft/cong-craft/tests/CongCraft.Engine.Tests/CongCraft.Engine.Tests.csproj" (VSTest target(s)) -- FAILED.
+     1>Done Building Project "/home/runner/work/cong-craft/cong-craft/CongCraft.sln" (VSTest target(s)) -- FAILED.
+
+Build FAILED.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.42

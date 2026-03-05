@@ -75,12 +75,12 @@ public sealed class TerrainSystem : ISystem
         var neededChunks = new HashSet<(int, int)>();
 
         for (int z = centerZ - _viewDistance; z <= centerZ + _viewDistance; z++)
-        for (int x = centerX - _viewDistance; x <= centerX + _viewDistance; x++)
-        {
-            neededChunks.Add((x, z));
-            if (!_loadedChunks.ContainsKey((x, z)))
-                CreateChunk(x, z);
-        }
+            for (int x = centerX - _viewDistance; x <= centerX + _viewDistance; x++)
+            {
+                neededChunks.Add((x, z));
+                if (!_loadedChunks.ContainsKey((x, z)))
+                    CreateChunk(x, z);
+            }
 
         // Unload far chunks
         var toRemove = _loadedChunks.Keys.Where(k => !neededChunks.Contains(k)).ToList();

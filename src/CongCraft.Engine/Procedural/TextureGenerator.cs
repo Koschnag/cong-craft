@@ -15,15 +15,15 @@ public static class TextureGenerator
 
         var pixels = new byte[size * size * 4];
         for (int y = 0; y < size; y++)
-        for (int x = 0; x < size; x++)
-        {
-            float n = noise.GetNoise(x, y) * 0.5f + 0.5f;
-            int i = (y * size + x) * 4;
-            pixels[i + 0] = (byte)(30 + n * 50);
-            pixels[i + 1] = (byte)(70 + n * 100);
-            pixels[i + 2] = (byte)(15 + n * 30);
-            pixels[i + 3] = 255;
-        }
+            for (int x = 0; x < size; x++)
+            {
+                float n = noise.GetNoise(x, y) * 0.5f + 0.5f;
+                int i = (y * size + x) * 4;
+                pixels[i + 0] = (byte)(30 + n * 50);
+                pixels[i + 1] = (byte)(70 + n * 100);
+                pixels[i + 2] = (byte)(15 + n * 30);
+                pixels[i + 3] = 255;
+            }
         return pixels;
     }
 
@@ -35,16 +35,16 @@ public static class TextureGenerator
 
         var pixels = new byte[size * size * 4];
         for (int y = 0; y < size; y++)
-        for (int x = 0; x < size; x++)
-        {
-            float n = noise.GetNoise(x, y) * 0.5f + 0.5f;
-            int i = (y * size + x) * 4;
-            byte v = (byte)(100 + n * 80);
-            pixels[i + 0] = v;
-            pixels[i + 1] = (byte)(v - 5);
-            pixels[i + 2] = (byte)(v - 10);
-            pixels[i + 3] = 255;
-        }
+            for (int x = 0; x < size; x++)
+            {
+                float n = noise.GetNoise(x, y) * 0.5f + 0.5f;
+                int i = (y * size + x) * 4;
+                byte v = (byte)(100 + n * 80);
+                pixels[i + 0] = v;
+                pixels[i + 1] = (byte)(v - 5);
+                pixels[i + 2] = (byte)(v - 10);
+                pixels[i + 3] = 255;
+            }
         return pixels;
     }
 
@@ -58,15 +58,15 @@ public static class TextureGenerator
 
         var pixels = new byte[size * size * 4];
         for (int y = 0; y < size; y++)
-        for (int x = 0; x < size; x++)
-        {
-            float n = noise.GetNoise(x, y) * 0.5f + 0.5f;
-            int i = (y * size + x) * 4;
-            pixels[i + 0] = (byte)(90 + n * 60);
-            pixels[i + 1] = (byte)(60 + n * 50);
-            pixels[i + 2] = (byte)(30 + n * 30);
-            pixels[i + 3] = 255;
-        }
+            for (int x = 0; x < size; x++)
+            {
+                float n = noise.GetNoise(x, y) * 0.5f + 0.5f;
+                int i = (y * size + x) * 4;
+                pixels[i + 0] = (byte)(90 + n * 60);
+                pixels[i + 1] = (byte)(60 + n * 50);
+                pixels[i + 2] = (byte)(30 + n * 30);
+                pixels[i + 3] = 255;
+            }
         return pixels;
     }
 

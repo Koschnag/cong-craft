@@ -9,8 +9,13 @@ public class EquipmentComponentTests
         {
             Item = new ItemData
             {
-                Id = $"test_{slot}", Name = $"Test {slot}", Type = ItemType.Armor,
-                Slot = slot, AttackBonus = attack, DefenseBonus = defense, SpeedBonus = speed
+                Id = $"test_{slot}",
+                Name = $"Test {slot}",
+                Type = ItemType.Armor,
+                Slot = slot,
+                AttackBonus = attack,
+                DefenseBonus = defense,
+                SpeedBonus = speed
             }
         };
 

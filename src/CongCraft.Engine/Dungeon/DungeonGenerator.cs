@@ -73,10 +73,10 @@ public sealed class DungeonGenerator
 
         // Carve room
         for (int rx = room.X; rx < room.X + room.Width; rx++)
-        for (int ry = room.Y; ry < room.Y + room.Height; ry++)
-        {
-            layout.Grid[rx, ry] = TileType.Floor;
-        }
+            for (int ry = room.Y; ry < room.Y + room.Height; ry++)
+            {
+                layout.Grid[rx, ry] = TileType.Floor;
+            }
 
         return room;
     }
@@ -141,8 +141,8 @@ public sealed class DungeonLayout
         Grid = new TileType[width, height];
         // Default: all walls
         for (int x = 0; x < width; x++)
-        for (int y = 0; y < height; y++)
-            Grid[x, y] = TileType.Wall;
+            for (int y = 0; y < height; y++)
+                Grid[x, y] = TileType.Wall;
     }
 
     public bool IsWalkable(int x, int y)
@@ -157,8 +157,8 @@ public sealed class DungeonLayout
         {
             int count = 0;
             for (int x = 0; x < Width; x++)
-            for (int y = 0; y < Height; y++)
-                if (Grid[x, y] != TileType.Wall) count++;
+                for (int y = 0; y < Height; y++)
+                    if (Grid[x, y] != TileType.Wall) count++;
             return count;
         }
     }
