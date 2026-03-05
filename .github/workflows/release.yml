@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+  pull_request:
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
@@ -68,6 +70,42 @@ jobs:
         with:
           name: ${{ matrix.name }}
           path: ${{ matrix.name }}.zip
+
+  pre-release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create testing tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="testing-pr${{ github.event.pull_request.number }}-$(echo ${{ github.sha }} | cut -c1-7)"
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create Pre-Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: "Testing: PR #${{ github.event.pull_request.number }}"
+          prerelease: true
+          generate_release_notes: false
+          body: |
+            Pre-release build from PR #${{ github.event.pull_request.number }}
+            Branch: `${{ github.head_ref }}`
+            Commit: ${{ github.sha }}
+          files: artifacts/*.zip
 
   release:
     needs: build
