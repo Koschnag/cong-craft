@@ -95,7 +95,7 @@ jobs:
               title: `[FEEDBACK] Release ${version} - Review Required`,
               body,
               labels: ['feedback-required', 'priority: critical', 'pinned'],
-              assignees: ['Koschnag']
+              assignees: [context.repo.owner]
             });
 
             core.info(`Feedback issue created: #${issue.data.number}`);
