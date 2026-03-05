@@ -104,6 +104,6 @@ public sealed class InputSystem : ISystem
     /// </summary>
     public void BeginFrame()
     {
-        _state.BeginFrame();
+        _state?.BeginFrame();
     }
 }
