@@ -1,8 +1,6 @@
-# CongCraft - Medieval RPG
+# CongCraft - Medieval Action RPG
 
 [![CI](https://github.com/Koschnag/cong-craft/actions/workflows/ci.yml/badge.svg)](https://github.com/Koschnag/cong-craft/actions/workflows/ci.yml)
-[![Build & Release](https://github.com/Koschnag/cong-craft/actions/workflows/release.yml/badge.svg)](https://github.com/Koschnag/cong-craft/actions/workflows/release.yml)
-[![Nightly](https://github.com/Koschnag/cong-craft/actions/workflows/nightly.yml/badge.svg)](https://github.com/Koschnag/cong-craft/actions/workflows/nightly.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/download/dotnet/8.0)
 
@@ -48,14 +46,14 @@ A Gothic/Risen-inspired action RPG built from scratch in .NET 8 with OpenGL 3.3.
 
 ## Download
 
-Grab the latest release from the [Releases page](../../releases). Self-contained builds available for:
+Grab the latest release from the [Releases page](../../releases). Self-contained Native AOT builds — no .NET runtime required.
 
-- **macOS ARM64** (M1/M2/M3) — `CongCraft-macOS-arm64.tar.gz`
-- **macOS x64** (Intel) — `CongCraft-macOS-x64.tar.gz`
-- **Linux x64** — `CongCraft-linux-x64.tar.gz`
-- **Windows x64** — `CongCraft-windows-x64.zip`
-
-No .NET SDK required — just download, extract, and run.
+| Platform | Download |
+|----------|----------|
+| macOS ARM64 (M1/M2/M3) | `CongCraft-macOS-arm64.tar.gz` |
+| macOS x64 (Intel) | `CongCraft-macOS-x64.tar.gz` |
+| Linux x64 | `CongCraft-linux-x64.tar.gz` |
+| Windows x64 | `CongCraft-windows-x64.zip` |
 
 ### macOS
 
@@ -89,77 +87,48 @@ dotnet test
 dotnet run --project src/CongCraft.Game
 ```
 
+## Project Structure
+
+```
+CongCraft.sln
+├── src/
+│   ├── CongCraft.Engine/     # Core game engine (class library)
+│   │   ├── Audio/            # Procedural audio & music
+│   │   ├── Boss/             # Boss fight mechanics
+│   │   ├── Combat/           # Combat system & enemy AI
+│   │   ├── Core/             # ECS, GameTime, ServiceLocator
+│   │   ├── Crafting/         # Crafting stations & recipes
+│   │   ├── Dialogue/         # NPC dialogue trees
+│   │   ├── Dungeon/          # Procedural dungeon generation
+│   │   ├── ECS/              # Entity Component System
+│   │   ├── Environment/      # Day/night cycle, sky, water
+│   │   ├── Input/            # Input handling
+│   │   ├── Inventory/        # Items & equipment
+│   │   ├── Leveling/         # XP, levels, skill trees
+│   │   ├── Magic/            # Spells & mana
+│   │   ├── Procedural/       # Mesh & texture generation
+│   │   ├── Quest/            # Quest system
+│   │   ├── Rendering/        # OpenGL rendering, shaders
+│   │   ├── SaveLoad/         # JSON save/load system
+│   │   ├── Terrain/          # World terrain generation
+│   │   ├── UI/               # HUD & minimap
+│   │   ├── VFX/              # Particle effects & lighting
+│   │   └── Weather/          # Weather system
+│   └── CongCraft.Game/       # Executable entry point (Native AOT)
+└── tests/
+    └── CongCraft.Engine.Tests/  # xUnit test suite (53 test files)
+```
+
 ## Tech Stack
 
-- **.NET 8** — Cross-platform runtime
+- **.NET 8** with Native AOT — compiled to native binaries
 - **Silk.NET 2.21** — OpenGL 3.3 Core, GLFW windowing, OpenAL audio
-- **xUnit** — 338 unit tests
-- **System.Text.Json** — Save/load serialization
+- **xUnit** — comprehensive unit test suite
+- **System.Text.Json** — AOT-safe serialization with source generators
 
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
-
-## Project Management
-
-- **Issues**: Use [issue templates](https://github.com/Koschnag/cong-craft/issues/new/choose) for bugs, features, tasks, and epics
-- **PRs**: Auto-labeled by files changed and size, with CI/CD and pre-release builds
-- **Releases**: Automated multi-platform builds on version tags
-- **Monitoring**: Nightly health checks, weekly metrics, dependency updates via Dependabot
-
-### Vision System
-
-Mit dem Vision System kannst du mehrere Feature-Ideen auf einmal einreichen. Der Vision Parser erstellt automatisch einzelne Issues daraus.
-
-**Neues Vision-Issue erstellen:**
-
-1. Gehe zu [Issues > New Issue](https://github.com/Koschnag/cong-craft/issues/new)
-2. Titel: `[VISION] Dein Visions-Titel`
-3. Body mit Bullet Points:
-   ```
-   - Groessere Spielwelt mit mehreren Regionen
-   - Reittiere zum schnelleren Reisen
-   - NPC-Siedlungen mit Wirtschaftssystem
-   ```
-4. Der Vision Parser erstellt automatisch ein Feature-Issue pro Bullet Point
-
-**Vision Parser manuell triggern (z.B. fuer Issue #34):**
-
-Falls der automatische Trigger nicht greift (z.B. bei Bot-erstellten Issues), kannst du den Parser manuell starten:
-
-1. Gehe zu [Actions > Vision Parser](https://github.com/Koschnag/cong-craft/actions/workflows/vision-parser.yml)
-2. Klicke **"Run workflow"**
-3. Gib die Issue-Nummer ein (z.B. `34`)
-4. Klicke **"Run workflow"** zur Bestaetigung
-
-Der Parser erkennt Duplikate automatisch und ueberspringt bereits verarbeitete Vision-Issues.
-
-### Inline-Befehle in Issue-Kommentaren
-
-| Befehl | Aktion |
-|--------|--------|
-| `Bug: Beschreibung` | Erstellt ein Bug-Issue |
-| `Fehler: Beschreibung` | Erstellt ein Bug-Issue |
-| `Idee: Beschreibung` | Erstellt ein Feature-Issue |
-| `Feature: Beschreibung` | Erstellt ein Feature-Issue |
-| `/priority critical\|high\|medium\|low` | Aendert die Prioritaet |
-| `/label name` | Fuegt ein Label hinzu |
-| `/close` oder `/done` | Schliesst das Issue |
-| `/reopen` | Oeffnet das Issue wieder |
-| `/duplicate #N` | Markiert als Duplikat |
-
-### Release-Feedback
-
-Nach einem Release bekommst du ein Feedback-Issue. Genehmige mit:
-- Thumbs-up Reaktion, oder
-- Kommentar: `passt`, `genehmigt`, `approved`, `lgtm`, `weiter`
-
-Bugs und Features kannst du direkt im selben Kommentar melden (jeweils eigene Zeile):
-```
-Bug: Spieler bleibt an Waenden haengen
-Idee: Schnellreise zwischen Lagerfeuern
-passt
-```
 
 ## License
 
