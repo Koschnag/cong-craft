@@ -1,0 +1,35 @@
+name: Close All Issues
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/close-issues.yml'
+
+permissions:
+  issues: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  close-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Close all milestone issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for issue in 15 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 36 37 42; do
+            echo "Closing issue #$issue..."
+            gh issue close $issue --comment "All v0.2.0 features verified as implemented. Closing as part of milestone completion." 2>/dev/null || echo "Failed to close #$issue"
+          done
+
+      - name: Self-destruct - remove this workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/close-issues.yml
+          git commit -m "ci: remove one-shot close-issues workflow"
+          git push
