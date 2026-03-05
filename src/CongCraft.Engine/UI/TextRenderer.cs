@@ -1,6 +1,7 @@
 using System.Numerics;
 using CongCraft.Engine.Rendering;
 using Silk.NET.OpenGL;
+using Shader = CongCraft.Engine.Rendering.Shader;
 
 namespace CongCraft.Engine.UI;
 

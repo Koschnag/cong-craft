@@ -405,7 +405,7 @@ public sealed class HudSystem : ISystem
         DrawOrnatePanel(panelX, panelY, panelW, panelH, ortho);
 
         // Speaker name
-        _textRenderer.DrawText(node.SpeakerId ?? "???", panelX + 15, panelY + panelH - 22, 2.0f, GoldColor, ortho);
+        _textRenderer.DrawText(node.SpeakerName ?? "???", panelX + 15, panelY + panelH - 22, 2.0f, GoldColor, ortho);
 
         // Divider
         _hudShader.Use();
@@ -516,7 +516,7 @@ public sealed class HudSystem : ISystem
                 new Vector4(0.12f, 0.10f, 0.06f, 0.7f)));
             DrawRect(new HudElement(new Vector2(trackerX - 2, trackerY + 18), new Vector2(210, 2), DarkGold));
 
-            _textRenderer.DrawText(quest.Title ?? "Quest", trackerX + 4, trackerY + 2, 1.5f, GoldColor, ortho);
+            _textRenderer.DrawText(quest.Quest.Title ?? "Quest", trackerX + 4, trackerY + 2, 1.5f, GoldColor, ortho);
 
             float objY = trackerY - 22;
             foreach (var obj in quest.Objectives)
