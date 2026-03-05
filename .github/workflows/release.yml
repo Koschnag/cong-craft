@@ -6,10 +6,17 @@ on:
       - 'v*'
   pull_request:
     branches: [main, master]
+    # Only build pre-releases for PRs that change game code, not CI-only changes
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - '**/*.csproj'
   workflow_dispatch:
 
 jobs:
   test:
+    # For tags: always run tests. For PRs: skip (CI workflow already tests).
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +27,7 @@ jobs:
 
   # --- PR path: only macOS ARM64 for M1 testing ---
   build-pr-macos-arm64:
-    needs: test
+    # For PRs, don't wait on test job (CI handles that separately)
     if: github.event_name == 'pull_request'
     runs-on: macos-14
     steps:

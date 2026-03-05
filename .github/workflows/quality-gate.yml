@@ -5,7 +5,7 @@ on:
     branches: [main, master]
 
 concurrency:
-  group: quality-${{ github.ref }}
+  group: quality-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
@@ -98,18 +98,22 @@ jobs:
             if (errors > 0) emoji = 'x';
             else if (warnings > 5) emoji = 'warning';
 
-            await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              name: 'Build Quality',
-              head_sha: context.payload.pull_request.head.sha,
-              status: 'completed',
-              conclusion: errors > 0 ? 'failure' : 'success',
-              output: {
-                title: `Build: ${warnings} warnings, ${errors} errors`,
-                summary: `:${emoji}: Build\n\n| Metric | Count |\n|--------|-------|\n| Warnings | ${warnings} |\n| Errors | ${errors} |`
-              }
-            });
+            try {
+              await github.rest.checks.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'Build Quality',
+                head_sha: context.payload.pull_request.head.sha,
+                status: 'completed',
+                conclusion: errors > 0 ? 'failure' : 'success',
+                output: {
+                  title: `Build: ${warnings} warnings, ${errors} errors`,
+                  summary: `:${emoji}: Build\n\n| Metric | Count |\n|--------|-------|\n| Warnings | ${warnings} |\n| Errors | ${errors} |`
+                }
+              });
+            } catch (e) {
+              core.warning(`Could not create check run (may lack permissions for bot PRs): ${e.message}`);
+            }
 
   test-coverage:
     name: Test Coverage Gate
@@ -150,20 +154,28 @@ jobs:
             const threshold = 30;
             const passed = coverage >= threshold;
 
-            await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              name: 'Coverage Gate',
-              head_sha: context.payload.pull_request.head.sha,
-              status: 'completed',
-              conclusion: passed ? 'success' : 'failure',
-              output: {
-                title: `Coverage: ${coverage}% (threshold: ${threshold}%)`,
-                summary: passed
-                  ? `:white_check_mark: Coverage ${coverage}% meets threshold of ${threshold}%`
-                  : `:x: Coverage ${coverage}% is below threshold of ${threshold}%`
-              }
-            });
+            try {
+              await github.rest.checks.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'Coverage Gate',
+                head_sha: context.payload.pull_request.head.sha,
+                status: 'completed',
+                conclusion: passed ? 'success' : 'failure',
+                output: {
+                  title: `Coverage: ${coverage}% (threshold: ${threshold}%)`,
+                  summary: passed
+                    ? `:white_check_mark: Coverage ${coverage}% meets threshold of ${threshold}%`
+                    : `:x: Coverage ${coverage}% is below threshold of ${threshold}%`
+                }
+              });
+            } catch (e) {
+              core.warning(`Could not create check run: ${e.message}`);
+            }
+
+            if (!passed) {
+              core.setFailed(`Coverage ${coverage}% is below threshold of ${threshold}%`);
+            }
 
   quality-result:
     name: Quality Result
