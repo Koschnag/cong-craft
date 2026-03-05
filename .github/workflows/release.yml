@@ -25,7 +25,7 @@ jobs:
             rid: osx-arm64
             name: CongCraft-macOS-arm64
             archive: tar.gz
-          - os: macos-13
+          - os: macos-15
             rid: osx-x64
             name: CongCraft-macOS-x64
             archive: tar.gz
