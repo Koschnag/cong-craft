@@ -9,6 +9,7 @@ on:
 
 permissions:
   issues: write
+  actions: write
 
 jobs:
   create-vision:
@@ -74,3 +75,13 @@ jobs:
             });
 
             core.info(`Vision issue created: #${issue.data.number}`);
+
+            // GITHUB_TOKEN events don't trigger other workflows.
+            // Explicitly dispatch the vision-parser to process this issue.
+            await github.rest.actions.createWorkflowDispatch({
+              owner, repo,
+              workflow_id: 'vision-parser.yml',
+              ref: 'main',
+              inputs: { issue_number: String(issue.data.number) }
+            });
+            core.info(`Vision parser dispatched for issue #${issue.data.number}`);

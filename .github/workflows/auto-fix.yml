@@ -10,6 +10,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: write
 
 jobs:
   auto-fix:
@@ -98,6 +99,21 @@ jobs:
             });
 
             core.info(`Created PR #${pr.data.number}`);
+
+            // GITHUB_TOKEN PRs don't trigger other workflows.
+            // Explicitly dispatch CI and Quality Gate for this PR's branch.
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'auto-merge.yml',
+                ref: 'main',
+                inputs: { pr_number: String(pr.data.number) }
+              });
+              core.info(`Dispatched auto-merge evaluation for PR #${pr.data.number}`);
+            } catch (e) {
+              core.warning(`Could not dispatch auto-merge: ${e.message}`);
+            }
 
       - name: Report unfixable issues
         if: steps.build.outputs.status == 'failure'

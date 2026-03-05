@@ -108,15 +108,19 @@ jobs:
             const warnings = parseInt('${{ steps.build.outputs.warnings }}') || 0;
             const formatIcon = formatStatus === 'pass' ? ':white_check_mark:' : ':warning:';
 
-            await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              name: 'Code Quality Report',
-              head_sha: context.payload.pull_request.head.sha,
-              status: 'completed',
-              conclusion: 'success',
-              output: {
-                title: `Format: ${formatStatus}, Warnings: ${warnings}`,
-                summary: `| Check | Status |\n|-------|--------|\n| Formatting | ${formatIcon} ${formatStatus} |\n| Build Warnings | ${warnings} |`
-              }
-            });
+            try {
+              await github.rest.checks.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'Code Quality Report',
+                head_sha: context.payload.pull_request.head.sha,
+                status: 'completed',
+                conclusion: 'success',
+                output: {
+                  title: `Format: ${formatStatus}, Warnings: ${warnings}`,
+                  summary: `| Check | Status |\n|-------|--------|\n| Formatting | ${formatIcon} ${formatStatus} |\n| Build Warnings | ${warnings} |`
+                }
+              });
+            } catch (e) {
+              core.warning(`Could not create check run: ${e.message}`);
+            }

@@ -17,6 +17,11 @@ on:
         required: true
         type: number
 
+# Serialize per-PR to avoid race conditions between CI and Quality Gate completing
+concurrency:
+  group: auto-merge-${{ github.event.workflow_run.head_branch || github.event.pull_request.number || github.event.inputs.pr_number }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
@@ -102,11 +107,24 @@ jobs:
             const ignoredChecks = [
               'Evaluate & Merge',
               'Auto Approve & Merge',
+              'Auto Label & Triage',
+              'Project Board Automation',
             ];
 
             const relevantChecks = checks.data.check_runs.filter(c =>
               !ignoredChecks.includes(c.name)
             );
+
+            // Bug 11 fix: Require at least one meaningful check to exist
+            // This prevents merging PRs that have no CI results yet
+            const requiredCheckNames = ['Build & Test'];
+            const hasRequiredCheck = relevantChecks.some(c =>
+              requiredCheckNames.includes(c.name)
+            );
+            if (!hasRequiredCheck) {
+              core.info(`No required checks found yet (need one of: ${requiredCheckNames.join(', ')}). Waiting for CI.`);
+              return;
+            }
 
             const failedChecks = relevantChecks.filter(c =>
               c.status === 'completed' &&
@@ -126,7 +144,7 @@ jobs:
             }
 
             if (failedChecks.length > 0) {
-              core.info(`${failedChecks.length} checks failed: ${failedChecks.map(c => c.name).join(', ')}`);
+              core.info(`${failedChecks.length} checks failed: ${failedChecks.map(c => `${c.name} (${c.conclusion})`).join(', ')}`);
               return;
             }
 
@@ -150,8 +168,9 @@ jobs:
                   body: '## Auto-Approved\n\nAll quality gates passed:\n- Build & Test: OK\n- Code Quality: OK\n\nAuto-merging...'
                 });
               } catch (e) {
-                core.info(`Could not auto-approve (may need different token): ${e.message}`);
-                // Continue anyway - merge might still work without required reviews
+                // GITHUB_TOKEN cannot always approve its own PRs.
+                // With required_approving_review_count: 0, this is OK.
+                core.info(`Could not auto-approve (expected for bot PRs): ${e.message}`);
               }
             }
 

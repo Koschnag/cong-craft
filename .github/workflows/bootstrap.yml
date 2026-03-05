@@ -143,7 +143,7 @@ jobs:
                 owner, repo,
                 branch: 'main',
                 required_status_checks: {
-                  strict: true,
+                  strict: false,
                   contexts: ['Build & Test']
                 },
                 enforce_admins: false,

@@ -324,5 +324,8 @@ jobs:
             echo "No wiki changes to push"
           else
             git commit -m "Auto-update wiki from source"
-            git push -f origin main
+            if ! git push -f origin main 2>&1; then
+              echo "::warning::Wiki push failed. The repository wiki may not be initialized yet."
+              echo "To initialize: go to the repo Wiki tab and create a first page manually."
+            fi
           fi
