@@ -67,24 +67,57 @@ CongCraft.sln
 - **Self-Test Loop**: Every 6 hours - build, test, code health analysis
 - **Dependabot**: Weekly NuGet and GitHub Actions dependency updates
 
-## Autonomous Development Cycle
-1. Code changes pushed to feature branch
-2. PR created -> CI + Quality Gate run automatically
-3. All checks pass -> Auto-approved and auto-merged (no manual review needed)
-4. Tag `vX.Y.Z` -> Multi-platform release built automatically
-5. Release published -> Feedback issue created for @Koschnag
-6. User tests, provides feedback (bugs/ideas), approves with thumbs-up or "passt"
-7. Feedback parsed -> Bug/Feature issues auto-created
-8. Next development cycle begins
+## Fully Autonomous System
+Everything runs automatically. No manual setup needed after first merge.
 
-## Feedback Keywords
-In release feedback issues, use these prefixes to auto-create issues:
+### Bootstrap (runs once on merge to main)
+- Labels, variables, branch protection all auto-configured
+- Welcome issue with instructions auto-created
+- No manual workflow triggers needed
+
+### Autonomous Development Cycle
+1. Code pushed to feature branch -> PR auto-created
+2. CI + Quality Gate run automatically
+3. All checks pass -> Auto-approved and auto-merged
+4. Tag `vX.Y.Z` -> Multi-platform release built
+5. Release published -> Feedback issue created for @Koschnag
+6. User tests, gives feedback, approves
+7. Feedback parsed -> Bug/Feature issues auto-created
+8. Next cycle begins
+
+### Self-Healing
+- Self-test loop runs every 6 hours
+- Formatting issues -> Auto-fix PR created
+- Build failures -> Issue auto-created
+- When fixed -> Failure issues auto-closed
+
+## User Interface (Issues only)
+
+### Vision Issues
+Create issue with title `[VISION] Your Vision Title`:
+```
+- Groessere Spielwelt mit mehreren Regionen
+- Reittiere zum schnelleren Reisen
+- NPC-Siedlungen mit Wirtschaftssystem
+```
+Each bullet point becomes a separate feature issue, auto-categorized.
+
+### Inline Commands (in any issue comment)
 - `Bug: <description>` -> Creates bug issue
 - `Fehler: <description>` -> Creates bug issue
-- `Idea: <description>` -> Creates feature issue
 - `Idee: <description>` -> Creates feature issue
 - `Feature: <description>` -> Creates feature issue
 - `Vision: <description>` -> Creates feature issue
+- `/priority critical|high|medium|low` -> Changes issue priority
+- `/label <name>` -> Adds label
+- `/close` or `/done` -> Closes issue
+- `/reopen` -> Reopens issue
+- `/duplicate #N` -> Marks as duplicate
+
+### Release Feedback
+After each release, approve with:
+- Thumbs-up reaction
+- Or comment: "passt", "genehmigt", "approved", "lgtm", "weiter"
 
 ## Labels
 PRs are auto-labeled by:

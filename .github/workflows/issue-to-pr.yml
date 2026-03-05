@@ -1,0 +1,140 @@
+name: Issue Tracker
+
+# Track issue lifecycle and auto-manage project flow
+on:
+  issues:
+    types: [opened, closed, reopened, assigned, labeled]
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  # When user types directly in any issue - parse for inline commands
+  parse-commands:
+    name: Parse Issue Commands
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issue_comment'
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const comment = context.payload.comment;
+            const issue = context.payload.issue;
+
+            // Only process commands from repo owner
+            if (comment.user.login !== 'Koschnag') return;
+
+            const body = comment.body;
+            const lines = body.split('\n');
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+
+              // /priority <level> - change priority
+              const priorityMatch = trimmed.match(/^\/priority\s+(critical|high|medium|low)/i);
+              if (priorityMatch) {
+                const level = priorityMatch[1].toLowerCase();
+                // Remove existing priority labels
+                const labels = issue.labels.map(l => l.name).filter(l => !l.startsWith('priority:'));
+                labels.push(`priority: ${level}`);
+                await github.rest.issues.setLabels({
+                  owner, repo,
+                  issue_number: issue.number,
+                  labels
+                });
+                await github.rest.reactions.createForIssueComment({
+                  owner, repo,
+                  comment_id: comment.id,
+                  content: '+1'
+                });
+              }
+
+              // /label <name> - add label
+              const labelMatch = trimmed.match(/^\/label\s+(.+)/i);
+              if (labelMatch) {
+                try {
+                  await github.rest.issues.addLabels({
+                    owner, repo,
+                    issue_number: issue.number,
+                    labels: [labelMatch[1].trim()]
+                  });
+                  await github.rest.reactions.createForIssueComment({
+                    owner, repo,
+                    comment_id: comment.id,
+                    content: '+1'
+                  });
+                } catch (e) {
+                  // Label doesn't exist
+                }
+              }
+
+              // /close - close issue
+              if (trimmed === '/close' || trimmed === '/done') {
+                await github.rest.issues.update({
+                  owner, repo,
+                  issue_number: issue.number,
+                  state: 'closed'
+                });
+              }
+
+              // /reopen - reopen issue
+              if (trimmed === '/reopen') {
+                await github.rest.issues.update({
+                  owner, repo,
+                  issue_number: issue.number,
+                  state: 'open'
+                });
+              }
+
+              // /duplicate #N - mark as duplicate
+              const dupMatch = trimmed.match(/^\/duplicate\s+#?(\d+)/i);
+              if (dupMatch) {
+                await github.rest.issues.createComment({
+                  owner, repo,
+                  issue_number: issue.number,
+                  body: `Duplicate of #${dupMatch[1]}`
+                });
+                await github.rest.issues.update({
+                  owner, repo,
+                  issue_number: issue.number,
+                  state: 'closed',
+                  state_reason: 'not_planned'
+                });
+              }
+
+              // Bug: / Idee: / Feature: - create sub-issues inline from any issue
+              const bugMatch = trimmed.match(/^(?:bug|fehler|problem):\s*(.+)/i);
+              const ideaMatch = trimmed.match(/^(?:idea|idee|feature|vision):\s*(.+)/i);
+
+              if (bugMatch) {
+                const created = await github.rest.issues.create({
+                  owner, repo,
+                  title: bugMatch[1].trim(),
+                  body: `Created from comment in #${issue.number}`,
+                  labels: ['bug', 'needs-triage']
+                });
+                await github.rest.reactions.createForIssueComment({
+                  owner, repo,
+                  comment_id: comment.id,
+                  content: 'rocket'
+                });
+              }
+
+              if (ideaMatch) {
+                const created = await github.rest.issues.create({
+                  owner, repo,
+                  title: ideaMatch[1].trim(),
+                  body: `Created from comment in #${issue.number}`,
+                  labels: ['enhancement', 'needs-triage']
+                });
+                await github.rest.reactions.createForIssueComment({
+                  owner, repo,
+                  comment_id: comment.id,
+                  content: 'rocket'
+                });
+              }
+            }
