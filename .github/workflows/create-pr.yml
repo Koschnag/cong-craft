@@ -76,3 +76,4 @@ jobs:
           for issue in 36 37; do
             gh issue close $issue --comment "Closed: test issue no longer needed" 2>/dev/null || true
           done
+
