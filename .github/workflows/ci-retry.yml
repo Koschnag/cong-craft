@@ -78,42 +78,24 @@ jobs:
             );
 
             if (retryComments.length >= 5) {
-              core.info(`PR #${pr.number} has ${retryComments.length} retry attempts - escalating to Claude Code`);
+              core.info(`PR #${pr.number} has ${retryComments.length} retry attempts - giving up`);
               await github.rest.issues.createComment({
                 owner, repo,
                 issue_number: pr.number,
                 body: [
-                  '## Auto-Fix Retry Limit Reached :stop_sign: → Escalating to Claude Code :robot:',
+                  '## Auto-Fix Retry Limit Reached :stop_sign:',
                   '',
-                  `After ${retryComments.length} attempts, the formatting auto-fix could not resolve all issues.`,
-                  'Dispatching Claude Code AI to analyze and fix the failures...',
+                  `After ${retryComments.length} attempts, the auto-fix loop could not resolve all issues.`,
+                  'Manual intervention required.',
                   '',
                   `[View latest run](${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId})`
                 ].join('\n')
               });
-
-              // Dispatch Claude Code to fix the CI failures
-              try {
-                await github.rest.actions.createWorkflowDispatch({
-                  owner, repo,
-                  workflow_id: 'claude-fix-ci.yml',
-                  ref: 'main',
-                  inputs: {
-                    pr_number: String(pr.number),
-                    failure_type: 'unknown'
-                  }
-                });
-                core.info(`Dispatched Claude Code CI fix for PR #${pr.number}`);
-              } catch (e) {
-                core.warning(`Could not dispatch Claude Code: ${e.message}`);
-                // Fall back to blocking label if dispatch fails
-                await github.rest.issues.addLabels({
-                  owner, repo,
-                  issue_number: pr.number,
-                  labels: ['blocked']
-                });
-              }
-
+              await github.rest.issues.addLabels({
+                owner, repo,
+                issue_number: pr.number,
+                labels: ['blocked']
+              });
               core.setOutput('found', 'false');
               return;
             }
@@ -249,9 +231,9 @@ jobs:
               lines.push(':arrows_counterclockwise: Formatting fixes pushed. CI will re-run automatically.');
               lines.push(`Next retry will be attempt ${parseInt(attempt) + 1}/5.`);
             } else if (buildStatus === 'failure') {
-              lines.push(':x: **Build failure** - escalating to Claude Code :robot:');
+              lines.push(':x: **Build failure** - cannot auto-fix build errors. Manual intervention needed.');
             } else if (testStatus === 'failure') {
-              lines.push(`:x: **${failed} test(s) failing** - escalating to Claude Code :robot:`);
+              lines.push(`:x: **${failed} test(s) failing** - cannot auto-fix test failures. Manual intervention needed.`);
             }
 
             lines.push('');
@@ -263,23 +245,9 @@ jobs:
               body: lines.join('\n')
             });
 
-            // If build fails or tests fail and no formatting was fixed, escalate to Claude Code
+            // If build fails or tests fail and no formatting was fixed, mark as blocked
             if (!allGreen && !pushed) {
-              const failureType = buildStatus === 'failure' ? 'build' : 'test';
-              core.info(`Dispatching Claude Code to fix ${failureType} failures`);
-              try {
-                await github.rest.actions.createWorkflowDispatch({
-                  owner, repo,
-                  workflow_id: 'claude-fix-ci.yml',
-                  ref: 'main',
-                  inputs: {
-                    pr_number: String(prNumber),
-                    failure_type: failureType
-                  }
-                });
-              } catch (e) {
-                core.warning(`Could not dispatch Claude Code: ${e.message}`);
-              }
+              core.info('No auto-fixable issues found. Marking as needing manual intervention.');
             }
 
             // If all green and we pushed fixes, dispatch auto-merge

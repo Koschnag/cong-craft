@@ -62,7 +62,6 @@ CongCraft.sln
 - **Auto-Merge**: PRs auto-approved and squash-merged when all quality gates pass
 - **Auto-Version**: After merge to main, auto-creates `v*` tag (semantic versioning)
 - **Auto-Fix**: Formatting issues auto-fixed via PR when self-test detects them
-- **Claude Code AI**: Issues auto-solved by Claude Code, CI failures auto-fixed by Claude Code
 - **Release**: Tag `v*` triggers multi-platform release (Windows/macOS/Linux)
 - **Pre-release**: PR builds create testing pre-releases (macOS ARM64)
 - **Nightly**: Daily health check builds across all platforms
@@ -95,31 +94,6 @@ Everything runs automatically. Zero manual intervention needed.
 - Posted as comment to pinned "Tagesbericht" issue
 - Contains: build status, test results, coverage, open issues, recent commits, workflow activity
 - No action needed - just read it
-
-### AI-Powered Code Generation (Claude Code)
-Two workflows use Claude Code CLI to write actual code:
-
-1. **Issue Solver** (`claude-solve-issue.yml`):
-   - Triggered when issue gets `claude` or `automated` label, or new `bug`/`enhancement` issues
-   - Claude reads the issue, analyzes codebase, writes code fix
-   - Verifies: build passes + ALL tests pass (0 failures)
-   - Creates PR automatically → existing auto-merge handles the rest
-   - If fix fails verification, reports back on the issue
-
-2. **CI Fixer** (`claude-fix-ci.yml`):
-   - Triggered automatically when `ci-retry` exhausts 5 formatting-only retries
-   - Also triggered when build/test failures can't be fixed by formatting alone
-   - Claude analyzes build errors and test failures, fixes the root cause
-   - Pushes fix to PR branch → CI re-runs → auto-merge evaluates
-   - Strict rule: never skips/deletes tests, always fixes actual code
-
-**Requirement:** `ANTHROPIC_API_KEY` secret must be set in repository settings.
-
-### Escalation Chain
-1. CI fails → `ci-retry` tries formatting fix (up to 5x)
-2. Still failing → `claude-fix-ci` uses AI to analyze and fix code
-3. Issue created → `claude-solve-issue` implements the solution
-4. Fix passes all tests → auto-merge → auto-version → release
 
 ### Self-Healing
 - Self-test loop runs every 6 hours
