@@ -7,6 +7,11 @@ on:
   issue_comment:
     types: [created]
 
+# Prevent race conditions when multiple comments arrive on same issue
+concurrency:
+  group: issue-commands-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
 permissions:
   issues: write
   contents: read

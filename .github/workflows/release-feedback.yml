@@ -36,6 +36,18 @@ jobs:
               releaseUrl = `${context.serverUrl}/${owner}/${repo}/releases/tag/${version}`;
             }
 
+            // Prevent duplicate feedback issues for the same version
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: 'feedback-required', per_page: 50
+            });
+            const alreadyExists = existingIssues.data.some(i =>
+              i.title.includes('[FEEDBACK]') && i.title.includes(version)
+            );
+            if (alreadyExists) {
+              core.info(`Feedback issue for ${version} already exists - skipping.`);
+              return;
+            }
+
             // Get changes since last release
             const releases = await github.rest.repos.listReleases({ owner, repo, per_page: 5 });
             const prevRelease = releases.data.find(r => r.tag_name !== version && !r.prerelease);
