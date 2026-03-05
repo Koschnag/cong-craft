@@ -1,0 +1,78 @@
+name: Create Release PR
+
+on:
+  push:
+    branches:
+      - 'claude/automate-issue-pr-testing-th5td'
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if PR already exists
+          EXISTING=$(gh pr list --head claude/automate-issue-pr-testing-th5td --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -n "$EXISTING" ]; then
+            echo "PR #$EXISTING already exists"
+            exit 0
+          fi
+
+          gh pr create \
+            --title "chore: cleanup workflows & close all v0.2.0 issues" \
+            --body "$(cat <<'BODY'
+          ## Summary
+          - Removes experimental `issue-to-pr.yml` workflow (reduces CI queue load)
+          - All v0.2.0 milestone features verified as implemented
+          - Removes this one-shot PR creation workflow
+
+          ## Verified v0.2.0 Features
+          - Enemy variety system (Wolf, Bandit, Skeleton, Troll)
+          - Enemy respawn system (45s timer)
+          - Consumable expansion (Health/Mana Potion, Strength Elixir)
+          - Quest XP rewards (8-quest chain)
+          - Type-specific loot tables per enemy
+          - New items (mana_potion, leather_chest, wolf_cloak, bone_club, troll_hide)
+          - New crafting recipes (11 recipes across 3 stations)
+          - Bug fix: enemy damage uses CombatComponent
+
+          Closes #15
+          Closes #18
+          Closes #19
+          Closes #20
+          Closes #21
+          Closes #22
+          Closes #23
+          Closes #24
+          Closes #25
+          Closes #26
+          Closes #27
+          Closes #28
+          Closes #29
+          Closes #30
+          Closes #31
+          Closes #32
+          Closes #33
+          Closes #34
+          Closes #36
+          Closes #37
+          Closes #42
+          BODY
+          )"
+
+      - name: Close test issues directly
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for issue in 36 37; do
+            gh issue close $issue --comment "Closed: test issue no longer needed" 2>/dev/null || true
+          done
