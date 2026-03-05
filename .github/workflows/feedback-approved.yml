@@ -32,13 +32,14 @@ jobs:
             });
 
             const thumbsUp = reactions.data.filter(r => r.content === '+1');
-            const isOwnerApproval = thumbsUp.some(r => r.user.login === 'Koschnag');
+            const repoOwner = context.repo.owner;
+            const isOwnerApproval = thumbsUp.some(r => r.user.login === repoOwner);
 
             // Also check for approval keywords in comments
             let commentApproval = false;
             if (context.eventName === 'issue_comment') {
               const comment = context.payload.comment.body.toLowerCase();
-              const isOwner = context.payload.comment.user.login === 'Koschnag';
+              const isOwner = context.payload.comment.user.login === repoOwner;
               commentApproval = isOwner && (
                 comment.includes('approved') ||
                 comment.includes('lgtm') ||
@@ -90,7 +91,7 @@ jobs:
               });
 
               for (const comment of comments.data) {
-                if (comment.user.login === 'Koschnag' && comment.user.type !== 'Bot') {
+                if (comment.user.login === repoOwner && comment.user.type !== 'Bot') {
                   const lines = comment.body.split('\n');
                   for (const line of lines) {
                     // Auto-create issues from lines starting with "Bug:" or "Idea:" or "Feature:"
