@@ -74,7 +74,7 @@ jobs:
 
       - name: Create PR
         if: steps.format.outputs.formatted != '0' && steps.build.outputs.status == 'success'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const branch = process.env.BRANCH;
@@ -101,7 +101,7 @@ jobs:
 
       - name: Report unfixable issues
         if: steps.build.outputs.status == 'failure'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');

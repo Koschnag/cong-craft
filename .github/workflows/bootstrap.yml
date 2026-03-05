@@ -21,7 +21,7 @@ jobs:
     name: Setup Labels
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         with:
           script: |
             const labels = [
@@ -107,7 +107,7 @@ jobs:
     name: Setup Repository Variables
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup-labels, setup-variables]
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -162,7 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup-labels]
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         with:
           script: |
             const { owner, repo } = context.repo;
