@@ -43,6 +43,13 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Install native dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # Xcode CLT is pre-installed on GitHub runners
+          # Ensure GLFW and OpenAL are available for linking
+          brew install glfw
+
       - name: Publish Native AOT
         run: >
           dotnet publish src/CongCraft.Game/CongCraft.Game.csproj
@@ -52,14 +59,18 @@ jobs:
 
       - name: Sign binary (macOS)
         if: runner.os == 'macOS'
-        run: codesign --force --deep -s - ./publish/${{ matrix.binary }}
+        run: |
+          # Sign the main binary and all dylibs for Gatekeeper
+          find ./publish -name '*.dylib' -exec codesign --force --deep -s - {} \;
+          codesign --force --deep -s - ./publish/${{ matrix.binary }}
 
       - name: Archive (Unix)
         if: runner.os != 'Windows'
         run: |
           cd publish
           chmod +x ${{ matrix.binary }}
-          zip -r ../${{ matrix.name }}.zip ${{ matrix.binary }} *.dylib *.so 2>/dev/null || zip -r ../${{ matrix.name }}.zip ${{ matrix.binary }}
+          # Include all native libraries (dylibs, so files) — not just the binary
+          find . -maxdepth 1 \( -name '*.dylib' -o -name '*.so' -o -name '${{ matrix.binary }}' \) | xargs zip -r ../${{ matrix.name }}.zip
 
       - name: Archive (Windows)
         if: runner.os == 'Windows'

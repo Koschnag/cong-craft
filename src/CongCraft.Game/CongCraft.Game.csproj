@@ -10,6 +10,10 @@
     <PublishAot>true</PublishAot>
     <StripSymbols>true</StripSymbols>
     <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!-- Silk.NET native libs (GLFW, OpenAL) muessen mit kopiert werden -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../CongCraft.Engine/CongCraft.Engine.csproj" />
