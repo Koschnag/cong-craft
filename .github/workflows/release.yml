@@ -25,10 +25,6 @@ jobs:
             rid: osx-arm64
             name: CongCraft-macOS-arm64
             binary: CongCraft.Game
-          - os: macos-13
-            rid: osx-x64
-            name: CongCraft-macOS-x64
-            binary: CongCraft.Game
           - os: ubuntu-latest
             rid: linux-x64
             name: CongCraft-linux-x64
@@ -51,6 +47,10 @@ jobs:
           --configuration Release
           --runtime ${{ matrix.rid }}
           --output ./publish
+
+      - name: Sign binary (macOS)
+        if: runner.os == 'macOS'
+        run: codesign --force --deep -s - ./publish/${{ matrix.binary }}
 
       - name: Archive (Unix)
         if: runner.os != 'Windows'
