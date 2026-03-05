@@ -1,9 +1,16 @@
 name: Vision Parser
 
 # Only on opened - NOT edited (to prevent duplicate feature creation)
+# workflow_dispatch allows manual trigger for bot-created issues (GitHub bot-loop protection)
 on:
   issues:
     types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to parse as vision'
+        required: true
+        type: number
 
 permissions:
   issues: write
@@ -12,14 +19,42 @@ jobs:
   parse-vision:
     name: Parse Vision into Features
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.title, '[VISION]')
+    if: |
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'issues' && contains(github.event.issue.title, '[VISION]'))
     steps:
       - uses: actions/github-script@v7
         with:
           script: |
             const { owner, repo } = context.repo;
-            const issue = context.payload.issue;
+
+            // Support both event triggers
+            let issue;
+            if (context.eventName === 'workflow_dispatch') {
+              const issueNumber = ${{ github.event.inputs.issue_number || 0 }};
+              const response = await github.rest.issues.get({ owner, repo, issue_number: issueNumber });
+              issue = response.data;
+              if (!issue.title.includes('[VISION]')) {
+                core.info(`Issue #${issueNumber} is not a vision issue - skipping.`);
+                return;
+              }
+            } else {
+              issue = context.payload.issue;
+            }
             const body = issue.body || '';
+
+            // Prevent duplicate processing: check if "Vision Parsed" comment already exists
+            const existingComments = await github.rest.issues.listComments({
+              owner, repo,
+              issue_number: issue.number
+            });
+            const alreadyParsed = existingComments.data.some(c =>
+              c.user.type === 'Bot' && (c.body.includes('Vision Parsed') || c.body.includes('Vision Received'))
+            );
+            if (alreadyParsed) {
+              core.info('Vision already parsed - skipping to prevent duplicates.');
+              return;
+            }
 
             // Extract the vision title (remove [VISION] prefix)
             const visionTitle = issue.title.replace(/\[VISION\]\s*/i, '').trim();
