@@ -2,9 +2,49 @@ namespace CongCraft.Engine.Rendering;
 
 /// <summary>
 /// All GLSL shaders embedded as string constants. No external files needed.
+/// Upgraded for mid-2000s RPG quality: triplanar texturing, specular, shadows,
+/// atmospheric fog, Fresnel water, procedural clouds.
 /// </summary>
 public static class ShaderSources
 {
+    // ─── Shadow map generation ─────────────────────────────────────────
+    public const string ShadowVertex = @"
+#version 330 core
+layout (location = 0) in vec3 aPosition;
+layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec2 aTexCoord;
+
+uniform mat4 uLightSpaceMatrix;
+uniform mat4 uModel;
+
+void main()
+{
+    gl_Position = uLightSpaceMatrix * uModel * vec4(aPosition, 1.0);
+}
+";
+
+    public const string ShadowFragment = @"
+#version 330 core
+void main() { }
+";
+
+    // Shadow vertex for entities with color attribute (different layout)
+    public const string ShadowVertexEntity = @"
+#version 330 core
+layout (location = 0) in vec3 aPosition;
+layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec3 aColor;
+
+uniform mat4 uLightSpaceMatrix;
+uniform mat4 uModel;
+
+void main()
+{
+    gl_Position = uLightSpaceMatrix * uModel * vec4(aPosition, 1.0);
+}
+";
+
+    // ─── Terrain (triplanar + multi-texture + shadow + specular) ────────
     public const string TerrainVertex = @"
 #version 330 core
 layout (location = 0) in vec3 aPosition;
@@ -14,11 +54,13 @@ layout (location = 2) in vec2 aTexCoord;
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProjection;
+uniform mat4 uLightSpaceMatrix;
 
 out vec3 FragPos;
 out vec3 Normal;
 out vec2 TexCoord;
 out float Height;
+out vec4 FragPosLightSpace;
 
 void main()
 {
@@ -27,6 +69,7 @@ void main()
     Normal = mat3(transpose(inverse(uModel))) * aNormal;
     TexCoord = aTexCoord;
     Height = aPosition.y;
+    FragPosLightSpace = uLightSpaceMatrix * worldPos;
     gl_Position = uProjection * uView * worldPos;
 }
 ";
@@ -37,6 +80,7 @@ in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoord;
 in float Height;
+in vec4 FragPosLightSpace;
 
 uniform vec3 uSunDirection;
 uniform vec3 uSunColor;
@@ -45,45 +89,110 @@ uniform float uSunIntensity;
 uniform float uFogDensity;
 uniform vec3 uFogColor;
 uniform vec3 uCameraPos;
+uniform sampler2D uGrassTex;
+uniform sampler2D uStoneTex;
+uniform sampler2D uDirtTex;
+uniform sampler2D uShadowMap;
 
 out vec4 FragColor;
+
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 ||
+        projCoords.y < 0.0 || projCoords.y > 1.0)
+        return 0.0;
+
+    float currentDepth = projCoords.z;
+    float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.002);
+
+    // PCF soft shadows (3x3 kernel)
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(uShadowMap, 0);
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(uShadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
+    return shadow;
+}
 
 void main()
 {
     vec3 norm = normalize(Normal);
     float slope = 1.0 - abs(dot(norm, vec3(0.0, 1.0, 0.0)));
 
-    // Height-based color blending: grass -> dirt -> stone -> snow
-    vec3 grassColor = vec3(0.15, 0.35, 0.08);
-    vec3 dirtColor = vec3(0.35, 0.25, 0.15);
-    vec3 stoneColor = vec3(0.45, 0.42, 0.38);
-    vec3 snowColor = vec3(0.85, 0.85, 0.9);
+    // Triplanar texturing for seamless blending
+    vec3 blending = abs(norm);
+    blending = normalize(max(blending, 0.00001));
+    float b = blending.x + blending.y + blending.z;
+    blending /= b;
 
+    float texScale = 0.15;
+    vec3 grassXY = texture(uGrassTex, FragPos.xy * texScale).rgb;
+    vec3 grassXZ = texture(uGrassTex, FragPos.xz * texScale).rgb;
+    vec3 grassYZ = texture(uGrassTex, FragPos.yz * texScale).rgb;
+    vec3 grassSample = grassXY * blending.z + grassXZ * blending.y + grassYZ * blending.x;
+
+    vec3 stoneXY = texture(uStoneTex, FragPos.xy * texScale * 1.3).rgb;
+    vec3 stoneXZ = texture(uStoneTex, FragPos.xz * texScale * 1.3).rgb;
+    vec3 stoneYZ = texture(uStoneTex, FragPos.yz * texScale * 1.3).rgb;
+    vec3 stoneSample = stoneXY * blending.z + stoneXZ * blending.y + stoneYZ * blending.x;
+
+    vec3 dirtXY = texture(uDirtTex, FragPos.xy * texScale * 0.9).rgb;
+    vec3 dirtXZ = texture(uDirtTex, FragPos.xz * texScale * 0.9).rgb;
+    vec3 dirtYZ = texture(uDirtTex, FragPos.yz * texScale * 0.9).rgb;
+    vec3 dirtSample = dirtXY * blending.z + dirtXZ * blending.y + dirtYZ * blending.x;
+
+    vec3 snowColor = vec3(0.88, 0.90, 0.95);
+
+    // Height-based blending with smooth transitions
     vec3 baseColor;
-    if (Height < 2.0)
-        baseColor = mix(dirtColor, grassColor, clamp((Height + 1.0) / 3.0, 0.0, 1.0));
-    else if (Height < 15.0)
-        baseColor = mix(grassColor, stoneColor, clamp((Height - 2.0) / 13.0, 0.0, 1.0));
+    if (Height < 1.5)
+        baseColor = mix(dirtSample, grassSample, smoothstep(-1.0, 2.0, Height));
+    else if (Height < 12.0)
+        baseColor = mix(grassSample, stoneSample, smoothstep(5.0, 12.0, Height));
     else
-        baseColor = mix(stoneColor, snowColor, clamp((Height - 15.0) / 10.0, 0.0, 1.0));
+        baseColor = mix(stoneSample, snowColor, smoothstep(12.0, 22.0, Height));
 
     // Steep slopes get stone
-    baseColor = mix(baseColor, stoneColor, smoothstep(0.4, 0.7, slope));
+    baseColor = mix(baseColor, stoneSample, smoothstep(0.35, 0.65, slope));
 
-    // Directional lighting
-    float diff = max(dot(norm, normalize(-uSunDirection)), 0.0);
-    vec3 diffuse = diff * uSunColor * uSunIntensity;
-    vec3 lighting = (uAmbientColor + diffuse) * baseColor;
+    // Directional lighting (Blinn-Phong)
+    vec3 lightDir = normalize(-uSunDirection);
+    float diff = max(dot(norm, lightDir), 0.0);
 
-    // Distance fog
+    // Specular (subtle for terrain)
+    vec3 viewDir = normalize(uCameraPos - FragPos);
+    vec3 halfDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(norm, halfDir), 0.0), 32.0);
+    vec3 specular = spec * uSunColor * 0.15 * uSunIntensity;
+
+    // Hemisphere ambient (sky above, ground below)
+    float hemiBlend = dot(norm, vec3(0.0, 1.0, 0.0)) * 0.5 + 0.5;
+    vec3 ambient = mix(uAmbientColor * 0.5, uAmbientColor * 1.2, hemiBlend);
+
+    // Shadow
+    float shadow = ShadowCalculation(FragPosLightSpace, norm, lightDir);
+    vec3 diffuse = diff * uSunColor * uSunIntensity * (1.0 - shadow * 0.7);
+    vec3 lighting = (ambient + diffuse) * baseColor + specular * (1.0 - shadow);
+
+    // Atmospheric fog (height-adjusted)
     float dist = length(FragPos - uCameraPos);
-    float fog = 1.0 - exp(-dist * uFogDensity);
+    float heightFactor = max(0.0, 1.0 - (FragPos.y - uCameraPos.y) * 0.02);
+    float fog = 1.0 - exp(-dist * uFogDensity * (1.0 + heightFactor * 0.5));
     lighting = mix(lighting, uFogColor, clamp(fog, 0.0, 1.0));
 
     FragColor = vec4(lighting, 1.0);
 }
 ";
 
+    // ─── Basic object shader (enemies, player, NPCs) with shadows ─────
     public const string BasicVertex = @"
 #version 330 core
 layout (location = 0) in vec3 aPosition;
@@ -93,10 +202,12 @@ layout (location = 2) in vec3 aColor;
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProjection;
+uniform mat4 uLightSpaceMatrix;
 
 out vec3 FragPos;
 out vec3 Normal;
 out vec3 VertexColor;
+out vec4 FragPosLightSpace;
 
 void main()
 {
@@ -104,6 +215,7 @@ void main()
     FragPos = worldPos.xyz;
     Normal = mat3(transpose(inverse(uModel))) * aNormal;
     VertexColor = aColor;
+    FragPosLightSpace = uLightSpaceMatrix * worldPos;
     gl_Position = uProjection * uView * worldPos;
 }
 ";
@@ -113,6 +225,7 @@ void main()
 in vec3 FragPos;
 in vec3 Normal;
 in vec3 VertexColor;
+in vec4 FragPosLightSpace;
 
 uniform vec3 uSunDirection;
 uniform vec3 uSunColor;
@@ -121,16 +234,64 @@ uniform float uSunIntensity;
 uniform float uFogDensity;
 uniform vec3 uFogColor;
 uniform vec3 uCameraPos;
+uniform sampler2D uShadowMap;
 
 out vec4 FragColor;
+
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 ||
+        projCoords.y < 0.0 || projCoords.y > 1.0)
+        return 0.0;
+
+    float currentDepth = projCoords.z;
+    float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.002);
+
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(uShadowMap, 0);
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(uShadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
+    return shadow;
+}
 
 void main()
 {
     vec3 norm = normalize(Normal);
-    float diff = max(dot(norm, normalize(-uSunDirection)), 0.0);
-    vec3 diffuse = diff * uSunColor * uSunIntensity;
-    vec3 lighting = (uAmbientColor + diffuse) * VertexColor;
+    vec3 lightDir = normalize(-uSunDirection);
+    vec3 viewDir = normalize(uCameraPos - FragPos);
 
+    // Diffuse
+    float diff = max(dot(norm, lightDir), 0.0);
+
+    // Blinn-Phong specular
+    vec3 halfDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(norm, halfDir), 0.0), 48.0);
+    vec3 specular = spec * uSunColor * 0.25 * uSunIntensity;
+
+    // Hemisphere ambient
+    float hemiBlend = dot(norm, vec3(0.0, 1.0, 0.0)) * 0.5 + 0.5;
+    vec3 ambient = mix(uAmbientColor * 0.6, uAmbientColor * 1.3, hemiBlend);
+
+    // Shadow
+    float shadow = ShadowCalculation(FragPosLightSpace, norm, lightDir);
+    vec3 diffuse = diff * uSunColor * uSunIntensity * (1.0 - shadow * 0.7);
+    vec3 lighting = (ambient + diffuse) * VertexColor + specular * (1.0 - shadow);
+
+    // Rim lighting
+    float rim = 1.0 - max(dot(viewDir, norm), 0.0);
+    rim = smoothstep(0.5, 1.0, rim);
+    lighting += rim * uSunColor * 0.08 * uSunIntensity;
+
+    // Fog
     float dist = length(FragPos - uCameraPos);
     float fog = 1.0 - exp(-dist * uFogDensity);
     lighting = mix(lighting, uFogColor, clamp(fog, 0.0, 1.0));
@@ -139,6 +300,7 @@ void main()
 }
 ";
 
+    // ─── Water (Fresnel, dynamic normals, fake reflection) ─────────────
     public const string WaterVertex = @"
 #version 330 core
 layout (location = 0) in vec3 aPosition;
@@ -149,11 +311,27 @@ uniform mat4 uProjection;
 uniform float uTime;
 
 out vec3 FragPos;
+out vec3 WaveNormal;
 
 void main()
 {
     vec3 pos = aPosition;
-    pos.y += sin(pos.x * 0.5 + uTime * 1.5) * 0.1 + cos(pos.z * 0.3 + uTime) * 0.08;
+
+    // Multi-octave waves
+    float wave1 = sin(pos.x * 0.4 + uTime * 1.2) * 0.12;
+    float wave2 = cos(pos.z * 0.3 + uTime * 0.8) * 0.09;
+    float wave3 = sin((pos.x + pos.z) * 0.2 + uTime * 0.5) * 0.06;
+    float wave4 = cos(pos.x * 0.8 - uTime * 1.5) * 0.04;
+    pos.y += wave1 + wave2 + wave3 + wave4;
+
+    // Wave normal from partial derivatives
+    float dx = 0.4 * 0.12 * cos(pos.x * 0.4 + uTime * 1.2)
+             + 0.2 * 0.06 * cos((pos.x + pos.z) * 0.2 + uTime * 0.5)
+             + 0.8 * 0.04 * (-sin(pos.x * 0.8 - uTime * 1.5));
+    float dz = 0.3 * 0.09 * (-sin(pos.z * 0.3 + uTime * 0.8))
+             + 0.2 * 0.06 * cos((pos.x + pos.z) * 0.2 + uTime * 0.5);
+    WaveNormal = normalize(vec3(-dx, 1.0, -dz));
+
     vec4 worldPos = uModel * vec4(pos, 1.0);
     FragPos = worldPos.xyz;
     gl_Position = uProjection * uView * worldPos;
@@ -163,6 +341,7 @@ void main()
     public const string WaterFragment = @"
 #version 330 core
 in vec3 FragPos;
+in vec3 WaveNormal;
 
 uniform vec3 uSunDirection;
 uniform vec3 uSunColor;
@@ -171,37 +350,66 @@ uniform vec3 uAmbientColor;
 uniform float uFogDensity;
 uniform vec3 uFogColor;
 uniform vec3 uCameraPos;
+uniform float uTime;
+uniform vec3 uZenithColor;
+uniform vec3 uHorizonColor;
 
 out vec4 FragColor;
 
 void main()
 {
-    vec3 waterColor = vec3(0.05, 0.15, 0.25);
-    vec3 norm = vec3(0.0, 1.0, 0.0);
-
-    float diff = max(dot(norm, normalize(-uSunDirection)), 0.0);
-    vec3 lighting = (uAmbientColor + diff * uSunColor * uSunIntensity) * waterColor;
-
-    // Specular highlight
+    vec3 deepColor = vec3(0.02, 0.08, 0.18);
+    vec3 shallowColor = vec3(0.05, 0.25, 0.35);
+    vec3 norm = normalize(WaveNormal);
     vec3 viewDir = normalize(uCameraPos - FragPos);
-    vec3 reflectDir = reflect(normalize(uSunDirection), norm);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
-    lighting += spec * uSunColor * 0.5;
 
+    // Fresnel
+    float fresnel = pow(1.0 - max(dot(viewDir, norm), 0.0), 4.0);
+    fresnel = mix(0.04, 0.9, fresnel);
+
+    // Fake sky reflection
+    vec3 reflectDir = reflect(-viewDir, norm);
+    float skyT = clamp(reflectDir.y * 0.5 + 0.5, 0.0, 1.0);
+    vec3 reflectionColor = mix(uHorizonColor * 1.2, uZenithColor, pow(skyT, 1.5));
+
+    // Sun specular
+    vec3 lightDir = normalize(-uSunDirection);
+    vec3 halfDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(norm, halfDir), 0.0), 256.0);
+    vec3 sunSpec = spec * uSunColor * 2.0 * uSunIntensity;
+    float spec2 = pow(max(dot(norm, halfDir), 0.0), 32.0);
+    vec3 broadSpec = spec2 * uSunColor * 0.3 * uSunIntensity;
+
+    // Water color
+    vec3 waterColor = mix(shallowColor, deepColor, clamp(fresnel, 0.0, 1.0));
+
+    // Diffuse
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 lighting = (uAmbientColor * 0.6 + diff * uSunColor * uSunIntensity * 0.4) * waterColor;
+
+    // Blend with reflection
+    vec3 finalColor = mix(lighting, reflectionColor, fresnel * 0.6) + sunSpec + broadSpec;
+
+    // Caustic shimmer
+    float caustic = sin(FragPos.x * 2.0 + uTime * 3.0) * sin(FragPos.z * 2.0 + uTime * 2.0);
+    caustic = max(0.0, caustic) * 0.03 * uSunIntensity;
+    finalColor += vec3(caustic);
+
+    // Fog
     float dist = length(FragPos - uCameraPos);
     float fog = 1.0 - exp(-dist * uFogDensity);
-    lighting = mix(lighting, uFogColor, clamp(fog, 0.0, 1.0));
+    finalColor = mix(finalColor, uFogColor, clamp(fog, 0.0, 1.0));
 
-    FragColor = vec4(lighting, 0.6);
+    float alpha = mix(0.55, 0.92, fresnel);
+    FragColor = vec4(finalColor, alpha);
 }
 ";
 
+    // ─── Sky (atmospheric + clouds + stars) ────────────────────────────
     public const string SkyVertex = @"
 #version 330 core
 layout (location = 0) in vec2 aPosition;
-
 out vec2 TexCoord;
-
 void main()
 {
     TexCoord = aPosition * 0.5 + 0.5;
@@ -216,29 +424,100 @@ in vec2 TexCoord;
 uniform vec3 uZenithColor;
 uniform vec3 uHorizonColor;
 uniform vec3 uSunDirection;
+uniform float uTime;
 
 out vec4 FragColor;
+
+float hash(vec2 p)
+{
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+}
+
+float noise(vec2 p)
+{
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float fbm(vec2 p)
+{
+    float val = 0.0;
+    float amp = 0.5;
+    for (int i = 0; i < 5; i++)
+    {
+        val += amp * noise(p);
+        p *= 2.0;
+        amp *= 0.5;
+    }
+    return val;
+}
 
 void main()
 {
     float t = TexCoord.y;
-    vec3 sky = mix(uHorizonColor, uZenithColor, pow(t, 1.5));
+    vec3 sky = mix(uHorizonColor, uZenithColor, pow(t, 1.2));
 
-    // Sun glow near horizon
-    float sunDot = max(dot(normalize(vec3(TexCoord.x * 2.0 - 1.0, t, 0.5)), normalize(-uSunDirection)), 0.0);
-    sky += pow(sunDot, 64.0) * vec3(1.0, 0.8, 0.4) * 0.5;
+    vec3 sunDir = normalize(-uSunDirection);
+    vec3 viewDir = normalize(vec3(TexCoord.x * 2.0 - 1.0, t * 1.5 - 0.2, 0.6));
+
+    // Multi-layer sun glow
+    float sunDot = max(dot(viewDir, sunDir), 0.0);
+    sky += pow(sunDot, 128.0) * vec3(1.0, 0.95, 0.8) * 1.5;
+    sky += pow(sunDot, 16.0) * vec3(1.0, 0.7, 0.3) * 0.4;
+    sky += pow(sunDot, 4.0) * vec3(0.8, 0.5, 0.2) * 0.15;
+
+    // Procedural clouds
+    if (t > 0.15)
+    {
+        float cloudHeight = (t - 0.15) / 0.85;
+        vec2 cloudUV = vec2(TexCoord.x * 3.0 + uTime * 0.01, cloudHeight * 2.0 + uTime * 0.005);
+        float cloud = fbm(cloudUV * 4.0);
+        cloud = smoothstep(0.35, 0.65, cloud);
+
+        float cloudLight = max(dot(sunDir, vec3(0.0, 1.0, 0.0)), 0.2);
+        vec3 cloudColor = mix(vec3(0.6, 0.6, 0.65), vec3(1.0, 0.98, 0.92), cloudLight);
+
+        float sunHeight = sunDir.y;
+        if (sunHeight < 0.1)
+        {
+            float duskFactor = smoothstep(-0.1, 0.1, sunHeight);
+            cloudColor = mix(cloudColor * vec3(0.8, 0.4, 0.25), cloudColor, duskFactor);
+        }
+
+        float horizonFade = smoothstep(0.15, 0.35, t);
+        cloud *= horizonFade * 0.6;
+        sky = mix(sky, cloudColor, cloud);
+    }
+
+    // Stars at night
+    float nightFactor = smoothstep(0.0, -0.3, sunDir.y);
+    if (nightFactor > 0.0 && t > 0.2)
+    {
+        vec2 starUV = TexCoord * 80.0;
+        float starBrightness = hash(floor(starUV));
+        starBrightness = pow(starBrightness, 20.0) * nightFactor;
+        float twinkle = sin(uTime * 2.0 + starBrightness * 100.0) * 0.3 + 0.7;
+        sky += vec3(starBrightness * twinkle);
+    }
 
     FragColor = vec4(sky, 1.0);
 }
 ";
 
+    // ─── HUD shaders ───────────────────────────────────────────────────
     public const string HudVertex = @"
 #version 330 core
 layout (location = 0) in vec2 aPosition;
-
 uniform mat4 uProjection;
 uniform vec4 uRect;
-
 void main()
 {
     vec2 pos = uRect.xy + aPosition * uRect.zw;
@@ -249,9 +528,7 @@ void main()
     public const string HudFragment = @"
 #version 330 core
 uniform vec4 uColor;
-
 out vec4 FragColor;
-
 void main()
 {
     FragColor = uColor;
@@ -261,14 +538,12 @@ void main()
     public const string ParticleVertex = @"
 #version 330 core
 layout (location = 0) in vec2 aQuad;
-
 uniform mat4 uView;
 uniform mat4 uProjection;
 uniform vec3 uPosition;
 uniform float uSize;
 uniform vec3 uCameraRight;
 uniform vec3 uCameraUp;
-
 void main()
 {
     vec3 worldPos = uPosition
@@ -281,12 +556,9 @@ void main()
     public const string ParticleFragment = @"
 #version 330 core
 uniform vec4 uColor;
-
 out vec4 FragColor;
-
 void main()
 {
-    // Soft circle falloff
     vec2 center = gl_PointCoord - vec2(0.5);
     float dist = length(center) * 2.0;
     float alpha = uColor.a * smoothstep(1.0, 0.3, dist);
@@ -294,16 +566,12 @@ void main()
 }
 ";
 
-    // --- Text rendering shader (textured quads with color tint) ---
     public const string TextVertex = @"
 #version 330 core
 layout (location = 0) in vec2 aPosition;
 layout (location = 1) in vec2 aTexCoord;
-
 uniform mat4 uProjection;
-
 out vec2 TexCoord;
-
 void main()
 {
     TexCoord = aTexCoord;
@@ -314,12 +582,9 @@ void main()
     public const string TextFragment = @"
 #version 330 core
 in vec2 TexCoord;
-
 uniform sampler2D uTexture;
 uniform vec4 uColor;
-
 out vec4 FragColor;
-
 void main()
 {
     float alpha = texture(uTexture, TexCoord).a;
@@ -327,16 +592,12 @@ void main()
 }
 ";
 
-    // --- Textured HUD shader (for ornate panels with texture + color tint) ---
     public const string HudTexturedVertex = @"
 #version 330 core
 layout (location = 0) in vec2 aPosition;
-
 uniform mat4 uProjection;
 uniform vec4 uRect;
-
 out vec2 TexCoord;
-
 void main()
 {
     vec2 pos = uRect.xy + aPosition * uRect.zw;
@@ -348,12 +609,9 @@ void main()
     public const string HudTexturedFragment = @"
 #version 330 core
 in vec2 TexCoord;
-
 uniform sampler2D uTexture;
 uniform vec4 uColor;
-
 out vec4 FragColor;
-
 void main()
 {
     vec4 texColor = texture(uTexture, TexCoord);
@@ -361,6 +619,7 @@ void main()
 }
 ";
 
+    // ─── Entity shader with point lights + shadows ────────────────────
     public const string BasicVertexPointLights = @"
 #version 330 core
 layout (location = 0) in vec3 aPosition;
@@ -370,10 +629,12 @@ layout (location = 2) in vec3 aColor;
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProjection;
+uniform mat4 uLightSpaceMatrix;
 
 out vec3 FragPos;
 out vec3 Normal;
 out vec3 VertexColor;
+out vec4 FragPosLightSpace;
 
 void main()
 {
@@ -381,6 +642,7 @@ void main()
     FragPos = worldPos.xyz;
     Normal = mat3(transpose(inverse(uModel))) * aNormal;
     VertexColor = aColor;
+    FragPosLightSpace = uLightSpaceMatrix * worldPos;
     gl_Position = uProjection * uView * worldPos;
 }
 ";
@@ -390,6 +652,7 @@ void main()
 in vec3 FragPos;
 in vec3 Normal;
 in vec3 VertexColor;
+in vec4 FragPosLightSpace;
 
 uniform vec3 uSunDirection;
 uniform vec3 uSunColor;
@@ -398,8 +661,8 @@ uniform float uSunIntensity;
 uniform float uFogDensity;
 uniform vec3 uFogColor;
 uniform vec3 uCameraPos;
+uniform sampler2D uShadowMap;
 
-// Point lights
 uniform int uPointLightCount;
 uniform vec3 uPointLightPos[4];
 uniform vec3 uPointLightColor[4];
@@ -408,34 +671,155 @@ uniform float uPointLightRadius[4];
 
 out vec4 FragColor;
 
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 ||
+        projCoords.y < 0.0 || projCoords.y > 1.0)
+        return 0.0;
+    float currentDepth = projCoords.z;
+    float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.002);
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(uShadowMap, 0);
+    for (int x = -1; x <= 1; ++x)
+        for (int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(uShadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    return shadow / 9.0;
+}
+
 void main()
 {
     vec3 norm = normalize(Normal);
+    vec3 lightDir = normalize(-uSunDirection);
+    vec3 viewDir = normalize(uCameraPos - FragPos);
 
-    // Directional light (sun)
-    float diff = max(dot(norm, normalize(-uSunDirection)), 0.0);
-    vec3 diffuse = diff * uSunColor * uSunIntensity;
-    vec3 lighting = (uAmbientColor + diffuse) * VertexColor;
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 halfDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(norm, halfDir), 0.0), 48.0);
+    vec3 specular = spec * uSunColor * 0.2 * uSunIntensity;
 
-    // Point lights
+    float hemiBlend = dot(norm, vec3(0.0, 1.0, 0.0)) * 0.5 + 0.5;
+    vec3 ambient = mix(uAmbientColor * 0.6, uAmbientColor * 1.3, hemiBlend);
+
+    float shadow = ShadowCalculation(FragPosLightSpace, norm, lightDir);
+    vec3 diffuse = diff * uSunColor * uSunIntensity * (1.0 - shadow * 0.7);
+    vec3 lighting = (ambient + diffuse) * VertexColor + specular * (1.0 - shadow);
+
     for (int i = 0; i < uPointLightCount && i < 4; i++)
     {
         vec3 toLight = uPointLightPos[i] - FragPos;
         float dist = length(toLight);
         if (dist > uPointLightRadius[i]) continue;
-
         float attenuation = 1.0 - (dist / uPointLightRadius[i]);
-        attenuation = attenuation * attenuation; // Quadratic falloff
-        float pointDiff = max(dot(norm, normalize(toLight)), 0.0);
-        lighting += pointDiff * uPointLightColor[i] * uPointLightIntensity[i] * attenuation * VertexColor;
+        attenuation *= attenuation;
+        vec3 pLightDir = normalize(toLight);
+        float pointDiff = max(dot(norm, pLightDir), 0.0);
+        vec3 pHalfDir = normalize(pLightDir + viewDir);
+        float pSpec = pow(max(dot(norm, pHalfDir), 0.0), 32.0);
+        lighting += (pointDiff * VertexColor + pSpec * uPointLightColor[i] * 0.3)
+                  * uPointLightColor[i] * uPointLightIntensity[i] * attenuation;
     }
 
-    // Distance fog
+    float rim = 1.0 - max(dot(viewDir, norm), 0.0);
+    rim = smoothstep(0.5, 1.0, rim);
+    lighting += rim * uSunColor * 0.06 * uSunIntensity;
+
     float fogDist = length(FragPos - uCameraPos);
     float fog = 1.0 - exp(-fogDist * uFogDensity);
     lighting = mix(lighting, uFogColor, clamp(fog, 0.0, 1.0));
 
     FragColor = vec4(lighting, 1.0);
+}
+";
+
+    // ─── Post-processing shaders ──────────────────────────────────────
+    public const string PostProcessVertex = @"
+#version 330 core
+layout (location = 0) in vec2 aPosition;
+out vec2 TexCoord;
+void main()
+{
+    TexCoord = aPosition * 0.5 + 0.5;
+    gl_Position = vec4(aPosition, 0.0, 1.0);
+}
+";
+
+    public const string BloomExtractFragment = @"
+#version 330 core
+in vec2 TexCoord;
+uniform sampler2D uScene;
+uniform float uThreshold;
+out vec4 FragColor;
+void main()
+{
+    vec3 color = texture(uScene, TexCoord).rgb;
+    float brightness = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    if (brightness > uThreshold)
+        FragColor = vec4(color * (brightness - uThreshold), 1.0);
+    else
+        FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+}
+";
+
+    public const string BloomBlurFragment = @"
+#version 330 core
+in vec2 TexCoord;
+uniform sampler2D uImage;
+uniform bool uHorizontal;
+out vec4 FragColor;
+void main()
+{
+    float weights[5] = float[](0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
+    vec2 texOffset = 1.0 / textureSize(uImage, 0);
+    vec3 result = texture(uImage, TexCoord).rgb * weights[0];
+    if (uHorizontal)
+    {
+        for (int i = 1; i < 5; ++i)
+        {
+            result += texture(uImage, TexCoord + vec2(texOffset.x * i, 0.0)).rgb * weights[i];
+            result += texture(uImage, TexCoord - vec2(texOffset.x * i, 0.0)).rgb * weights[i];
+        }
+    }
+    else
+    {
+        for (int i = 1; i < 5; ++i)
+        {
+            result += texture(uImage, TexCoord + vec2(0.0, texOffset.y * i)).rgb * weights[i];
+            result += texture(uImage, TexCoord - vec2(0.0, texOffset.y * i)).rgb * weights[i];
+        }
+    }
+    FragColor = vec4(result, 1.0);
+}
+";
+
+    public const string ToneMappingFragment = @"
+#version 330 core
+in vec2 TexCoord;
+uniform sampler2D uScene;
+uniform sampler2D uBloom;
+uniform float uBloomIntensity;
+uniform float uExposure;
+out vec4 FragColor;
+void main()
+{
+    vec3 hdrColor = texture(uScene, TexCoord).rgb;
+    vec3 bloomColor = texture(uBloom, TexCoord).rgb;
+    hdrColor += bloomColor * uBloomIntensity;
+
+    // ACES-like tonemapping
+    vec3 mapped = (hdrColor * (2.51 * hdrColor + 0.03)) / (hdrColor * (2.43 * hdrColor + 0.59) + 0.14);
+    mapped = pow(mapped, vec3(1.0 / 2.2));
+
+    // Subtle vignette
+    vec2 uv = TexCoord * 2.0 - 1.0;
+    float vignette = 1.0 - dot(uv * 0.4, uv * 0.4);
+    mapped *= smoothstep(0.0, 1.0, vignette);
+
+    FragColor = vec4(mapped, 1.0);
 }
 ";
 }

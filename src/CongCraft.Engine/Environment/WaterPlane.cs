@@ -8,17 +8,18 @@ using Shader = CongCraft.Engine.Rendering.Shader;
 namespace CongCraft.Engine.Environment;
 
 /// <summary>
-/// Renders a large semi-transparent water plane at a fixed Y level.
+/// Renders a large semi-transparent water plane with Fresnel reflections and multi-octave waves.
 /// </summary>
 public sealed class WaterPlane : ISystem
 {
-    public int Priority => 105; // Render after terrain
+    public int Priority => 105;
 
     private GL _gl = null!;
     private Shader _waterShader = null!;
     private Mesh _waterMesh = null!;
     private Camera _camera = null!;
     private LightingData _lighting = null!;
+    private DayNightCycle _dayNight = null!;
 
     public float WaterLevel { get; set; } = 1.5f;
 
@@ -27,6 +28,7 @@ public sealed class WaterPlane : ISystem
         _gl = services.Get<GL>();
         _camera = services.Get<Camera>();
         _lighting = services.Get<LightingData>();
+        _dayNight = services.Get<DayNightCycle>();
         _waterShader = new Shader(_gl, ShaderSources.WaterVertex, ShaderSources.WaterFragment);
         _waterMesh = CreateWaterMesh(_gl, 400f);
     }
@@ -44,6 +46,8 @@ public sealed class WaterPlane : ISystem
         _waterShader.SetUniform("uModel", Matrix4x4.CreateTranslation(0, WaterLevel, 0));
         _waterShader.SetUniform("uTime", time.TotalTimeF);
         _waterShader.SetUniform("uCameraPos", _camera.Position);
+        _waterShader.SetUniform("uZenithColor", _dayNight.ZenithColor);
+        _waterShader.SetUniform("uHorizonColor", _dayNight.HorizonColor);
         _lighting.ApplyToShader(_waterShader);
 
         _waterMesh.Draw();
@@ -54,7 +58,7 @@ public sealed class WaterPlane : ISystem
     private static Mesh CreateWaterMesh(GL gl, float size)
     {
         float h = size / 2f;
-        int divisions = 40;
+        int divisions = 60; // Higher resolution for better wave detail
         float step = size / divisions;
 
         var verts = new List<float>();
@@ -63,9 +67,9 @@ public sealed class WaterPlane : ISystem
         for (int z = 0; z <= divisions; z++)
         for (int x = 0; x <= divisions; x++)
         {
-            verts.Add(-h + x * step); // x
-            verts.Add(0);              // y (modified in shader)
-            verts.Add(-h + z * step); // z
+            verts.Add(-h + x * step);
+            verts.Add(0);
+            verts.Add(-h + z * step);
         }
 
         for (int z = 0; z < divisions; z++)

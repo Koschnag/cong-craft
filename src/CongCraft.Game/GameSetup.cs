@@ -45,7 +45,7 @@ public static class GameSetup
         engine.RegisterSystem(new WeatherSystem());
         engine.RegisterSystem(new PlayerMovementSystem());
         engine.RegisterSystem(dayNight);
-        engine.RegisterSystem(new TerrainSystem(viewDistance: 2));
+        engine.RegisterSystem(new TerrainSystem(viewDistance: 3));
         engine.RegisterSystem(new VegetationPlacer());
         engine.RegisterSystem(new SkyRenderer());
         engine.RegisterSystem(new DialogueSystem());
@@ -75,7 +75,7 @@ public static class GameSetup
         // Create player entity after engine loads (deferred via callback)
         SetupPlayerEntity(engine);
 
-        engine.Run("CongCraft - Medieval RPG", 1280, 720);
+        engine.Run("CongCraft - Medieval RPG", 1920, 1080);
     }
 
     private static void SetupPlayerEntity(GameEngine engine)
