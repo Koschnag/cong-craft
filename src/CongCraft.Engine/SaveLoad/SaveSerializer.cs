@@ -7,11 +7,7 @@ namespace CongCraft.Engine.SaveLoad;
 /// </summary>
 public static class SaveSerializer
 {
-    private static readonly JsonSerializerOptions Options = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
+    private static SaveJsonContext JsonContext => SaveJsonContext.Default;
 
     private static string SaveDirectory => Path.Combine(
         System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile),
@@ -24,7 +20,7 @@ public static class SaveSerializer
     {
         Directory.CreateDirectory(SaveDirectory);
         data.SavedAt = DateTime.UtcNow;
-        string json = JsonSerializer.Serialize(data, Options);
+        string json = JsonSerializer.Serialize(data, JsonContext.SaveData);
         File.WriteAllText(SaveFilePath(slot), json);
     }
 
@@ -34,7 +30,7 @@ public static class SaveSerializer
         if (!File.Exists(path)) return null;
 
         string json = File.ReadAllText(path);
-        return JsonSerializer.Deserialize<SaveData>(json, Options);
+        return JsonSerializer.Deserialize(json, JsonContext.SaveData);
     }
 
     public static bool SaveExists(int slot = 0) =>
@@ -44,11 +40,11 @@ public static class SaveSerializer
     /// Serializes to JSON string (for testing without file I/O).
     /// </summary>
     public static string SerializeToString(SaveData data) =>
-        JsonSerializer.Serialize(data, Options);
+        JsonSerializer.Serialize(data, JsonContext.SaveData);
 
     /// <summary>
     /// Deserializes from JSON string (for testing without file I/O).
     /// </summary>
     public static SaveData? DeserializeFromString(string json) =>
-        JsonSerializer.Deserialize<SaveData>(json, Options);
+        JsonSerializer.Deserialize(json, JsonContext.SaveData);
 }
