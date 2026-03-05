@@ -4,19 +4,10 @@ on:
   push:
     tags:
       - 'v*'
-  pull_request:
-    branches: [main, master]
-    # Only build pre-releases for PRs that change game code, not CI-only changes
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - '**/*.csproj'
   workflow_dispatch:
 
 jobs:
   test:
-    # For tags: always run tests. For PRs: skip (CI workflow already tests).
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,98 +16,27 @@ jobs:
           dotnet-version: '8.0.x'
       - run: dotnet test --configuration Release
 
-  # --- PR path: only macOS ARM64 for M1 testing ---
-  build-pr-macos-arm64:
-    # For PRs, don't wait on test job (CI handles that separately)
-    if: github.event_name == 'pull_request'
-    runs-on: macos-14
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Install native dependencies (macOS)
-        run: brew install glfw
-
-      - name: Publish Native AOT (macOS ARM64)
-        run: >
-          dotnet publish src/CongCraft.Game/CongCraft.Game.csproj
-          --configuration Release
-          --runtime osx-arm64
-          --output ./publish
-
-      - name: Sign binary (macOS)
-        run: |
-          find ./publish -name '*.dylib' -exec codesign --force --deep -s - {} \;
-          codesign --force --deep -s - ./publish/CongCraft.Game
-
-      - name: Archive
-        run: |
-          cd publish
-          chmod +x CongCraft.Game
-          find . -maxdepth 1 \( -name '*.dylib' -o -name '*.so' -o -name 'CongCraft.Game' \) | xargs zip -r ../CongCraft-macOS-arm64.zip
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: CongCraft-macOS-arm64
-          path: CongCraft-macOS-arm64.zip
-
-  pre-release:
-    needs: build-pr-macos-arm64
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Create testing tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="testing-pr${{ github.event.pull_request.number }}-$(echo ${{ github.sha }} | cut -c1-7)"
-          git tag "$TAG"
-          git push origin "$TAG"
-          echo "TAG=$TAG" >> "$GITHUB_ENV"
-
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true
-
-      - name: Create Pre-Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.TAG }}
-          name: "Testing: PR #${{ github.event.pull_request.number }}"
-          prerelease: true
-          generate_release_notes: false
-          body: |
-            Pre-release build from PR #${{ github.event.pull_request.number }}
-            Branch: `${{ github.head_ref }}`
-            Commit: ${{ github.sha }}
-          files: artifacts/*.zip
-
-  # --- Tag path: all platforms for full release ---
   build-release:
     needs: test
-    if: startsWith(github.ref, 'refs/tags/v')
     strategy:
       matrix:
         include:
           - os: macos-14
             rid: osx-arm64
             name: CongCraft-macOS-arm64
-            binary: CongCraft.Game
+            archive: tar.gz
+          - os: macos-13
+            rid: osx-x64
+            name: CongCraft-macOS-x64
+            archive: tar.gz
           - os: ubuntu-latest
             rid: linux-x64
             name: CongCraft-linux-x64
-            binary: CongCraft.Game
+            archive: tar.gz
           - os: windows-latest
             rid: win-x64
             name: CongCraft-windows-x64
-            binary: CongCraft.Game.exe
+            archive: zip
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -124,11 +44,6 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-
-      - name: Install native dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install glfw
 
       - name: Publish Native AOT
         run: >
@@ -140,33 +55,33 @@ jobs:
       - name: Sign binary (macOS)
         if: runner.os == 'macOS'
         run: |
-          find ./publish -name '*.dylib' -exec codesign --force --deep -s - {} \;
-          codesign --force --deep -s - ./publish/${{ matrix.binary }}
+          find ./publish -type f \( -name '*.dylib' -o -name 'CongCraft.Game' \) -exec codesign --force --deep -s - {} \;
 
-      - name: Archive (Unix)
-        if: runner.os != 'Windows'
+      - name: Archive (tar.gz)
+        if: matrix.archive == 'tar.gz'
         run: |
           cd publish
-          chmod +x ${{ matrix.binary }}
-          find . -maxdepth 1 \( -name '*.dylib' -o -name '*.so' -o -name '${{ matrix.binary }}' \) | xargs zip -r ../${{ matrix.name }}.zip
+          chmod +x CongCraft.Game
+          tar -czf ../${{ matrix.name }}.tar.gz *
 
-      - name: Archive (Windows)
-        if: runner.os == 'Windows'
+      - name: Archive (zip)
+        if: matrix.archive == 'zip'
         shell: pwsh
         run: Compress-Archive -Path ./publish/* -DestinationPath ./${{ matrix.name }}.zip
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
-          path: ${{ matrix.name }}.zip
+          path: ${{ matrix.name }}.${{ matrix.archive }}
 
   release:
     needs: build-release
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
@@ -176,4 +91,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: artifacts/*.zip
+          files: |
+            artifacts/*.tar.gz
+            artifacts/*.zip

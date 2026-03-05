@@ -78,13 +78,9 @@ All code must be Native AOT compatible:
 When creating issues, use the appropriate template:
 - **Bug Report**: For crashes, glitches, or broken features
 - **Feature Request**: For new gameplay features or improvements
-- **Task**: For development tasks, refactoring, or chores
-- **Epic**: For large features that span multiple tasks
 
 ## Release Process
 
-Releases are fully automated:
 1. Merge PRs to `main`
 2. Create a version tag: `git tag v1.0.0 && git push origin v1.0.0`
 3. GitHub Actions builds for all platforms and creates the release
-4. Pre-releases are automatically created for open PRs
