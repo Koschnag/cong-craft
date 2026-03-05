@@ -35,7 +35,7 @@ public class CraftingRecipeTests
     [Fact]
     public void CraftingDatabase_ContainsExpectedRecipeCount()
     {
-        Assert.Equal(7, CraftingDatabase.All.Count);
+        Assert.Equal(11, CraftingDatabase.All.Count);
     }
 
     [Theory]
@@ -73,7 +73,7 @@ public class CraftingRecipeTests
     public void CraftingDatabase_GetByStation_ReturnsCorrectRecipes()
     {
         var anvilRecipes = CraftingDatabase.GetByStation(CraftingStationType.Anvil).ToList();
-        Assert.Equal(4, anvilRecipes.Count); // iron_sword, chain_mail, iron_greaves, dark_blade
+        Assert.Equal(5, anvilRecipes.Count); // iron_sword, chain_mail, iron_greaves, dark_blade, bone_club
         Assert.All(anvilRecipes, r => Assert.Equal(CraftingStationType.Anvil, r.Station));
     }
 }

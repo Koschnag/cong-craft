@@ -164,7 +164,7 @@ public sealed class InventorySystem : ISystem
             _lootedEnemies.Add(entity.Id);
 
             // Select loot table based on enemy type
-            var lootTable = LootTables.GetValueOrDefault(enemy.Type, null) ?? DefaultLootTable;
+            var lootTable = LootTables.GetValueOrDefault(enemy.Type) ?? DefaultLootTable;
 
             // Trolls drop more gold
             int goldMultiplier = enemy.Type == EnemyType.Troll ? 3 : 1;
