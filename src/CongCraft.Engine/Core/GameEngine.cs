@@ -38,6 +38,9 @@ public sealed class GameEngine : IDisposable
 
     public void Run(string title = "CongCraft", int width = 1280, int height = 720)
     {
+        DevLog.Section("Window Creation");
+        DevLog.Info($"Creating window: {title} ({width}x{height})");
+
         var options = WindowOptions.Default with
         {
             Size = new Vector2D<int>(width, height),
@@ -47,19 +50,45 @@ public sealed class GameEngine : IDisposable
             VSync = true
         };
 
-        _window = Window.Create(options);
+        try
+        {
+            _window = Window.Create(options);
+            DevLog.Info("Window created successfully");
+        }
+        catch (Exception ex)
+        {
+            DevLog.Error("Failed to create window", ex);
+            throw;
+        }
+
         _window.Load += OnLoad;
         _window.Update += OnUpdate;
         _window.Render += OnRender;
         _window.FramebufferResize += OnResize;
         _window.Closing += OnClosing;
+
+        DevLog.Info("Starting window run loop...");
         _window.Run();
         _window.Dispose();
     }
 
     private void OnLoad()
     {
-        _gl = GL.GetApi(_window);
+        DevLog.Section("OpenGL Init");
+
+        try
+        {
+            _gl = GL.GetApi(_window);
+            DevLog.Info($"OpenGL Vendor:   {_gl.GetStringS(StringName.Vendor)}");
+            DevLog.Info($"OpenGL Renderer: {_gl.GetStringS(StringName.Renderer)}");
+            DevLog.Info($"OpenGL Version:  {_gl.GetStringS(StringName.Version)}");
+            DevLog.Info($"GLSL Version:    {_gl.GetStringS(StringName.ShadingLanguageVersion)}");
+        }
+        catch (Exception ex)
+        {
+            DevLog.Error("Failed to get OpenGL API", ex);
+            throw;
+        }
 
         _gl.Enable(EnableCap.DepthTest);
         _gl.Enable(EnableCap.CullFace);
@@ -73,8 +102,11 @@ public sealed class GameEngine : IDisposable
         _services.Register(_camera);
         _services.Register(_lighting);
 
-        // Initialize all registered systems
+        DevLog.Section("System Init");
+        // Initialize all registered systems (with per-system error handling)
         _systems.InitializeAll(_services);
+
+        DevLog.Info("All systems initialized — entering game loop");
     }
 
     private void OnUpdate(double deltaTime)
@@ -100,6 +132,7 @@ public sealed class GameEngine : IDisposable
 
     private void OnClosing()
     {
+        DevLog.Section("Shutdown");
         _systems.Dispose();
     }
 

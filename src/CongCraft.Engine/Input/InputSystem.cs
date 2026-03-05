@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.InteropServices;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
@@ -38,7 +39,17 @@ public sealed class InputSystem : ISystem
         {
             mouse.MouseMove += OnMouseMove;
             mouse.Scroll += OnScroll;
-            mouse.Cursor.CursorMode = CursorMode.Raw;
+
+            // CursorMode.Raw can crash on some macOS versions — fall back to Disabled
+            try
+            {
+                mouse.Cursor.CursorMode = CursorMode.Raw;
+            }
+            catch
+            {
+                DevLog.Warn("CursorMode.Raw not supported, falling back to Disabled");
+                mouse.Cursor.CursorMode = CursorMode.Disabled;
+            }
         }
 
         _state.IsMouseCaptured = true;
