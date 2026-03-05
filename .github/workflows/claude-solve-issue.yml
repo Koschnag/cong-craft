@@ -1,0 +1,233 @@
+name: Claude Code - Solve Issue
+
+# Triggers:
+# 1. When an issue is labeled 'claude' or 'automated'
+# 2. When a new bug/enhancement issue is created
+# 3. Manual dispatch with issue number
+on:
+  issues:
+    types: [labeled, opened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to solve'
+        required: true
+        type: number
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+# Only one Claude session per issue at a time
+concurrency:
+  group: claude-solve-${{ github.event.issue.number || github.event.inputs.issue_number }}
+  cancel-in-progress: false
+
+jobs:
+  solve:
+    name: Solve Issue with Claude
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' &&
+       (github.event.label.name == 'claude' || github.event.label.name == 'automated')) ||
+      (github.event.action == 'opened' &&
+       github.event.issue.labels[0] != null)
+    steps:
+      - name: Determine issue and check eligibility
+        id: issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let issueNumber;
+            if (context.eventName === 'workflow_dispatch') {
+              issueNumber = parseInt('${{ github.event.inputs.issue_number }}');
+            } else {
+              issueNumber = context.payload.issue.number;
+            }
+
+            const { owner, repo } = context.repo;
+            const issue = await github.rest.issues.get({ owner, repo, issue_number: issueNumber });
+
+            // Skip PRs, closed issues, or already in-progress
+            if (issue.data.pull_request) { core.setOutput('should_run', 'false'); return; }
+            if (issue.data.state === 'closed') { core.setOutput('should_run', 'false'); return; }
+
+            const labels = issue.data.labels.map(l => l.name);
+            if (labels.includes('in-progress-by-claude')) { core.setOutput('should_run', 'false'); return; }
+
+            // For opened events, only auto-solve bug/enhancement issues
+            if (context.eventName === 'issues' && context.payload.action === 'opened') {
+              const autoLabels = ['bug', 'enhancement', 'automated', 'claude'];
+              if (!labels.some(l => autoLabels.includes(l))) {
+                core.setOutput('should_run', 'false');
+                return;
+              }
+            }
+
+            core.setOutput('should_run', 'true');
+            core.setOutput('number', String(issueNumber));
+            core.setOutput('title', issue.data.title);
+
+      - name: Mark issue as in-progress
+        if: steps.issue.outputs.should_run == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = parseInt('${{ steps.issue.outputs.number }}');
+            await github.rest.issues.addLabels({ owner, repo, issue_number: issueNumber, labels: ['in-progress-by-claude'] });
+            await github.rest.issues.createComment({ owner, repo, issue_number: issueNumber,
+              body: `:robot: **Claude Code is working on this**\n\nAnalyzing the issue and implementing a solution...\n\n[View run](${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId})`
+            });
+
+      - name: Checkout
+        if: steps.issue.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup .NET
+        if: steps.issue.outputs.should_run == 'true'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Create branch
+        if: steps.issue.outputs.should_run == 'true'
+        id: branch
+        run: |
+          ISSUE_NUM="${{ steps.issue.outputs.number }}"
+          TITLE=$(echo "${{ steps.issue.outputs.title }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | head -c 40)
+          BRANCH="claude/issue-${ISSUE_NUM}-${TITLE}"
+          git checkout -b "$BRANCH"
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Solve with Claude Code
+        if: steps.issue.outputs.should_run == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            ISSUE NUMBER: ${{ steps.issue.outputs.number }}
+
+            Solve the GitHub issue above. Read the issue details with gh, analyze the codebase,
+            and implement the fix or feature.
+
+            ## Rules
+            1. Run `dotnet build` - must succeed with 0 errors
+            2. Run `dotnet test` - ALL tests must pass (0 failures)
+            3. If tests fail, fix them until all pass
+            4. Keep changes minimal and focused
+            5. Do NOT delete or skip tests
+            6. Follow existing code conventions (.NET 8, nullable enabled)
+            7. Use System.Text.Json with source generators (AOT-safe)
+            8. Write new tests for new features
+            9. Commit your changes with message: "fix: resolve #${{ steps.issue.outputs.number }}"
+
+          claude_args: |
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(dotnet *),Bash(git add *),Bash(git commit *),Bash(git diff*),Bash(git status*),Bash(gh issue view *),Bash(ls*),Bash(find*)"
+
+      - name: Verify solution
+        if: steps.issue.outputs.should_run == 'true'
+        id: verify
+        run: |
+          dotnet restore
+          if dotnet build --configuration Release 2>&1; then
+            echo "build=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=failure" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          TEST_OUT=$(dotnet test --configuration Release --no-build --verbosity normal 2>&1) || true
+          echo "$TEST_OUT"
+          FAILED=$(echo "$TEST_OUT" | grep -oP 'Failed:\s*\K\d+' || echo "0")
+          PASSED=$(echo "$TEST_OUT" | grep -oP 'Passed:\s*\K\d+' || echo "0")
+          echo "test_passed=$PASSED" >> "$GITHUB_OUTPUT"
+          echo "test_failed=$FAILED" >> "$GITHUB_OUTPUT"
+
+          if [ "$FAILED" -eq "0" ] && [ "$PASSED" -gt "0" ]; then
+            echo "tests=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "tests=failure" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push and create PR
+        if: >
+          steps.issue.outputs.should_run == 'true' &&
+          steps.verify.outputs.build == 'success' &&
+          steps.verify.outputs.tests == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ steps.branch.outputs.name }}"
+          ISSUE_NUM="${{ steps.issue.outputs.number }}"
+
+          # Check if there are changes to push
+          if git diff --quiet HEAD && git diff --cached --quiet; then
+            echo "No changes - nothing to push"
+            exit 0
+          fi
+
+          # Ensure changes are committed
+          git diff --quiet || (git add -A && git commit -m "fix: resolve #${ISSUE_NUM} - ${{ steps.issue.outputs.title }}")
+
+          git push -u origin "$BRANCH"
+
+          gh pr create \
+            --title "fix: resolve #${ISSUE_NUM} - ${{ steps.issue.outputs.title }}" \
+            --body "## Resolves #${ISSUE_NUM}
+
+          Automatically implemented by Claude Code.
+
+          ### Verification
+          - :white_check_mark: Build: passing
+          - :white_check_mark: Tests: ${{ steps.verify.outputs.test_passed }} passed, ${{ steps.verify.outputs.test_failed }} failed
+
+          _Auto-merge will evaluate when all CI checks pass._" \
+            --label "automated,claude-code"
+
+      - name: Report failure on issue
+        if: >
+          steps.issue.outputs.should_run == 'true' &&
+          (steps.verify.outputs.build == 'failure' || steps.verify.outputs.tests == 'failure')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = parseInt('${{ steps.issue.outputs.number }}');
+            const build = '${{ steps.verify.outputs.build }}' || 'unknown';
+            const tests = '${{ steps.verify.outputs.tests }}' || 'unknown';
+            const passed = '${{ steps.verify.outputs.test_passed }}' || '0';
+            const failed = '${{ steps.verify.outputs.test_failed }}' || '0';
+
+            let reason = build === 'failure' ? 'Build failed.' : `${failed} test(s) still failing.`;
+
+            await github.rest.issues.createComment({ owner, repo, issue_number: issueNumber,
+              body: [
+                '## :warning: Claude Code could not fully resolve this issue',
+                '', `**Reason:** ${reason}`,
+                '', '| Check | Status |', '|-------|--------|',
+                `| Build | ${build === 'success' ? ':white_check_mark:' : ':x:'} |`,
+                `| Tests | ${tests === 'success' ? ':white_check_mark:' : ':x:'} ${passed} passed, ${failed} failed |`,
+                '', `[View run](${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId})`
+              ].join('\n')
+            });
+
+      - name: Clean up labels
+        if: always() && steps.issue.outputs.should_run == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.removeLabel({
+                ...context.repo, issue_number: parseInt('${{ steps.issue.outputs.number }}'),
+                name: 'in-progress-by-claude'
+              });
+            } catch (e) { /* label might not exist */ }

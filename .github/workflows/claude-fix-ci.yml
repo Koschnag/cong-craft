@@ -1,0 +1,240 @@
+name: Claude Code - Fix CI Failures
+
+# Triggers:
+# 1. Dispatched by ci-retry when formatting fixes aren't enough
+# 2. Dispatched by auto-fix for unfixable build errors
+# 3. Manual dispatch with PR number
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number with failing CI'
+        required: true
+        type: number
+      failure_type:
+        description: 'Type of failure'
+        required: false
+        default: 'unknown'
+        type: choice
+        options:
+          - build
+          - test
+          - unknown
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  checks: read
+  id-token: write
+
+concurrency:
+  group: claude-fix-ci-${{ github.event.inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  fix-ci:
+    name: Fix CI with Claude
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Get PR details
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = parseInt('${{ github.event.inputs.pr_number }}');
+            const pr = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+
+            if (pr.data.state !== 'open') {
+              core.setOutput('should_run', 'false');
+              return;
+            }
+
+            core.setOutput('should_run', 'true');
+            core.setOutput('number', String(prNumber));
+            core.setOutput('branch', pr.data.head.ref);
+            core.setOutput('title', pr.data.title);
+
+      - name: Comment on PR
+        if: steps.pr.outputs.should_run == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            await github.rest.issues.createComment({ owner, repo,
+              issue_number: parseInt('${{ steps.pr.outputs.number }}'),
+              body: `:robot: **Claude Code - Attempting CI Fix**\n\nAnalyzing and fixing the failures...\n\n[View run](${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId})`
+            });
+
+      - name: Checkout PR branch
+        if: steps.pr.outputs.should_run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.branch }}
+          fetch-depth: 0
+
+      - name: Setup .NET
+        if: steps.pr.outputs.should_run == 'true'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Diagnose failures
+        if: steps.pr.outputs.should_run == 'true'
+        id: diagnose
+        run: |
+          dotnet restore
+
+          # Capture build output
+          BUILD_OUT=$(dotnet build --configuration Release --no-restore 2>&1) || true
+          echo "$BUILD_OUT" > /tmp/build-output.txt
+          BUILD_ERRORS=$(echo "$BUILD_OUT" | grep ": error " | head -30 || true)
+          echo "$BUILD_OUT" | grep -q ": error " && echo "build_passes=false" >> "$GITHUB_OUTPUT" || echo "build_passes=true" >> "$GITHUB_OUTPUT"
+
+          # If build passes, capture test output
+          if [ "$(grep -c ': error ' /tmp/build-output.txt || echo 0)" -eq "0" ]; then
+            TEST_OUT=$(dotnet test --configuration Release --no-build --verbosity normal 2>&1) || true
+            echo "$TEST_OUT" > /tmp/test-output.txt
+            TEST_FAILURES=$(echo "$TEST_OUT" | grep -A3 "Failed " | head -50 || true)
+          else
+            TEST_FAILURES=""
+          fi
+
+          # Write multiline outputs
+          {
+            echo "build_errors<<EOF_BUILD"
+            echo "$BUILD_ERRORS"
+            echo "EOF_BUILD"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "test_failures<<EOF_TEST"
+            echo "$TEST_FAILURES"
+            echo "EOF_TEST"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Fix with Claude Code
+        if: steps.pr.outputs.should_run == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ steps.pr.outputs.number }}
+
+            Fix the CI failures on this PR. The PR branch is already checked out.
+
+            **Failure Type:** ${{ github.event.inputs.failure_type }}
+
+            **Build Errors:**
+            ```
+            ${{ steps.diagnose.outputs.build_errors }}
+            ```
+
+            **Test Failures:**
+            ```
+            ${{ steps.diagnose.outputs.test_failures }}
+            ```
+
+            ## Instructions
+            1. Analyze the error messages carefully
+            2. Read the relevant source and test files
+            3. Fix the root cause - don't suppress errors
+            4. Run `dotnet build` - must succeed with 0 errors
+            5. Run `dotnet test` - ALL tests must pass (0 failures)
+            6. Commit your changes
+
+            ## Rules
+            - ALL tests MUST pass (0 failures) - non-negotiable
+            - Do NOT delete or skip tests
+            - Do NOT add [Skip] or [Fact(Skip=...)] attributes
+            - Fix actual code, not tests (unless the test is wrong)
+            - Keep changes minimal
+
+          claude_args: |
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(dotnet *),Bash(git add *),Bash(git commit *),Bash(git diff*),Bash(git status*),Bash(ls*),Bash(find*)"
+
+      - name: Final verification
+        if: steps.pr.outputs.should_run == 'true'
+        id: verify
+        run: |
+          dotnet restore
+          if dotnet build --configuration Release 2>&1; then
+            echo "build=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=failure" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          TEST_OUT=$(dotnet test --configuration Release --no-build --verbosity normal 2>&1) || true
+          echo "$TEST_OUT"
+          FAILED=$(echo "$TEST_OUT" | grep -oP 'Failed:\s*\K\d+' || echo "0")
+          PASSED=$(echo "$TEST_OUT" | grep -oP 'Passed:\s*\K\d+' || echo "0")
+          echo "test_passed=$PASSED" >> "$GITHUB_OUTPUT"
+          echo "test_failed=$FAILED" >> "$GITHUB_OUTPUT"
+
+          if [ "$FAILED" -eq "0" ] && [ "$PASSED" -gt "0" ]; then
+            echo "tests=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "tests=failure" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push fixes
+        if: >
+          steps.pr.outputs.should_run == 'true' &&
+          steps.verify.outputs.build == 'success' &&
+          steps.verify.outputs.tests == 'success'
+        id: push
+        run: |
+          # Ensure changes are committed
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            git config user.name "claude-code[bot]"
+            git config user.email "claude-code[bot]@users.noreply.github.com"
+            git diff --quiet || git add -A
+            git diff --cached --quiet || git commit -m "fix: resolve CI failures (Claude Code)
+
+          Build: passing
+          Tests: ${{ steps.verify.outputs.test_passed }} passed, 0 failed"
+            git push origin "${{ steps.pr.outputs.branch }}"
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report result
+        if: always() && steps.pr.outputs.should_run == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = parseInt('${{ steps.pr.outputs.number }}');
+            const build = '${{ steps.verify.outputs.build }}' || 'unknown';
+            const tests = '${{ steps.verify.outputs.tests }}' || 'unknown';
+            const passed = '${{ steps.verify.outputs.test_passed }}' || '0';
+            const failed = '${{ steps.verify.outputs.test_failed }}' || '0';
+            const pushed = '${{ steps.push.outputs.pushed }}';
+            const allGreen = build === 'success' && tests === 'success' && pushed === 'true';
+
+            const body = [
+              `## :robot: Claude Code CI Fix - ${allGreen ? ':white_check_mark: Success' : ':x: Could not fully resolve'}`,
+              '', '| Check | Status |', '|-------|--------|',
+              `| Build | ${build === 'success' ? ':white_check_mark:' : ':x:'} |`,
+              `| Tests | ${tests === 'success' ? ':white_check_mark:' : ':x:'} ${passed} passed, ${failed} failed |`,
+              `| Fix pushed | ${pushed === 'true' ? ':white_check_mark:' : ':x:'} |`,
+              '',
+              allGreen
+                ? ':rocket: **All fixed!** CI will re-run and auto-merge will evaluate.'
+                : ':warning: Could not fully fix. Manual intervention needed.',
+              '',
+              `[View run](${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId})`
+            ].join('\n');
+
+            await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body });
+
+            if (allGreen) {
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number: prNumber, name: 'blocked' });
+              } catch (e) { /* label might not exist */ }
+            }
