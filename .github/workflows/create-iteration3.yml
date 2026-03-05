@@ -1,0 +1,117 @@
+name: Create Iteration 3 Vision & Test Feedback
+
+on:
+  push:
+    paths:
+      - '.github/workflows/create-iteration3.yml'
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  create-vision:
+    name: Create Vision Issue - Iteration 3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        id: vision
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+
+            // Check if vision issue already exists
+            const existing = await github.rest.issues.listForRepo({
+              owner, repo,
+              state: 'open',
+              labels: 'vision'
+            });
+            const alreadyExists = existing.data.some(i => i.title.includes('Iteration 3'));
+            if (alreadyExists) {
+              core.info('Vision issue already exists, skipping.');
+              return;
+            }
+
+            // Create the Vision Issue
+            const vision = await github.rest.issues.create({
+              owner, repo,
+              title: '[VISION] Iteration 3 - Lebendige Spielwelt',
+              body: [
+                '## Vision: Lebendige Spielwelt',
+                '',
+                'Die Spielwelt soll sich lebendig anfühlen - NPCs haben Tagesabläufe,',
+                'das Wetter beeinflusst das Gameplay, und der Spieler kann die Welt',
+                'auf einer Karte erkunden.',
+                '',
+                '### Features',
+                '',
+                '- NPC-Siedlungen mit Marktplatz und Handwerkern',
+                '- Reittiere zum schnelleren Reisen durch die Spielwelt',
+                '- Tag-Nacht-Zyklus beeinflusst NPC-Verhalten und Monster-Spawns',
+                '- Wettereffekte wie Regen und Gewitter mit Gameplay-Auswirkungen',
+                '- Hintergrundmusik die sich dynamisch an Situation anpasst',
+                '- Minimap und Weltkarte zum Erkunden der Regionen',
+              ].join('\n')
+            });
+
+            core.info(`Vision issue created: #${vision.data.number}`);
+            core.setOutput('vision_number', vision.data.number);
+
+  create-feedback-test:
+    name: Create Test Feedback Issue
+    runs-on: ubuntu-latest
+    needs: create-vision
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+
+            // Check if test feedback issue already exists
+            const existing = await github.rest.issues.listForRepo({
+              owner, repo,
+              state: 'open',
+              labels: 'feedback-required'
+            });
+            const alreadyExists = existing.data.some(i => i.title.includes('Test'));
+            if (alreadyExists) {
+              core.info('Feedback issue already exists, skipping.');
+              return;
+            }
+
+            // Create a test feedback issue to verify the feedback loop
+            const feedback = await github.rest.issues.create({
+              owner, repo,
+              title: '[FEEDBACK] Automation Test - Review Required',
+              body: [
+                '## Automation Test - Feedback Loop Verification',
+                '',
+                'This issue tests whether the feedback automation works correctly.',
+                '',
+                '### How to test',
+                '',
+                '1. **Approve**: React with :+1: or comment "passt"',
+                '2. **Report bugs**: Comment with `Bug: description`',
+                '3. **Suggest features**: Comment with `Idee: description`',
+                '',
+                '### Expected behavior',
+                '',
+                '- When approved, `feedback-approved.yml` should trigger',
+                '- `AWAITING_FEEDBACK` variable should be set to `false`',
+                '- Any `Bug:` or `Idee:` lines should create new issues',
+                '',
+                '---',
+                '',
+                '### Try these test commands in a comment:',
+                '```',
+                'Bug: Test-Bug um die Automation zu prüfen',
+                'Idee: Test-Feature um die Automation zu prüfen',
+                'passt',
+                '```',
+                '',
+                '> React with :+1: or comment "passt" to approve.',
+              ].join('\n'),
+              labels: ['feedback-required', 'priority: critical']
+            });
+
+            core.info(`Test feedback issue created: #${feedback.data.number}`);
