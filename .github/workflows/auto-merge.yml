@@ -1,0 +1,185 @@
+name: Auto Approve & Merge
+
+on:
+  # Runs after CI completes on a PR
+  pull_request:
+    types: [opened, synchronize, reopened]
+  # Re-evaluate when checks complete
+  check_suite:
+    types: [completed]
+  # Re-evaluate when reviews are submitted
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  # Gate 1: All quality checks must pass
+  quality-gate:
+    name: Quality Gate Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || (github.event_name == 'check_suite' && github.event.check_suite.conclusion == 'success')
+    outputs:
+      should_merge: ${{ steps.evaluate.outputs.should_merge }}
+      pr_number: ${{ steps.find-pr.outputs.pr_number }}
+    steps:
+      - uses: actions/github-script@v7
+        id: find-pr
+        with:
+          script: |
+            let prNumber;
+            if (context.eventName === 'pull_request') {
+              prNumber = context.payload.pull_request.number;
+            } else if (context.eventName === 'check_suite') {
+              const prs = context.payload.check_suite.pull_requests;
+              if (prs && prs.length > 0) {
+                prNumber = prs[0].number;
+              }
+            }
+            if (!prNumber) {
+              core.setOutput('pr_number', '');
+              return;
+            }
+            core.setOutput('pr_number', prNumber.toString());
+
+      - uses: actions/github-script@v7
+        id: evaluate
+        if: steps.find-pr.outputs.pr_number != ''
+        with:
+          script: |
+            const prNumber = parseInt('${{ steps.find-pr.outputs.pr_number }}');
+            const { owner, repo } = context.repo;
+
+            // Get PR details
+            const pr = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+
+            // Skip draft PRs
+            if (pr.data.draft) {
+              core.info('PR is draft, skipping');
+              core.setOutput('should_merge', 'false');
+              return;
+            }
+
+            // Skip PRs with "work-in-progress" label
+            const labels = pr.data.labels.map(l => l.name);
+            if (labels.includes('work-in-progress') || labels.includes('blocked')) {
+              core.info('PR is WIP or blocked, skipping');
+              core.setOutput('should_merge', 'false');
+              return;
+            }
+
+            // Check all CI status checks
+            const checks = await github.rest.checks.listForRef({
+              owner, repo,
+              ref: pr.data.head.sha
+            });
+
+            const failedChecks = checks.data.check_runs.filter(c =>
+              c.status === 'completed' &&
+              c.conclusion !== 'success' &&
+              c.conclusion !== 'skipped' &&
+              c.conclusion !== 'neutral' &&
+              c.name !== 'Auto Approve' &&
+              c.name !== 'Auto Merge' &&
+              c.name !== 'Quality Gate Check'
+            );
+
+            const pendingChecks = checks.data.check_runs.filter(c =>
+              c.status !== 'completed' &&
+              c.name !== 'Auto Approve' &&
+              c.name !== 'Auto Merge' &&
+              c.name !== 'Quality Gate Check'
+            );
+
+            if (pendingChecks.length > 0) {
+              core.info(`${pendingChecks.length} checks still pending`);
+              core.setOutput('should_merge', 'false');
+              return;
+            }
+
+            if (failedChecks.length > 0) {
+              core.info(`${failedChecks.length} checks failed: ${failedChecks.map(c => c.name).join(', ')}`);
+              core.setOutput('should_merge', 'false');
+
+              // Post failure comment
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: prNumber,
+                body: `## Auto-Merge Blocked\n\nThe following checks failed:\n${failedChecks.map(c => `- **${c.name}**: ${c.conclusion}`).join('\n')}\n\nPlease fix the issues and push again. Auto-merge will re-evaluate.`
+              });
+              return;
+            }
+
+            core.info('All checks passed!');
+            core.setOutput('should_merge', 'true');
+
+  auto-approve:
+    name: Auto Approve
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    if: needs.quality-gate.outputs.should_merge == 'true'
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt('${{ needs.quality-gate.outputs.pr_number }}');
+            const { owner, repo } = context.repo;
+
+            // Check if already approved
+            const reviews = await github.rest.pulls.listReviews({
+              owner, repo,
+              pull_number: prNumber
+            });
+
+            const hasApproval = reviews.data.some(r =>
+              r.state === 'APPROVED' && r.user.type === 'Bot'
+            );
+
+            if (!hasApproval) {
+              await github.rest.pulls.createReview({
+                owner, repo,
+                pull_number: prNumber,
+                event: 'APPROVE',
+                body: '## Auto-Approved\n\nAll quality gates passed:\n- Build: OK\n- Tests: OK\n- Code Coverage: OK\n- Code Quality: OK\n\nAuto-merging...'
+              });
+            }
+
+  auto-merge:
+    name: Auto Merge
+    needs: [quality-gate, auto-approve]
+    runs-on: ubuntu-latest
+    if: needs.quality-gate.outputs.should_merge == 'true'
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt('${{ needs.quality-gate.outputs.pr_number }}');
+            const { owner, repo } = context.repo;
+
+            try {
+              // Merge the PR
+              await github.rest.pulls.merge({
+                owner, repo,
+                pull_number: prNumber,
+                merge_method: 'squash'
+              });
+
+              core.info(`PR #${prNumber} merged successfully`);
+
+              // Post success comment
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: prNumber,
+                body: '## Merged Automatically\n\nAll quality gates passed. Changes have been squash-merged into `main`.'
+              });
+            } catch (e) {
+              core.warning(`Failed to merge: ${e.message}`);
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: prNumber,
+                body: `## Auto-Merge Failed\n\nCould not merge: ${e.message}\n\nPlease merge manually or resolve conflicts.`
+              });
+            }

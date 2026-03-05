@@ -58,18 +58,33 @@ CongCraft.sln
 
 ## CI/CD
 - **CI**: Runs on every push/PR - build, test, code coverage
+- **Quality Gate**: Code formatting, build warnings, test coverage threshold (30%)
+- **Auto-Merge**: PRs auto-approved and squash-merged when all quality gates pass
+- **Auto-Fix**: Formatting issues auto-fixed via PR when self-test detects them
 - **Release**: Tag `v*` triggers multi-platform release (Windows/macOS/Linux)
 - **Pre-release**: PR builds create testing pre-releases (macOS ARM64)
 - **Nightly**: Daily health check builds across all platforms
+- **Self-Test Loop**: Every 6 hours - build, test, code health analysis
 - **Dependabot**: Weekly NuGet and GitHub Actions dependency updates
 
-## Git Workflow
-1. Create feature branch from `main`
-2. Open PR with description using the PR template
-3. CI runs automatically (build + test + coverage)
-4. Pre-release build created for manual testing
-5. Review, approve, merge
-6. Tag `vX.Y.Z` for production release
+## Autonomous Development Cycle
+1. Code changes pushed to feature branch
+2. PR created -> CI + Quality Gate run automatically
+3. All checks pass -> Auto-approved and auto-merged (no manual review needed)
+4. Tag `vX.Y.Z` -> Multi-platform release built automatically
+5. Release published -> Feedback issue created for @Koschnag
+6. User tests, provides feedback (bugs/ideas), approves with thumbs-up or "passt"
+7. Feedback parsed -> Bug/Feature issues auto-created
+8. Next development cycle begins
+
+## Feedback Keywords
+In release feedback issues, use these prefixes to auto-create issues:
+- `Bug: <description>` -> Creates bug issue
+- `Fehler: <description>` -> Creates bug issue
+- `Idea: <description>` -> Creates feature issue
+- `Idee: <description>` -> Creates feature issue
+- `Feature: <description>` -> Creates feature issue
+- `Vision: <description>` -> Creates feature issue
 
 ## Labels
 PRs are auto-labeled by:

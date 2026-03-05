@@ -1,0 +1,133 @@
+name: Release Feedback Loop
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to request feedback for'
+        required: true
+        type: string
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  request-feedback:
+    name: Request User Feedback
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            let version, releaseUrl;
+
+            if (context.eventName === 'release') {
+              version = context.payload.release.tag_name;
+              releaseUrl = context.payload.release.html_url;
+            } else {
+              version = '${{ github.event.inputs.version }}';
+              releaseUrl = `${context.serverUrl}/${owner}/${repo}/releases/tag/${version}`;
+            }
+
+            // Get changes since last release
+            const releases = await github.rest.repos.listReleases({ owner, repo, per_page: 5 });
+            const prevRelease = releases.data.find(r => r.tag_name !== version && !r.prerelease);
+
+            let changeLog = '';
+            if (prevRelease) {
+              try {
+                const comparison = await github.rest.repos.compareCommits({
+                  owner, repo,
+                  base: prevRelease.tag_name,
+                  head: version
+                });
+                changeLog = comparison.data.commits
+                  .map(c => `- ${c.commit.message.split('\n')[0]}`)
+                  .join('\n');
+              } catch (e) {
+                changeLog = 'Could not generate changelog.';
+              }
+            }
+
+            const body = `## Release ${version} - Feedback Required
+
+            A new release has been published and needs your review.
+
+            **Release**: [${version}](${releaseUrl})
+
+            ### Changes Since Last Release
+            ${changeLog || 'First release or changelog unavailable.'}
+
+            ---
+
+            ### Please Test & Review
+
+            Download the release and test the following:
+
+            - [ ] Game starts without crashes
+            - [ ] Movement and controls work
+            - [ ] Combat system functional
+            - [ ] Magic spells work
+            - [ ] Save/Load works
+            - [ ] No visual glitches
+            - [ ] Performance acceptable
+
+            ### Your Feedback
+
+            Please comment on this issue with:
+            1. **Bugs found** (if any)
+            2. **Ideas / Vision** for next iteration
+            3. **Approval**: React with :+1: to approve, :-1: if changes needed
+
+            ---
+            > This issue will stay open until you provide feedback.
+            > All development pauses until approval.
+            > React with :+1: to approve and trigger the next development cycle.`;
+
+            const issue = await github.rest.issues.create({
+              owner, repo,
+              title: `[FEEDBACK] Release ${version} - Review Required`,
+              body,
+              labels: ['feedback-required', 'priority: critical', 'pinned'],
+              assignees: ['Koschnag']
+            });
+
+            core.info(`Feedback issue created: #${issue.data.number}`);
+
+  # Wait for approval before allowing next development cycle
+  track-approval:
+    name: Track Feedback Status
+    runs-on: ubuntu-latest
+    needs: request-feedback
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            // Create a deployment status to track approval
+            const { owner, repo } = context.repo;
+            let version;
+            if (context.eventName === 'release') {
+              version = context.payload.release.tag_name;
+            } else {
+              version = '${{ github.event.inputs.version }}';
+            }
+
+            // Set a repository variable to signal "awaiting feedback"
+            try {
+              await github.rest.actions.createOrUpdateRepoVariable({
+                owner, repo,
+                name: 'AWAITING_FEEDBACK',
+                value: 'true'
+              });
+              await github.rest.actions.createOrUpdateRepoVariable({
+                owner, repo,
+                name: 'FEEDBACK_VERSION',
+                value: version
+              });
+            } catch (e) {
+              core.info(`Could not set variables: ${e.message}`);
+            }

@@ -1,0 +1,190 @@
+name: Code Quality Enforcement
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  format-check:
+    name: Code Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Check code formatting
+        id: format
+        run: |
+          dotnet format --verify-no-changes --verbosity diagnostic 2>&1 | tee format-output.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Report formatting issues
+        if: steps.format.outputs.exit_code != '0' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('format-output.txt', 'utf8');
+            const lines = output.split('\n').filter(l => l.includes('Formatted'));
+
+            let body = '## Code Formatting Issues\n\n';
+            if (lines.length > 0) {
+              body += 'The following files need formatting:\n\n';
+              body += lines.map(l => `- \`${l}\``).join('\n');
+              body += '\n\nRun `dotnet format` to fix these automatically.';
+            } else {
+              body += 'Formatting check failed. Run `dotnet format` locally to fix.';
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body
+            });
+
+  build-warnings:
+    name: Build Warnings Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build and capture warnings
+        id: build
+        run: |
+          dotnet build --configuration Release 2>&1 | tee build-output.txt
+          WARNINGS=$(grep -c "warning " build-output.txt || echo "0")
+          ERRORS=$(grep -c "error " build-output.txt || echo "0")
+          echo "warnings=$WARNINGS" >> "$GITHUB_OUTPUT"
+          echo "errors=$ERRORS" >> "$GITHUB_OUTPUT"
+
+      - name: Post build analysis
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const warnings = parseInt('${{ steps.build.outputs.warnings }}');
+            const errors = parseInt('${{ steps.build.outputs.errors }}');
+
+            let status = 'OK';
+            let emoji = 'white_check_mark';
+            if (errors > 0) { status = 'FAILED'; emoji = 'x'; }
+            else if (warnings > 5) { status = 'WARNING'; emoji = 'warning'; }
+
+            // Create check run
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Build Quality',
+              head_sha: context.payload.pull_request.head.sha,
+              status: 'completed',
+              conclusion: errors > 0 ? 'failure' : 'success',
+              output: {
+                title: `Build: ${warnings} warnings, ${errors} errors`,
+                summary: `:${emoji}: Build ${status}\n\n| Metric | Count |\n|--------|-------|\n| Warnings | ${warnings} |\n| Errors | ${errors} |`
+              }
+            });
+
+  test-coverage:
+    name: Test Coverage Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run tests with coverage
+        run: |
+          dotnet test --configuration Release \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./coverage \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: Parse coverage
+        id: coverage
+        run: |
+          # Extract line coverage percentage from coverage file
+          COVERAGE_FILE=$(find coverage -name "coverage.opencover.xml" | head -1)
+          if [ -n "$COVERAGE_FILE" ]; then
+            COVERED=$(grep -oP 'sequenceCoverage="\K[^"]+' "$COVERAGE_FILE" | head -1 || echo "0")
+            echo "percentage=$COVERED" >> "$GITHUB_OUTPUT"
+          else
+            # Try cobertura format
+            COVERAGE_FILE=$(find coverage -name "coverage.cobertura.xml" | head -1)
+            if [ -n "$COVERAGE_FILE" ]; then
+              RATE=$(grep -oP 'line-rate="\K[^"]+' "$COVERAGE_FILE" | head -1 || echo "0")
+              PCT=$(echo "$RATE * 100" | bc -l 2>/dev/null | cut -d. -f1 || echo "0")
+              echo "percentage=$PCT" >> "$GITHUB_OUTPUT"
+            else
+              echo "percentage=0" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - name: Coverage gate
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const coverage = parseFloat('${{ steps.coverage.outputs.percentage }}') || 0;
+            const threshold = 30; // Minimum coverage %
+            const passed = coverage >= threshold;
+
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Coverage Gate',
+              head_sha: context.payload.pull_request.head.sha,
+              status: 'completed',
+              conclusion: passed ? 'success' : 'failure',
+              output: {
+                title: `Coverage: ${coverage.toFixed(1)}% (threshold: ${threshold}%)`,
+                summary: passed
+                  ? `:white_check_mark: Coverage ${coverage.toFixed(1)}% meets threshold of ${threshold}%`
+                  : `:x: Coverage ${coverage.toFixed(1)}% is below threshold of ${threshold}%`
+              }
+            });
+
+  # Aggregate quality result for auto-merge to check
+  quality-result:
+    name: Quality Result
+    needs: [format-check, build-warnings, test-coverage]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const results = {
+              format: '${{ needs.format-check.result }}',
+              build: '${{ needs.build-warnings.result }}',
+              coverage: '${{ needs.test-coverage.result }}'
+            };
+
+            const allPassed = Object.values(results).every(r => r === 'success');
+
+            if (!allPassed) {
+              core.setFailed(`Quality checks failed: ${JSON.stringify(results)}`);
+            } else {
+              core.info('All quality checks passed');
+            }
