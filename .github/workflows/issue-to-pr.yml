@@ -1,0 +1,33 @@
+name: Auto-resolve Issues
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  resolve:
+    if: >
+      contains(github.event.issue.labels.*.name, 'auto') ||
+      contains(github.event.issue.labels.*.name, 'bug') ||
+      contains(github.event.issue.labels.*.name, 'enhancement')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are working on CongCraft, a .NET 8 medieval action RPG.
+            Fix the following GitHub issue. Run 'dotnet build' and 'dotnet test' to verify.
+            Create a new branch, commit your fix, push, and open a PR.
+
+            Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}
+
+            ${{ github.event.issue.body }}
+          claude_args: "--max-turns 30"

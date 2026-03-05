@@ -1,6 +1,7 @@
 # CongCraft - Medieval Action RPG
 
 [![CI](https://github.com/Koschnag/cong-craft/actions/workflows/ci.yml/badge.svg)](https://github.com/Koschnag/cong-craft/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Koschnag/cong-craft?include_prereleases&label=latest%20release)](https://github.com/Koschnag/cong-craft/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/download/dotnet/8.0)
 
@@ -50,7 +51,7 @@ Grab the latest release from the [Releases page](../../releases). Self-contained
 
 | Platform | Download |
 |----------|----------|
-| macOS ARM64 (M1/M2/M3) | `CongCraft-macOS-arm64.tar.gz` |
+| macOS ARM64 (M1/M2/M3) | `CongCraft-macOS-arm64.dmg` or `.tar.gz` |
 | macOS x64 (Intel) | `CongCraft-macOS-x64.tar.gz` |
 | Linux x64 | `CongCraft-linux-x64.tar.gz` |
 | Windows x64 | `CongCraft-windows-x64.zip` |

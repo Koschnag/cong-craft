@@ -69,10 +69,21 @@ jobs:
         shell: pwsh
         run: Compress-Archive -Path ./publish/* -DestinationPath ./${{ matrix.name }}.zip
 
+      - name: Create DMG (macOS ARM64)
+        if: matrix.rid == 'osx-arm64'
+        run: |
+          mkdir -p dmg-content
+          cp -R publish/* dmg-content/
+          chmod +x dmg-content/CongCraft.Game
+          hdiutil create -volname "CongCraft" -srcfolder dmg-content \
+            -ov -format UDZO CongCraft-macOS-arm64.dmg
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
-          path: ${{ matrix.name }}.${{ matrix.archive }}
+          path: |
+            ${{ matrix.name }}.${{ matrix.archive }}
+            CongCraft-macOS-arm64.dmg
 
   release:
     needs: build-release
@@ -94,3 +105,4 @@ jobs:
           files: |
             artifacts/*.tar.gz
             artifacts/*.zip
+            artifacts/*.dmg
