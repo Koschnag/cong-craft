@@ -97,7 +97,6 @@ internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
 {
     public int Priority => 5; // Before player movement
 
-    private bool _created;
     private Engine.ECS.World _world = null!;
     private Silk.NET.OpenGL.GL _gl = null!;
 

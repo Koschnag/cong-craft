@@ -15,8 +15,8 @@ public sealed class AudioSystem : ISystem
     private ALContext? _alc;
     private unsafe Device* _device;
     private unsafe Context* _context;
-    private uint _musicSource;
-    private uint _musicBuffer;
+    private uint _musicSource = 0;
+    private uint _musicBuffer = 0;
     private uint _ambientSource;
     private uint _ambientBuffer;
     private bool _initialized;
