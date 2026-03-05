@@ -7,8 +7,8 @@ using Silk.NET.OpenGL;
 namespace CongCraft.Engine.Rendering;
 
 /// <summary>
-/// Renders all entities with MeshRendererComponent that are NOT handled by specialized systems.
-/// Now with shadow map support.
+/// Renders the player entity (MeshRendererComponent + PlayerComponent).
+/// Enemies are handled by EnemyRenderSystem. Includes shadow map support.
 /// </summary>
 public sealed class RenderSystem : ISystem, IShadowCaster
 {
