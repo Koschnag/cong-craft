@@ -11,7 +11,7 @@ public static class RockMeshBuilder
     public record RockParams(
         float BaseRadius = 0.8f,
         float Deformation = 0.3f,
-        int Subdivisions = 2,
+        int Subdivisions = 3,
         int Seed = 42
     );
 

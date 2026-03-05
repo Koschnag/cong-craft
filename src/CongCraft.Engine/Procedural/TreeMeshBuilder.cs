@@ -4,7 +4,8 @@ using CongCraft.Engine.Rendering;
 namespace CongCraft.Engine.Procedural;
 
 /// <summary>
-/// Generates a simple tree mesh: brown cylinder trunk + dark green cone crown.
+/// Generates tree meshes with smooth cylindrical trunk and layered spherical canopy.
+/// SpellForce-style organic trees with higher polygon count.
 /// </summary>
 public static class TreeMeshBuilder
 {
@@ -13,7 +14,7 @@ public static class TreeMeshBuilder
         float TrunkHeight = 2.5f,
         float CrownRadius = 1.5f,
         float CrownHeight = 3.5f,
-        int Segments = 8
+        int Segments = 12
     );
 
     public static MeshData GenerateData(TreeParams? p = null)
@@ -22,15 +23,35 @@ public static class TreeMeshBuilder
         var verts = new List<float>();
         var inds = new List<uint>();
 
-        // Trunk (brown cylinder)
+        // Trunk (brown cylinder with more segments for smoothness)
         AddCylinder(verts, inds, 0, 0, 0,
             p.TrunkRadius, p.TrunkHeight, p.Segments,
             0.35f, 0.22f, 0.1f);
 
-        // Crown (dark green cone)
-        AddCone(verts, inds, 0, p.TrunkHeight, 0,
-            p.CrownRadius, p.CrownHeight, p.Segments,
-            0.08f, 0.25f, 0.05f);
+        // Trunk base flare (wider at bottom)
+        AddCylinder(verts, inds, 0, 0, 0,
+            p.TrunkRadius * 1.4f, p.TrunkHeight * 0.15f, p.Segments,
+            0.32f, 0.2f, 0.09f);
+
+        // Layered canopy using overlapping spheres for organic look
+        float baseY = p.TrunkHeight;
+        float crR = p.CrownRadius;
+
+        // Main central canopy sphere (largest)
+        AddSphere(verts, inds, 0, baseY + crR * 0.7f, 0, crR * 0.85f, p.Segments,
+            0.1f, 0.3f, 0.06f);
+
+        // Upper sphere (lighter green, slightly smaller)
+        AddSphere(verts, inds, 0, baseY + crR * 1.2f, 0, crR * 0.6f, p.Segments,
+            0.12f, 0.35f, 0.08f);
+
+        // Side spheres for volume (darker green)
+        AddSphere(verts, inds, crR * 0.5f, baseY + crR * 0.5f, 0, crR * 0.55f, 8,
+            0.08f, 0.26f, 0.05f);
+        AddSphere(verts, inds, -crR * 0.4f, baseY + crR * 0.55f, crR * 0.3f, crR * 0.5f, 8,
+            0.09f, 0.28f, 0.05f);
+        AddSphere(verts, inds, 0, baseY + crR * 0.4f, -crR * 0.4f, crR * 0.5f, 8,
+            0.08f, 0.25f, 0.04f);
 
         return new MeshData(verts.ToArray(), inds.ToArray());
     }
@@ -64,28 +85,39 @@ public static class TreeMeshBuilder
         }
     }
 
-    private static void AddCone(List<float> verts, List<uint> inds,
-        float cx, float cy, float cz,
-        float radius, float height, int segments,
+    private static void AddSphere(List<float> verts, List<uint> inds,
+        float cx, float cy, float cz, float radius, int segments,
         float r, float g, float b)
     {
         uint baseIdx = (uint)(verts.Count / 9);
+        int stacks = segments / 2;
 
-        // Apex
-        verts.AddRange(new[] { cx, cy + height, cz, 0f, 1f, 0f, r * 0.9f, g * 0.9f, b * 0.9f });
-
-        float ny = radius / MathF.Sqrt(radius * radius + height * height);
-        float nxz = height / MathF.Sqrt(radius * radius + height * height);
-
-        for (int i = 0; i <= segments; i++)
+        for (int stack = 0; stack <= stacks; stack++)
         {
-            float angle = i * MathF.Tau / segments;
-            float cos = MathF.Cos(angle), sin = MathF.Sin(angle);
-            verts.AddRange(new[] { cx + cos * radius, cy, cz + sin * radius, cos * nxz, ny, sin * nxz, r, g, b });
+            float phi = MathF.PI * stack / stacks;
+            float sinPhi = MathF.Sin(phi), cosPhi = MathF.Cos(phi);
+
+            for (int seg = 0; seg <= segments; seg++)
+            {
+                float theta = MathF.Tau * seg / segments;
+                float cosT = MathF.Cos(theta), sinT = MathF.Sin(theta);
+
+                float nx = sinPhi * cosT, ny = cosPhi, nz = sinPhi * sinT;
+                float px = cx + radius * nx, py = cy + radius * ny, pz = cz + radius * nz;
+                verts.AddRange(new[] { px, py, pz, nx, ny, nz, r, g, b });
+            }
         }
 
-        for (uint i = 1; i <= (uint)segments; i++)
-            inds.AddRange(new[] { baseIdx, baseIdx + i, baseIdx + i + 1 });
+        int vertsPerRow = segments + 1;
+        for (int stack = 0; stack < stacks; stack++)
+        for (int seg = 0; seg < segments; seg++)
+        {
+            uint tl = baseIdx + (uint)(stack * vertsPerRow + seg);
+            uint tr = tl + 1;
+            uint bl = (uint)(tl + vertsPerRow);
+            uint br = bl + 1;
+            inds.AddRange(new[] { tl, bl, br, tl, br, tr });
+        }
     }
 }
 

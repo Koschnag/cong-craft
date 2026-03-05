@@ -130,8 +130,12 @@ public sealed class GameEngine : IDisposable
         _frameCount++;
         _gameTime = new GameTime(deltaTime, _gameTime.TotalTime + deltaTime, _frameCount);
 
-        _inputSystem?.BeginFrame();
         _systems.UpdateAll(_gameTime);
+
+        // Clear per-frame input AFTER all systems have read it.
+        // Silk.NET fires input callbacks during DoEvents() before OnUpdate,
+        // so we must let systems read the current frame's input first.
+        _inputSystem?.BeginFrame();
     }
 
     private void OnRender(double deltaTime)

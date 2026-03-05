@@ -290,4 +290,62 @@ public static class ProceduralMusic
         float noteT = (t * 2.0f) % 1f;
         return noteT > 0.8f ? 0 : notes[noteIdx];
     }
+
+    // ─── Sound Effects ──────────────────────────────────────────────────
+
+    /// <summary>Short metallic click for menu button press.</summary>
+    public static short[] GenerateClickSfx()
+    {
+        int samples = SampleRate / 10; // 100ms
+        var data = new short[samples];
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / SampleRate;
+            float decay = MathF.Exp(-t * 60f);
+            float sample = MathF.Sin(t * 800f * MathF.Tau) * 0.4f * decay;
+            sample += MathF.Sin(t * 1200f * MathF.Tau) * 0.2f * decay;
+            sample += MathF.Sin(t * 2400f * MathF.Tau) * 0.1f * MathF.Exp(-t * 100f);
+            sample = Math.Clamp(sample, -0.95f, 0.95f);
+            data[i] = (short)(sample * short.MaxValue);
+        }
+        return data;
+    }
+
+    /// <summary>Soft tonal hover sound for menu item highlight.</summary>
+    public static short[] GenerateHoverSfx()
+    {
+        int samples = SampleRate / 15; // ~67ms
+        var data = new short[samples];
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / SampleRate;
+            float env = MathF.Sin(t * samples / (float)SampleRate * MathF.PI);
+            float sample = MathF.Sin(t * 520f * MathF.Tau) * 0.15f * env;
+            sample += MathF.Sin(t * 780f * MathF.Tau) * 0.08f * env;
+            sample = Math.Clamp(sample, -0.95f, 0.95f);
+            data[i] = (short)(sample * short.MaxValue);
+        }
+        return data;
+    }
+
+    /// <summary>Bright confirmation chime for menu selection.</summary>
+    public static short[] GenerateSelectSfx()
+    {
+        int samples = SampleRate / 4; // 250ms
+        var data = new short[samples];
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / SampleRate;
+            float decay = MathF.Exp(-t * 12f);
+            float sweep = 440f + t * 600f; // rising pitch
+            float sample = MathF.Sin(t * sweep * MathF.Tau) * 0.3f * decay;
+            sample += MathF.Sin(t * sweep * 1.5f * MathF.Tau) * 0.15f * decay;
+            sample += MathF.Sin(t * sweep * 2f * MathF.Tau) * 0.08f * MathF.Exp(-t * 20f);
+            float fadeIn = Math.Min(1f, i / (SampleRate * 0.005f));
+            sample *= fadeIn;
+            sample = Math.Clamp(sample, -0.95f, 0.95f);
+            data[i] = (short)(sample * short.MaxValue);
+        }
+        return data;
+    }
 }

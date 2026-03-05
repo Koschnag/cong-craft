@@ -1,4 +1,5 @@
 using System.Numerics;
+using CongCraft.Engine.Audio;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
@@ -33,6 +34,7 @@ public sealed class MenuSystem : ISystem
     private InputState? _inputState;
 
     private int _selectedItem;
+    private int _prevSelectedItem = -1;
     private float _animTimer;
     private bool _escWasPressed;
 
@@ -121,10 +123,18 @@ public sealed class MenuSystem : ISystem
                 if (hoveredItem >= 0)
                     _selectedItem = hoveredItem;
 
+                // Play hover SFX when selection changes
+                if (_selectedItem != _prevSelectedItem)
+                {
+                    AudioSystem.Instance?.PlaySfx(SfxType.Hover);
+                    _prevSelectedItem = _selectedItem;
+                }
+
                 // Activate on Enter/Space or left mouse click
                 if (_inputState.KeysPressed.Contains(Key.Enter) || _inputState.KeysPressed.Contains(Key.Space)
                     || _inputState.IsMouseButtonPressed(MouseButton.Left))
                 {
+                    AudioSystem.Instance?.PlaySfx(SfxType.Select);
                     HandleMenuSelect();
                 }
             }
