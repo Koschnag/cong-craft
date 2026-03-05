@@ -33,7 +33,7 @@ jobs:
        !contains(github.event.head_commit.message, 'style: auto-format') &&
        !contains(github.event.head_commit.message, '[skip-release]'))
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Need full history for tag detection
 
