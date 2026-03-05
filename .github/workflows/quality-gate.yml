@@ -59,6 +59,12 @@ jobs:
               body
             });
 
+      - name: Fail on formatting issues
+        if: steps.format.outputs.result == 'fail'
+        run: |
+          echo "::error::Code formatting issues detected. Run 'dotnet format' locally to fix."
+          exit 1
+
   build-warnings:
     name: Build Warnings Analysis
     runs-on: ubuntu-latest

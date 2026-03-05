@@ -5,8 +5,6 @@ on:
     types: [opened, closed, reopened, labeled]
   pull_request:
     types: [opened, closed, reopened, review_requested, ready_for_review]
-  issue_comment:
-    types: [created]
 
 jobs:
   track-issue:
@@ -90,103 +88,6 @@ jobs:
               });
             }
 
-  process-inline-commands:
-    name: Process Inline Commands
-    runs-on: ubuntu-latest
-    if: github.event_name == 'issue_comment'
-    permissions:
-      issues: write
-    steps:
-      - uses: actions/github-script@v7
-        with:
-          script: |
-            const comment = context.payload.comment.body;
-            const issueNumber = context.payload.issue.number;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            // Parse inline commands
-            const lines = comment.split('\n');
-            for (const line of lines) {
-              const trimmed = line.trim();
-
-              // Bug/Fehler: create bug issue
-              const bugMatch = trimmed.match(/^(?:Bug|Fehler):\s*(.+)/i);
-              if (bugMatch) {
-                await github.rest.issues.create({
-                  owner, repo,
-                  title: `[BUG] ${bugMatch[1]}`,
-                  body: `Reported from #${issueNumber} by @${context.payload.comment.user.login}`,
-                  labels: ['bug', 'priority: high']
-                });
-              }
-
-              // Idee/Feature/Vision: create feature issue
-              const featureMatch = trimmed.match(/^(?:Idee|Feature|Vision):\s*(.+)/i);
-              if (featureMatch) {
-                await github.rest.issues.create({
-                  owner, repo,
-                  title: `[FEATURE] ${featureMatch[1]}`,
-                  body: `Suggested from #${issueNumber} by @${context.payload.comment.user.login}`,
-                  labels: ['enhancement']
-                });
-              }
-
-              // /priority command
-              const priorityMatch = trimmed.match(/^\/priority\s+(critical|high|medium|low)/i);
-              if (priorityMatch) {
-                const priority = priorityMatch[1].toLowerCase();
-                // Remove existing priority labels
-                const currentLabels = context.payload.issue.labels.map(l => l.name);
-                for (const label of currentLabels) {
-                  if (label.startsWith('priority:')) {
-                    await github.rest.issues.removeLabel({
-                      owner, repo, issue_number: issueNumber, name: label
-                    }).catch(() => {});
-                  }
-                }
-                await github.rest.issues.addLabels({
-                  owner, repo, issue_number: issueNumber,
-                  labels: [`priority: ${priority}`]
-                });
-              }
-
-              // /label command
-              const labelMatch = trimmed.match(/^\/label\s+(.+)/i);
-              if (labelMatch) {
-                await github.rest.issues.addLabels({
-                  owner, repo, issue_number: issueNumber,
-                  labels: [labelMatch[1].trim()]
-                });
-              }
-
-              // /close or /done
-              if (/^\/(?:close|done)$/i.test(trimmed)) {
-                await github.rest.issues.update({
-                  owner, repo, issue_number: issueNumber, state: 'closed'
-                });
-              }
-
-              // /reopen
-              if (/^\/reopen$/i.test(trimmed)) {
-                await github.rest.issues.update({
-                  owner, repo, issue_number: issueNumber, state: 'open'
-                });
-              }
-
-              // /duplicate #N
-              const dupMatch = trimmed.match(/^\/duplicate\s+#?(\d+)/i);
-              if (dupMatch) {
-                await github.rest.issues.addLabels({
-                  owner, repo, issue_number: issueNumber,
-                  labels: ['duplicate']
-                });
-                await github.rest.issues.createComment({
-                  owner, repo, issue_number: issueNumber,
-                  body: `Duplicate of #${dupMatch[1]}`
-                });
-                await github.rest.issues.update({
-                  owner, repo, issue_number: issueNumber, state: 'closed'
-                });
-              }
-            }
+  # NOTE: Inline commands (Bug:, Feature:, /priority, /close, etc.) are handled
+  # exclusively by issue-to-pr.yml to avoid creating duplicate issues.
+  # Do NOT add command parsing here.
