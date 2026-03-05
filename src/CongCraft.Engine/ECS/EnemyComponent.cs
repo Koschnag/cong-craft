@@ -7,6 +7,7 @@ namespace CongCraft.Engine.ECS;
 /// </summary>
 public sealed class EnemyComponent : IComponent
 {
+    public EnemyType Type { get; set; } = EnemyType.Wolf;
     public EnemyState State { get; set; } = EnemyState.Patrol;
     public float DetectionRange { get; set; } = 15f;
     public float AttackRange { get; set; } = 2.5f;
@@ -35,4 +36,15 @@ public enum EnemyState
     Chase,
     Attack,
     Dead
+}
+
+/// <summary>
+/// Different enemy archetypes with distinct stats and behaviors.
+/// </summary>
+public enum EnemyType
+{
+    Wolf,     // Fast, low HP, pack hunter
+    Bandit,   // Balanced, medium stats
+    Skeleton, // Slow, high damage, medium HP
+    Troll     // Very slow, very high HP and damage (mini-boss)
 }

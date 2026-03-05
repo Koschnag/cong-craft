@@ -4,6 +4,7 @@ using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
 using CongCraft.Engine.Input;
 using CongCraft.Engine.Inventory;
+using CongCraft.Engine.Leveling;
 using Silk.NET.Input;
 
 namespace CongCraft.Engine.Quest;
@@ -143,6 +144,13 @@ public sealed class QuestSystem : ISystem
                     inventory.TryAdd(itemData, reward.Quantity);
             }
 
+            // Award XP
+            if (questData.XpReward > 0 && _world.HasComponent<LevelComponent>(playerEntity))
+            {
+                var level = _world.GetComponent<LevelComponent>(playerEntity);
+                level.AddExperience(questData.XpReward);
+            }
+
             // Accept follow-up quests based on completed quest
             AcceptFollowUpQuest(questId, journal);
         }
@@ -150,11 +158,16 @@ public sealed class QuestSystem : ISystem
 
     private void AcceptFollowUpQuest(string completedQuestId, QuestJournal journal)
     {
-        // Quest chains
+        // Quest chains — each quest can lead to the next
         string? followUpId = completedQuestId switch
         {
             "village_tour" => "beast_hunt",
             "beast_hunt" => "pelt_collector",
+            "pelt_collector" => "gather_materials",
+            "gather_materials" => "first_craft",
+            "first_craft" => "dungeon_delve",
+            "dungeon_delve" => "bone_collector",
+            "bone_collector" => "troll_slayer",
             _ => null
         };
 

@@ -40,4 +40,32 @@ public class EnemyComponentTests
         Assert.Contains(EnemyState.Attack, Enum.GetValues<EnemyState>());
         Assert.Contains(EnemyState.Dead, Enum.GetValues<EnemyState>());
     }
+
+    [Fact]
+    public void DefaultType_IsWolf()
+    {
+        var enemy = new EnemyComponent();
+        Assert.Equal(EnemyType.Wolf, enemy.Type);
+    }
+
+    [Fact]
+    public void AllEnemyTypes_Exist()
+    {
+        Assert.Equal(4, Enum.GetValues<EnemyType>().Length);
+        Assert.Contains(EnemyType.Wolf, Enum.GetValues<EnemyType>());
+        Assert.Contains(EnemyType.Bandit, Enum.GetValues<EnemyType>());
+        Assert.Contains(EnemyType.Skeleton, Enum.GetValues<EnemyType>());
+        Assert.Contains(EnemyType.Troll, Enum.GetValues<EnemyType>());
+    }
+
+    [Theory]
+    [InlineData(EnemyType.Wolf)]
+    [InlineData(EnemyType.Bandit)]
+    [InlineData(EnemyType.Skeleton)]
+    [InlineData(EnemyType.Troll)]
+    public void EnemyType_CanBeSet(EnemyType type)
+    {
+        var enemy = new EnemyComponent { Type = type };
+        Assert.Equal(type, enemy.Type);
+    }
 }

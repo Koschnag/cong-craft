@@ -101,6 +101,45 @@ public static class ItemDatabase
             Slot = ItemSlot.None, Weight = 0.5f,
             AttackBonus = 10f, IconR = 0.8f, IconG = 0.4f, IconB = 0.1f
         });
+        Register(new ItemData
+        {
+            Id = "mana_potion", Name = "Mana Potion", Type = ItemType.Consumable,
+            Slot = ItemSlot.None, Weight = 0.5f,
+            HealthBonus = 40f, // Repurposed as mana restore amount
+            IconR = 0.2f, IconG = 0.3f, IconB = 0.9f
+        });
+        Register(new ItemData
+        {
+            Id = "leather_chest", Name = "Leather Armor", Type = ItemType.Armor,
+            Slot = ItemSlot.Chest, Weight = 5f,
+            DefenseBonus = 5f, IconR = 0.5f, IconG = 0.35f, IconB = 0.2f
+        });
+        Register(new ItemData
+        {
+            Id = "wolf_cloak", Name = "Wolf Cloak", Type = ItemType.Armor,
+            Slot = ItemSlot.Chest, Weight = 4f,
+            DefenseBonus = 6f, SpeedBonus = 0.5f,
+            IconR = 0.35f, IconG = 0.3f, IconB = 0.25f
+        });
+        Register(new ItemData
+        {
+            Id = "bone", Name = "Bone", Type = ItemType.Material,
+            Slot = ItemSlot.None, Weight = 1f,
+            IconR = 0.85f, IconG = 0.82f, IconB = 0.75f
+        });
+        Register(new ItemData
+        {
+            Id = "bone_club", Name = "Bone Club", Type = ItemType.Weapon,
+            Slot = ItemSlot.MainHand, Weight = 6f,
+            AttackBonus = 12f, SpeedBonus = -0.5f,
+            IconR = 0.8f, IconG = 0.75f, IconB = 0.65f
+        });
+        Register(new ItemData
+        {
+            Id = "troll_hide", Name = "Troll Hide", Type = ItemType.Material,
+            Slot = ItemSlot.None, Weight = 5f,
+            IconR = 0.3f, IconG = 0.4f, IconB = 0.25f
+        });
     }
 
     private static void Register(ItemData item) => Items[item.Id] = item;

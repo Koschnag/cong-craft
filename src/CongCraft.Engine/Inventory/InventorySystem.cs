@@ -3,6 +3,7 @@ using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
 using CongCraft.Engine.Input;
+using CongCraft.Engine.Magic;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
 using CongCraft.Engine.Terrain;
@@ -30,22 +31,58 @@ public sealed class InventorySystem : ISystem
     // Track which enemies already dropped loot (by entity ID)
     private readonly HashSet<int> _lootedEnemies = new();
 
-    // Loot tables: what items enemies can drop
-    private static readonly (string itemId, float chance)[] EnemyLootTable =
+    // Loot tables per enemy type
+    private static readonly Dictionary<EnemyType, (string itemId, float chance)[]> LootTables = new()
+    {
+        [EnemyType.Wolf] = new[]
+        {
+            ("gold_coin", 0.6f),
+            ("wolf_pelt", 0.5f),
+            ("leather", 0.3f),
+            ("herb", 0.2f),
+            ("health_potion", 0.15f),
+        },
+        [EnemyType.Bandit] = new[]
+        {
+            ("gold_coin", 0.9f),
+            ("health_potion", 0.3f),
+            ("rusty_sword", 0.15f),
+            ("iron_sword", 0.06f),
+            ("leather_helm", 0.1f),
+            ("iron_ore", 0.25f),
+            ("cloth", 0.2f),
+            ("wood", 0.15f),
+        },
+        [EnemyType.Skeleton] = new[]
+        {
+            ("gold_coin", 0.8f),
+            ("bone", 0.5f),
+            ("bone_club", 0.08f),
+            ("iron_ore", 0.3f),
+            ("chain_mail", 0.05f),
+            ("iron_greaves", 0.06f),
+            ("mana_potion", 0.15f),
+        },
+        [EnemyType.Troll] = new[]
+        {
+            ("gold_coin", 1f),
+            ("troll_hide", 0.7f),
+            ("health_potion", 0.6f),
+            ("strength_elixir", 0.3f),
+            ("dark_blade", 0.1f),
+            ("chain_mail", 0.15f),
+            ("iron_greaves", 0.15f),
+            ("mana_potion", 0.3f),
+        },
+    };
+
+    // Fallback loot table
+    private static readonly (string itemId, float chance)[] DefaultLootTable =
     {
         ("gold_coin", 0.9f),
         ("health_potion", 0.4f),
-        ("rusty_sword", 0.15f),
-        ("iron_sword", 0.08f),
-        ("leather_helm", 0.12f),
-        ("chain_mail", 0.06f),
-        ("iron_greaves", 0.08f),
-        ("wolf_pelt", 0.3f),
-        ("iron_ore", 0.2f),
         ("herb", 0.25f),
-        ("leather", 0.15f),
-        ("wood", 0.1f),
-        ("cloth", 0.1f),
+        ("iron_ore", 0.2f),
     };
 
     public void Initialize(ServiceLocator services)
@@ -93,6 +130,14 @@ public sealed class InventorySystem : ISystem
             if (input.IsKeyPressed(Key.H))
                 TryUseHealthPotion(entity, inventory);
 
+            // Use mana potion with M
+            if (input.IsKeyPressed(Key.M))
+                TryUseManaPotion(entity, inventory);
+
+            // Use strength elixir with B (Buff)
+            if (input.IsKeyPressed(Key.B))
+                TryUseStrengthElixir(entity, inventory);
+
             // Equip items with number keys when inventory is open
             if (inventory.IsOpen)
             {
@@ -118,8 +163,13 @@ public sealed class InventorySystem : ISystem
             if (_lootedEnemies.Contains(entity.Id)) continue;
             _lootedEnemies.Add(entity.Id);
 
-            // Roll loot
-            foreach (var (itemId, chance) in EnemyLootTable)
+            // Select loot table based on enemy type
+            var lootTable = LootTables.GetValueOrDefault(enemy.Type, null) ?? DefaultLootTable;
+
+            // Trolls drop more gold
+            int goldMultiplier = enemy.Type == EnemyType.Troll ? 3 : 1;
+
+            foreach (var (itemId, chance) in lootTable)
             {
                 if (_rng.NextDouble() > chance) continue;
 
@@ -127,7 +177,7 @@ public sealed class InventorySystem : ISystem
                 if (itemData == null) continue;
 
                 int quantity = itemData.Id == "gold_coin"
-                    ? _rng.Next(1, 6)
+                    ? _rng.Next(1, 6) * goldMultiplier
                     : 1;
 
                 SpawnLootDrop(transform.Position, itemData, quantity);
@@ -193,6 +243,34 @@ public sealed class InventorySystem : ISystem
 
         health.Heal(potionData.HealthBonus);
         inventory.TryRemove("health_potion");
+    }
+
+    private void TryUseManaPotion(Entity entity, InventoryComponent inventory)
+    {
+        if (inventory.CountOf("mana_potion") <= 0) return;
+        if (!_world.HasComponent<ManaComponent>(entity)) return;
+
+        var mana = _world.GetComponent<ManaComponent>(entity);
+        if (mana.Current >= mana.Max) return;
+
+        mana.Current = MathF.Min(mana.Max, mana.Current + 40f);
+        inventory.TryRemove("mana_potion");
+    }
+
+    private void TryUseStrengthElixir(Entity entity, InventoryComponent inventory)
+    {
+        if (inventory.CountOf("strength_elixir") <= 0) return;
+        if (!_world.HasComponent<CombatComponent>(entity)) return;
+
+        var combat = _world.GetComponent<CombatComponent>(entity);
+
+        // Temporary buff: +10 attack damage for 30 seconds
+        // We apply it directly — the EquipmentSystem recalculates from base each frame,
+        // but SkillAttackBonus is additive and set by LevelingSystem.
+        // We add a temporary buff via a new field.
+        combat.BuffAttackBonus += 10f;
+        combat.BuffDuration = 30f;
+        inventory.TryRemove("strength_elixir");
     }
 
     private void TryEquipAt(Entity entity, InventoryComponent inventory, int slotIndex)

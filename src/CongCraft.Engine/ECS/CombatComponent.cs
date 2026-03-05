@@ -26,7 +26,11 @@ public sealed class CombatComponent : IComponent
     public float SkillAttackBonus { get; set; }
     public float SkillCooldownReduction { get; set; }
 
-    public float EffectiveAttackDamage => AttackDamage + SkillAttackBonus;
+    // Temporary consumable buffs
+    public float BuffAttackBonus { get; set; }
+    public float BuffDuration { get; set; }
+
+    public float EffectiveAttackDamage => AttackDamage + SkillAttackBonus + BuffAttackBonus;
     public float EffectiveAttackCooldown => MathF.Max(0.2f, AttackCooldown - SkillCooldownReduction);
 
     // Magic shield (set by MagicSystem each frame)

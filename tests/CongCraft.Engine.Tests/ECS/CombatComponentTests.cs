@@ -31,4 +31,31 @@ public class CombatComponentTests
         Assert.Equal(1.0f, combat.DodgeCooldown);
         Assert.Equal(0.3f, combat.DodgeDuration);
     }
+
+    [Fact]
+    public void BuffAttackBonus_IncludedInEffectiveDamage()
+    {
+        var combat = new CombatComponent { AttackDamage = 10f, BuffAttackBonus = 5f };
+        Assert.Equal(15f, combat.EffectiveAttackDamage);
+    }
+
+    [Fact]
+    public void BuffAttackBonus_StacksWithSkillBonus()
+    {
+        var combat = new CombatComponent
+        {
+            AttackDamage = 10f,
+            SkillAttackBonus = 3f,
+            BuffAttackBonus = 5f
+        };
+        Assert.Equal(18f, combat.EffectiveAttackDamage);
+    }
+
+    [Fact]
+    public void BuffDuration_DefaultsToZero()
+    {
+        var combat = new CombatComponent();
+        Assert.Equal(0f, combat.BuffDuration);
+        Assert.Equal(0f, combat.BuffAttackBonus);
+    }
 }

@@ -49,4 +49,51 @@ public class ItemDatabaseTests
         Assert.Equal(ItemType.Consumable, potion.Type);
         Assert.True(potion.HealthBonus > 0, "Health potion should heal");
     }
+
+    [Fact]
+    public void NewItems_Exist()
+    {
+        Assert.NotNull(ItemDatabase.Get("mana_potion"));
+        Assert.NotNull(ItemDatabase.Get("leather_chest"));
+        Assert.NotNull(ItemDatabase.Get("wolf_cloak"));
+        Assert.NotNull(ItemDatabase.Get("bone"));
+        Assert.NotNull(ItemDatabase.Get("bone_club"));
+        Assert.NotNull(ItemDatabase.Get("troll_hide"));
+    }
+
+    [Fact]
+    public void ManaPotion_IsConsumable()
+    {
+        var potion = ItemDatabase.Get("mana_potion");
+        Assert.NotNull(potion);
+        Assert.Equal(ItemType.Consumable, potion.Type);
+        Assert.Equal(ItemSlot.None, potion.Slot);
+    }
+
+    [Fact]
+    public void WolfCloak_IsChestArmor()
+    {
+        var cloak = ItemDatabase.Get("wolf_cloak");
+        Assert.NotNull(cloak);
+        Assert.Equal(ItemType.Armor, cloak.Type);
+        Assert.Equal(ItemSlot.Chest, cloak.Slot);
+        Assert.True(cloak.DefenseBonus > 0);
+        Assert.True(cloak.SpeedBonus > 0, "Wolf cloak should give speed bonus");
+    }
+
+    [Fact]
+    public void BoneClub_IsWeapon()
+    {
+        var club = ItemDatabase.Get("bone_club");
+        Assert.NotNull(club);
+        Assert.Equal(ItemType.Weapon, club.Type);
+        Assert.Equal(ItemSlot.MainHand, club.Slot);
+        Assert.True(club.AttackBonus > 0);
+    }
+
+    [Fact]
+    public void All_HasExpectedItemCount()
+    {
+        Assert.True(ItemDatabase.All.Count >= 20, $"Should have at least 20 items, got {ItemDatabase.All.Count}");
+    }
 }

@@ -92,6 +92,60 @@ public static class CraftingDatabase
             },
             OutputItemId = "dark_blade"
         });
+
+        // Mana Potion — Alchemy
+        Register(new CraftingRecipe
+        {
+            Id = "craft_mana_potion", Name = "Brew Mana Potion",
+            Station = CraftingStationType.Alchemy,
+            Ingredients = new List<CraftingIngredient>
+            {
+                new("herb", 2),
+                new("gold_coin", 2)
+            },
+            OutputItemId = "mana_potion"
+        });
+
+        // Leather Armor — Workbench
+        Register(new CraftingRecipe
+        {
+            Id = "craft_leather_chest", Name = "Craft Leather Armor",
+            Station = CraftingStationType.Workbench,
+            Ingredients = new List<CraftingIngredient>
+            {
+                new("leather", 4),
+                new("cloth", 2)
+            },
+            OutputItemId = "leather_chest"
+        });
+
+        // Wolf Cloak — Workbench (endgame)
+        Register(new CraftingRecipe
+        {
+            Id = "craft_wolf_cloak", Name = "Craft Wolf Cloak",
+            Station = CraftingStationType.Workbench,
+            Ingredients = new List<CraftingIngredient>
+            {
+                new("wolf_pelt", 4),
+                new("leather", 2),
+                new("cloth", 2)
+            },
+            OutputItemId = "wolf_cloak"
+        });
+
+        // Bone Club — Anvil
+        Register(new CraftingRecipe
+        {
+            Id = "craft_bone_club", Name = "Forge Bone Club",
+            Station = CraftingStationType.Anvil,
+            Ingredients = new List<CraftingIngredient>
+            {
+                new("bone", 5),
+                new("iron_ore", 2),
+                new("leather", 1)
+            },
+            OutputItemId = "bone_club"
+        });
     }
 
     private static void Register(CraftingRecipe recipe) => Recipes[recipe.Id] = recipe;

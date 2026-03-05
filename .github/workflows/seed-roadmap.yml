@@ -1,0 +1,98 @@
+name: Seed Roadmap Issues
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/seed-roadmap.yml'
+
+jobs:
+  seed-issues:
+    name: Create Roadmap Issues
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Check if already seeded
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner, repo, state: 'all', labels: 'roadmap', per_page: 1
+            });
+            if (existingIssues.data.length > 0) {
+              console.log('Roadmap already seeded, skipping');
+              return;
+            }
+
+            const milestones = [
+              {
+                title: 'v0.2.0 - Gameplay Loop',
+                description: 'Core gameplay loop polish and system connections',
+                issues: [
+                  { title: 'Enemy variety system (Wolf, Bandit, Skeleton, Troll)', labels: ['area: combat', 'enhancement'], body: 'Different enemy types with unique stats, behaviors, and loot tables.\n\n- Wolf: Fast, low HP, pack hunter\n- Bandit: Balanced, medium stats\n- Skeleton: Slow, high damage\n- Troll: Mini-boss, very high HP/damage' },
+                  { title: 'Enemy respawn system', labels: ['area: combat', 'enhancement'], body: 'Enemies respawn after 45 seconds at their spawn points to keep the world alive.' },
+                  { title: 'Consumable system expansion (Mana Potion, Strength Elixir)', labels: ['area: inventory', 'enhancement'], body: 'M key for mana potions, B key for strength elixir (temporary +10 attack for 30s).' },
+                  { title: 'Quest XP rewards and expanded quest chain', labels: ['area: quest-system', 'enhancement'], body: '8 quests with XP rewards: village_tour → beast_hunt → pelt_collector → gather_materials → first_craft → dungeon_delve → bone_collector → troll_slayer' },
+                  { title: 'Type-specific loot tables', labels: ['area: inventory', 'area: combat', 'enhancement'], body: 'Each enemy type drops different loot. Wolves drop pelts, Bandits drop weapons, Skeletons drop bones, Trolls drop rare items.' },
+                  { title: 'New items: Mana Potion, Leather Armor, Wolf Cloak, Bone Club, Troll Hide', labels: ['area: inventory', 'enhancement'], body: '7 new items added to ItemDatabase for richer crafting and equipment variety.' },
+                  { title: 'New crafting recipes: Mana Potion, Leather Armor, Wolf Cloak, Bone Club', labels: ['area: inventory', 'enhancement'], body: '5 new crafting recipes using all material types.' },
+                  { title: 'Fix: Enemy damage uses CombatComponent instead of hardcoded value', labels: ['bug', 'area: combat'], body: 'EnemyAISystem.UpdateAttack was using hardcoded 8f damage instead of the entity CombatComponent.AttackDamage.' },
+                ]
+              },
+              {
+                title: 'v0.3.0 - World Expansion',
+                description: 'Bigger world, more content, visual polish',
+                issues: [
+                  { title: 'Multiple biomes (Forest, Desert, Snow, Swamp)', labels: ['area: world-gen', 'enhancement'], body: 'Terrain generator produces distinct biomes based on moisture/temperature noise.' },
+                  { title: 'NPC merchants with buy/sell system', labels: ['area: quest-system', 'enhancement'], body: 'NPCs that buy/sell items using gold coins as currency.' },
+                  { title: 'Boss encounters in overworld', labels: ['area: combat', 'enhancement'], body: 'Unique boss enemies with special attack patterns in the overworld.' },
+                  { title: 'Day/night cycle affects enemy spawns', labels: ['area: combat', 'area: world-gen', 'enhancement'], body: 'Stronger enemies spawn at night, weaker during day.' },
+                  { title: 'Particle effects for spell impacts', labels: ['area: magic', 'enhancement'], body: 'Visual feedback when spells hit enemies or terrain.' },
+                  { title: 'Death and respawn system for player', labels: ['area: combat', 'enhancement'], body: 'Player respawns at last safe location on death with partial inventory.' },
+                ]
+              },
+              {
+                title: 'v0.4.0 - Multiplayer Foundation',
+                description: 'Network architecture and co-op basics',
+                issues: [
+                  { title: 'Network architecture design', labels: ['enhancement'], body: 'Design client-server architecture for future multiplayer support.' },
+                  { title: 'Save system cloud sync', labels: ['area: save-system', 'enhancement'], body: 'Save games to cloud storage for cross-device play.' },
+                ]
+              }
+            ];
+
+            for (const milestone of milestones) {
+              // Create milestone
+              let ms;
+              try {
+                ms = await github.rest.issues.createMilestone({
+                  owner, repo,
+                  title: milestone.title,
+                  description: milestone.description
+                });
+              } catch (e) {
+                // Milestone might already exist
+                const existing = await github.rest.issues.listMilestones({ owner, repo });
+                ms = { data: existing.data.find(m => m.title === milestone.title) };
+              }
+
+              // Create issues
+              for (const issue of milestone.issues) {
+                await github.rest.issues.create({
+                  owner, repo,
+                  title: issue.title,
+                  body: issue.body,
+                  labels: [...issue.labels, 'roadmap'],
+                  milestone: ms?.data?.number
+                });
+                // Small delay to avoid rate limiting
+                await new Promise(r => setTimeout(r, 500));
+              }
+            }
+
+            console.log('Roadmap seeded successfully!');
