@@ -22,7 +22,7 @@ jobs:
     # Only for full releases, not pre-releases
     if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         with:
           script: |
             const { owner, repo } = context.repo;
