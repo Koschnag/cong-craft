@@ -4,6 +4,7 @@ using CongCraft.Engine.Input;
 using CongCraft.Engine.Rendering;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
+using Silk.NET.Input.Glfw;
 using Silk.NET.Windowing;
 using Silk.NET.Windowing.Glfw;
 
@@ -42,8 +43,9 @@ public sealed class GameEngine : IDisposable
         DevLog.Section("Window Creation");
         DevLog.Info($"Creating window: {title} ({width}x{height})");
 
-        // Explicitly register GLFW platform for Native AOT compatibility
+        // Explicitly register GLFW platforms for Native AOT compatibility
         GlfwWindowing.RegisterPlatform();
+        GlfwInput.RegisterPlatform();
 
         var options = WindowOptions.Default with
         {
