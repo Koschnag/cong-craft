@@ -68,6 +68,7 @@ public static class GameSetup
         engine.RegisterSystem(new EnemyRenderSystem());
         engine.RegisterSystem(new WaterPlane());
         engine.RegisterSystem(new ParticleRenderSystem());
+        engine.RegisterSystem(new MenuSystem());
         engine.RegisterSystem(new HudSystem());
         engine.RegisterSystem(new AudioSystem());
 

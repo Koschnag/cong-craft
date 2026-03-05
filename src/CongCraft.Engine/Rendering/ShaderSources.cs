@@ -294,6 +294,73 @@ void main()
 }
 ";
 
+    // --- Text rendering shader (textured quads with color tint) ---
+    public const string TextVertex = @"
+#version 330 core
+layout (location = 0) in vec2 aPosition;
+layout (location = 1) in vec2 aTexCoord;
+
+uniform mat4 uProjection;
+
+out vec2 TexCoord;
+
+void main()
+{
+    TexCoord = aTexCoord;
+    gl_Position = uProjection * vec4(aPosition, 0.0, 1.0);
+}
+";
+
+    public const string TextFragment = @"
+#version 330 core
+in vec2 TexCoord;
+
+uniform sampler2D uTexture;
+uniform vec4 uColor;
+
+out vec4 FragColor;
+
+void main()
+{
+    float alpha = texture(uTexture, TexCoord).a;
+    FragColor = vec4(uColor.rgb, uColor.a * alpha);
+}
+";
+
+    // --- Textured HUD shader (for ornate panels with texture + color tint) ---
+    public const string HudTexturedVertex = @"
+#version 330 core
+layout (location = 0) in vec2 aPosition;
+
+uniform mat4 uProjection;
+uniform vec4 uRect;
+
+out vec2 TexCoord;
+
+void main()
+{
+    vec2 pos = uRect.xy + aPosition * uRect.zw;
+    TexCoord = aPosition;
+    gl_Position = uProjection * vec4(pos, 0.0, 1.0);
+}
+";
+
+    public const string HudTexturedFragment = @"
+#version 330 core
+in vec2 TexCoord;
+
+uniform sampler2D uTexture;
+uniform vec4 uColor;
+
+out vec4 FragColor;
+
+void main()
+{
+    vec4 texColor = texture(uTexture, TexCoord);
+    FragColor = texColor * uColor;
+}
+";
+
     public const string BasicVertexPointLights = @"
 #version 330 core
 layout (location = 0) in vec3 aPosition;

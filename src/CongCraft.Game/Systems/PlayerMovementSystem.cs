@@ -30,6 +30,11 @@ public sealed class PlayerMovementSystem : ISystem
 
     public void Update(GameTime time)
     {
+        // Skip movement when not in gameplay mode
+        if (_world.TryGetSingleton<Engine.Core.GameStateManager>(out var gs)
+            && gs != null && gs.CurrentMode != Engine.Core.GameMode.Playing)
+            return;
+
         var input = _world.GetSingleton<InputState>();
         float dt = time.DeltaTimeF;
 
@@ -103,9 +108,7 @@ public sealed class PlayerMovementSystem : ISystem
             // Update component back (class reference, so already updated)
             _camera.Target = transform.Position;
 
-            // Toggle mouse capture with Escape
-            if (input.IsKeyPressed(Key.Escape))
-                input.IsMouseCaptured = !input.IsMouseCaptured;
+            // Escape is handled by MenuSystem for pause/resume
         }
     }
 

@@ -1,11 +1,13 @@
 using CongCraft.Engine.Core;
+using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
 using Silk.NET.OpenAL;
 
 namespace CongCraft.Engine.Audio;
 
 /// <summary>
-/// Manages OpenAL audio context and plays background music/ambient sounds.
+/// Manages OpenAL audio context and plays background music.
+/// Switches between menu/exploration/combat themes based on GameMode.
 /// </summary>
 public sealed class AudioSystem : ISystem
 {
@@ -15,14 +17,21 @@ public sealed class AudioSystem : ISystem
     private ALContext? _alc;
     private unsafe Device* _device;
     private unsafe Context* _context;
-    private uint _musicSource = 0;
-    private uint _musicBuffer = 0;
-    private uint _ambientSource;
-    private uint _ambientBuffer;
     private bool _initialized;
+    private World? _world;
+
+    // Music tracks
+    private uint _menuSource, _menuBuffer;
+    private uint _explorationSource, _explorationBuffer;
+    private uint _combatSource, _combatBuffer;
+
+    private GameMode _currentPlaying = (GameMode)(-1);
+    private const float MusicVolume = 0.4f;
 
     public void Initialize(ServiceLocator services)
     {
+        _world = services.Get<World>();
+
         try
         {
             _alc = ALContext.GetApi();
@@ -37,51 +46,102 @@ public sealed class AudioSystem : ISystem
                 _alc.MakeContextCurrent(_context);
             }
 
-            // Generate procedural ambient drone
-            var ambientData = ProceduralMusic.GenerateAmbientDrone(sampleRate: 44100, durationSeconds: 30);
-            _ambientBuffer = _al.GenBuffer();
-            _ambientSource = _al.GenSource();
+            // Generate all music themes
+            LoadTrack(ProceduralMusic.GenerateMenuTheme(40), out _menuBuffer, out _menuSource);
+            LoadTrack(ProceduralMusic.GenerateExplorationTheme(45), out _explorationBuffer, out _explorationSource);
+            LoadTrack(ProceduralMusic.GenerateCombatTheme(30), out _combatBuffer, out _combatSource);
 
-            unsafe
-            {
-                fixed (short* data = ambientData)
-                {
-                    _al.BufferData(_ambientBuffer, BufferFormat.Mono16, data,
-                        ambientData.Length * sizeof(short), 44100);
-                }
-            }
-
-            _al.SetSourceProperty(_ambientSource, SourceInteger.Buffer, (int)_ambientBuffer);
-            _al.SetSourceProperty(_ambientSource, SourceBoolean.Looping, true);
-            _al.SetSourceProperty(_ambientSource, SourceFloat.Gain, 0.3f);
-            _al.SourcePlay(_ambientSource);
+            // Start with menu music
+            _al.SetSourceProperty(_menuSource, SourceFloat.Gain, MusicVolume);
+            _al.SourcePlay(_menuSource);
+            _currentPlaying = GameMode.MainMenu;
 
             _initialized = true;
         }
         catch
         {
-            // Audio is optional — game works without it
             _initialized = false;
         }
     }
 
-    public void Update(GameTime time) { }
+    private unsafe void LoadTrack(short[] data, out uint buffer, out uint source)
+    {
+        buffer = _al!.GenBuffer();
+        source = _al.GenSource();
+
+        fixed (short* p = data)
+        {
+            _al.BufferData(buffer, BufferFormat.Mono16, p,
+                data.Length * sizeof(short), 44100);
+        }
+
+        _al.SetSourceProperty(source, SourceInteger.Buffer, (int)buffer);
+        _al.SetSourceProperty(source, SourceBoolean.Looping, true);
+        _al.SetSourceProperty(source, SourceFloat.Gain, 0f);
+    }
+
+    public void Update(GameTime time)
+    {
+        if (!_initialized || _al == null || _world == null) return;
+
+        // Determine target music based on game mode
+        GameMode targetMode = GameMode.MainMenu;
+        if (_world.TryGetSingleton<GameStateManager>(out var gs) && gs != null)
+        {
+            targetMode = gs.CurrentMode;
+            // Paused keeps the current gameplay music (just quieter)
+            if (targetMode == GameMode.Paused)
+                targetMode = GameMode.Playing;
+        }
+
+        if (targetMode != _currentPlaying)
+        {
+            // Crossfade: stop old, start new
+            StopSource(GetSourceForMode(_currentPlaying));
+            var newSource = GetSourceForMode(targetMode);
+            _al.SetSourceProperty(newSource, SourceFloat.Gain, MusicVolume);
+            _al.SourcePlay(newSource);
+            _currentPlaying = targetMode;
+        }
+
+        // Lower volume during pause
+        if (_world.TryGetSingleton<GameStateManager>(out var gs2) && gs2 != null)
+        {
+            float vol = gs2.CurrentMode == GameMode.Paused ? MusicVolume * 0.4f : MusicVolume;
+            var activeSource = GetSourceForMode(_currentPlaying);
+            _al.SetSourceProperty(activeSource, SourceFloat.Gain, vol);
+        }
+    }
+
+    private uint GetSourceForMode(GameMode mode) => mode switch
+    {
+        GameMode.MainMenu => _menuSource,
+        GameMode.Playing => _explorationSource,
+        _ => _explorationSource
+    };
+
+    private void StopSource(uint source)
+    {
+        if (source == 0) return;
+        _al?.SetSourceProperty(source, SourceFloat.Gain, 0f);
+        _al?.SourceStop(source);
+    }
+
     public void Render(GameTime time) { }
 
     public void Dispose()
     {
         if (!_initialized || _al == null || _alc == null) return;
 
-        _al.SourceStop(_ambientSource);
-        _al.DeleteSource(_ambientSource);
-        _al.DeleteBuffer(_ambientBuffer);
-
-        if (_musicSource != 0)
+        void Cleanup(uint source, uint buffer)
         {
-            _al.SourceStop(_musicSource);
-            _al.DeleteSource(_musicSource);
-            _al.DeleteBuffer(_musicBuffer);
+            if (source != 0) { _al.SourceStop(source); _al.DeleteSource(source); }
+            if (buffer != 0) _al.DeleteBuffer(buffer);
         }
+
+        Cleanup(_menuSource, _menuBuffer);
+        Cleanup(_explorationSource, _explorationBuffer);
+        Cleanup(_combatSource, _combatBuffer);
 
         unsafe
         {
