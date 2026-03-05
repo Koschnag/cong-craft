@@ -1,0 +1,40 @@
+name: "Vision / Direction"
+description: Share your product vision - each bullet point becomes a feature issue
+title: "[VISION] "
+labels: ["vision", "epic"]
+body:
+  - type: textarea
+    id: vision
+    attributes:
+      label: "Deine Vision"
+      description: "Beschreibe deine Vision. Jeder Aufzaehlungspunkt wird automatisch zu einem eigenen Feature-Issue."
+      placeholder: |
+        - Groessere Spielwelt mit mehreren Regionen
+        - Reittiere zum schnelleren Reisen
+        - NPC-Siedlungen mit Wirtschaftssystem
+        - Multiplayer Co-Op Modus
+    validations:
+      required: true
+
+  - type: dropdown
+    id: milestone
+    attributes:
+      label: "Ziel-Meilenstein"
+      options:
+        - "Naechstes Release"
+        - "Alpha"
+        - "Beta"
+        - "v1.0"
+        - "Post-Launch"
+        - "Langfristig"
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "Kontext / Motivation"
+      description: "Warum diese Richtung? Was soll das Spielerlebnis sein?"
+      placeholder: "Das Spiel soll sich anfuehlen wie..."
+    validations:
+      required: false
