@@ -1,0 +1,52 @@
+name: Epic
+description: A large feature spanning multiple tasks
+title: "[Epic]: "
+labels: ["epic"]
+assignees: []
+body:
+  - type: textarea
+    id: vision
+    attributes:
+      label: Vision
+      description: What is the high-level goal?
+    validations:
+      required: true
+
+  - type: textarea
+    id: user-stories
+    attributes:
+      label: User Stories
+      description: Who benefits and how?
+      placeholder: |
+        As a player, I want to... so that...
+    validations:
+      required: true
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks Breakdown
+      description: List the sub-tasks for this epic
+      placeholder: |
+        - [ ] #issue1 - Task description
+        - [ ] #issue2 - Task description
+    validations:
+      required: true
+
+  - type: dropdown
+    id: milestone
+    attributes:
+      label: Target Milestone
+      options:
+        - Alpha
+        - Beta
+        - v1.0
+        - Post-Launch
+    validations:
+      required: true
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks & Dependencies
+      description: What could block this epic?
