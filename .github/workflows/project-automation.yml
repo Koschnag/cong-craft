@@ -6,6 +6,10 @@ on:
   pull_request:
     types: [opened, closed, reopened, review_requested, ready_for_review]
 
+concurrency:
+  group: project-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
 jobs:
   track-issue:
     name: Track in Project
