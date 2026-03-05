@@ -1,9 +1,9 @@
 name: Vision Parser
 
-# When user creates a [VISION] issue, parse bullet points into feature issues
+# Only on opened - NOT edited (to prevent duplicate feature creation)
 on:
   issues:
-    types: [opened, edited]
+    types: [opened]
 
 permissions:
   issues: write
@@ -38,8 +38,8 @@ jobs:
               const match = line.match(/^\s*(?:[-*]|\d+[.)]\s)\s*(.+)/);
               if (match) {
                 const text = match[1].trim();
-                // Skip empty lines or very short entries
-                if (text.length > 3) {
+                // Skip checkbox syntax, empty lines, or very short entries
+                if (text.length > 3 && !text.startsWith('[')) {
                   features.push(text);
                 }
               }
@@ -49,7 +49,7 @@ jobs:
               await github.rest.issues.createComment({
                 owner, repo,
                 issue_number: issue.number,
-                body: `## Vision Received! 🎯\n\nI couldn't find bullet points to convert to features.\n\nTo auto-create feature issues, use bullet points:\n\`\`\`\n- Feature idea 1\n- Feature idea 2\n- Feature idea 3\n\`\`\``
+                body: `## Vision Received!\n\nNo bullet points found to convert to features.\n\nTo auto-create feature issues, use bullet points:\n\`\`\`\n- Feature idea 1\n- Feature idea 2\n- Feature idea 3\n\`\`\``
               });
               return;
             }
@@ -57,11 +57,10 @@ jobs:
             // Create feature issues for each bullet point
             const createdIssues = [];
             for (const feature of features) {
-              // Detect language and categorize
               const text = feature.toLowerCase();
               const labels = ['enhancement', 'needs-triage'];
 
-              // Auto-categorize
+              // Auto-categorize by DE/EN keywords
               if (text.match(/render|grafik|shader|opengl|visual/)) labels.push('area: rendering');
               if (text.match(/kampf|combat|attack|angriff|waffe|weapon/)) labels.push('area: combat');
               if (text.match(/magic|magie|zauber|spell|mana/)) labels.push('area: magic');
@@ -86,9 +85,9 @@ jobs:
               createdIssues.push(`- #${created.data.number}: ${feature}`);
             }
 
-            // Update the vision issue with links to created features
+            // Post summary comment
             await github.rest.issues.createComment({
               owner, repo,
               issue_number: issue.number,
-              body: `## Vision Parsed! 🚀\n\n**${features.length} Feature-Issues erstellt:**\n\n${createdIssues.join('\n')}\n\nJedes Feature wird automatisch kategorisiert und priorisiert.\nDer Entwicklungszyklus arbeitet diese Issues ab.`
+              body: `## Vision Parsed!\n\n**${features.length} Feature-Issues erstellt:**\n\n${createdIssues.join('\n')}\n\nJedes Feature wird automatisch kategorisiert und priorisiert.\nDer Entwicklungszyklus arbeitet diese Issues ab.`
             });
