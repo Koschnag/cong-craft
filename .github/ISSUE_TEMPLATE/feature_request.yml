@@ -1,0 +1,76 @@
+name: Feature Request
+description: Suggest a new feature or improvement for CongCraft
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Describe your idea below.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Game Area
+      options:
+        - Combat
+        - Magic / Spells
+        - Inventory / Equipment
+        - Crafting
+        - Quests / Dialogue
+        - World Generation / Terrain
+        - Dungeon
+        - Weather / Day-Night
+        - Save / Load
+        - Rendering / Graphics
+        - Audio
+        - UI / HUD
+        - Boss Fights
+        - Multiplayer
+        - Modding
+        - Performance
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - Nice to have
+        - Should have
+        - Must have
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the feature you'd like
+      placeholder: A clear description of the feature...
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why is this feature important?
+      placeholder: What problem does this solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions you've thought about?
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups / References
+      description: Screenshots, sketches, or links to similar features in other games
