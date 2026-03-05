@@ -63,7 +63,6 @@ public static class UITextureGenerator
     {
         var noise = new FastNoiseLite(seed);
         noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
-        noise.SetCellularDistanceFunction(FastNoiseLite.CellularDistanceFunction.EuclideanSq);
         noise.SetFrequency(0.06f);
 
         var noise2 = new FastNoiseLite(seed + 50);

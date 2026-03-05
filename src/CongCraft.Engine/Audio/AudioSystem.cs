@@ -26,7 +26,6 @@ public sealed class AudioSystem : ISystem
     private uint _combatSource, _combatBuffer;
 
     private GameMode _currentPlaying = (GameMode)(-1);
-    private float _fadeTarget = 0.4f;
     private const float MusicVolume = 0.4f;
 
     public void Initialize(ServiceLocator services)

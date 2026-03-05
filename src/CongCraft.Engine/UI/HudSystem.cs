@@ -260,7 +260,7 @@ public sealed class HudSystem : ISystem
             new Vector4(0.12f, 0.10f, 0.07f, 0.85f)));
 
         // Fill
-        float fillWidth = bw * MathF.Clamp(fill, 0, 1);
+        float fillWidth = bw * Math.Clamp(fill, 0f, 1f);
         DrawRect(new HudElement(new Vector2(x, y), new Vector2(fillWidth, bh), fillColor));
 
         // Gold frame around bar
