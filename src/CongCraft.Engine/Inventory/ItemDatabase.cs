@@ -11,134 +11,250 @@ public static class ItemDatabase
     {
         Register(new ItemData
         {
-            Id = "rusty_sword", Name = "Rusty Sword", Type = ItemType.Weapon,
-            Slot = ItemSlot.MainHand, Weight = 3f,
-            AttackBonus = 5f, IconR = 0.6f, IconG = 0.4f, IconB = 0.3f
+            Id = "rusty_sword",
+            Name = "Rusty Sword",
+            Type = ItemType.Weapon,
+            Slot = ItemSlot.MainHand,
+            Weight = 3f,
+            AttackBonus = 5f,
+            IconR = 0.6f,
+            IconG = 0.4f,
+            IconB = 0.3f
         });
         Register(new ItemData
         {
-            Id = "iron_sword", Name = "Iron Sword", Type = ItemType.Weapon,
-            Slot = ItemSlot.MainHand, Weight = 4f,
-            AttackBonus = 10f, IconR = 0.7f, IconG = 0.7f, IconB = 0.75f
+            Id = "iron_sword",
+            Name = "Iron Sword",
+            Type = ItemType.Weapon,
+            Slot = ItemSlot.MainHand,
+            Weight = 4f,
+            AttackBonus = 10f,
+            IconR = 0.7f,
+            IconG = 0.7f,
+            IconB = 0.75f
         });
         Register(new ItemData
         {
-            Id = "dark_blade", Name = "Dark Blade", Type = ItemType.Weapon,
-            Slot = ItemSlot.MainHand, Weight = 5f,
-            AttackBonus = 18f, IconR = 0.3f, IconG = 0.1f, IconB = 0.4f
+            Id = "dark_blade",
+            Name = "Dark Blade",
+            Type = ItemType.Weapon,
+            Slot = ItemSlot.MainHand,
+            Weight = 5f,
+            AttackBonus = 18f,
+            IconR = 0.3f,
+            IconG = 0.1f,
+            IconB = 0.4f
         });
         Register(new ItemData
         {
-            Id = "leather_helm", Name = "Leather Helm", Type = ItemType.Armor,
-            Slot = ItemSlot.Head, Weight = 2f,
-            DefenseBonus = 3f, IconR = 0.5f, IconG = 0.35f, IconB = 0.2f
+            Id = "leather_helm",
+            Name = "Leather Helm",
+            Type = ItemType.Armor,
+            Slot = ItemSlot.Head,
+            Weight = 2f,
+            DefenseBonus = 3f,
+            IconR = 0.5f,
+            IconG = 0.35f,
+            IconB = 0.2f
         });
         Register(new ItemData
         {
-            Id = "chain_mail", Name = "Chain Mail", Type = ItemType.Armor,
-            Slot = ItemSlot.Chest, Weight = 8f,
-            DefenseBonus = 8f, SpeedBonus = -1f,
-            IconR = 0.55f, IconG = 0.55f, IconB = 0.6f
+            Id = "chain_mail",
+            Name = "Chain Mail",
+            Type = ItemType.Armor,
+            Slot = ItemSlot.Chest,
+            Weight = 8f,
+            DefenseBonus = 8f,
+            SpeedBonus = -1f,
+            IconR = 0.55f,
+            IconG = 0.55f,
+            IconB = 0.6f
         });
         Register(new ItemData
         {
-            Id = "iron_greaves", Name = "Iron Greaves", Type = ItemType.Armor,
-            Slot = ItemSlot.Legs, Weight = 5f,
-            DefenseBonus = 5f, SpeedBonus = -0.5f,
-            IconR = 0.5f, IconG = 0.5f, IconB = 0.55f
+            Id = "iron_greaves",
+            Name = "Iron Greaves",
+            Type = ItemType.Armor,
+            Slot = ItemSlot.Legs,
+            Weight = 5f,
+            DefenseBonus = 5f,
+            SpeedBonus = -0.5f,
+            IconR = 0.5f,
+            IconG = 0.5f,
+            IconB = 0.55f
         });
         Register(new ItemData
         {
-            Id = "health_potion", Name = "Health Potion", Type = ItemType.Consumable,
-            Slot = ItemSlot.None, Weight = 0.5f,
-            HealthBonus = 30f, IconR = 0.8f, IconG = 0.15f, IconB = 0.15f
+            Id = "health_potion",
+            Name = "Health Potion",
+            Type = ItemType.Consumable,
+            Slot = ItemSlot.None,
+            Weight = 0.5f,
+            HealthBonus = 30f,
+            IconR = 0.8f,
+            IconG = 0.15f,
+            IconB = 0.15f
         });
         Register(new ItemData
         {
-            Id = "wolf_pelt", Name = "Wolf Pelt", Type = ItemType.Material,
-            Slot = ItemSlot.None, Weight = 2f,
-            IconR = 0.4f, IconG = 0.35f, IconB = 0.3f
+            Id = "wolf_pelt",
+            Name = "Wolf Pelt",
+            Type = ItemType.Material,
+            Slot = ItemSlot.None,
+            Weight = 2f,
+            IconR = 0.4f,
+            IconG = 0.35f,
+            IconB = 0.3f
         });
         Register(new ItemData
         {
-            Id = "gold_coin", Name = "Gold Coin", Type = ItemType.Material,
-            Slot = ItemSlot.None, Weight = 0.1f,
-            IconR = 0.9f, IconG = 0.8f, IconB = 0.2f
+            Id = "gold_coin",
+            Name = "Gold Coin",
+            Type = ItemType.Material,
+            Slot = ItemSlot.None,
+            Weight = 0.1f,
+            IconR = 0.9f,
+            IconG = 0.8f,
+            IconB = 0.2f
         });
         Register(new ItemData
         {
-            Id = "iron_ore", Name = "Iron Ore", Type = ItemType.Material,
-            Slot = ItemSlot.None, Weight = 3f,
-            IconR = 0.45f, IconG = 0.45f, IconB = 0.5f
+            Id = "iron_ore",
+            Name = "Iron Ore",
+            Type = ItemType.Material,
+            Slot = ItemSlot.None,
+            Weight = 3f,
+            IconR = 0.45f,
+            IconG = 0.45f,
+            IconB = 0.5f
         });
         Register(new ItemData
         {
-            Id = "herb", Name = "Herb", Type = ItemType.Material,
-            Slot = ItemSlot.None, Weight = 0.2f,
-            IconR = 0.2f, IconG = 0.7f, IconB = 0.2f
+            Id = "herb",
+            Name = "Herb",
+            Type = ItemType.Material,
+            Slot = ItemSlot.None,
+            Weight = 0.2f,
+            IconR = 0.2f,
+            IconG = 0.7f,
+            IconB = 0.2f
         });
         Register(new ItemData
         {
-            Id = "leather", Name = "Leather", Type = ItemType.Material,
-            Slot = ItemSlot.None, Weight = 1f,
-            IconR = 0.55f, IconG = 0.35f, IconB = 0.15f
+            Id = "leather",
+            Name = "Leather",
+            Type = ItemType.Material,
+            Slot = ItemSlot.None,
+            Weight = 1f,
+            IconR = 0.55f,
+            IconG = 0.35f,
+            IconB = 0.15f
         });
         Register(new ItemData
         {
-            Id = "wood", Name = "Wood", Type = ItemType.Material,
-            Slot = ItemSlot.None, Weight = 2f,
-            IconR = 0.5f, IconG = 0.35f, IconB = 0.2f
+            Id = "wood",
+            Name = "Wood",
+            Type = ItemType.Material,
+            Slot = ItemSlot.None,
+            Weight = 2f,
+            IconR = 0.5f,
+            IconG = 0.35f,
+            IconB = 0.2f
         });
         Register(new ItemData
         {
-            Id = "cloth", Name = "Cloth", Type = ItemType.Material,
-            Slot = ItemSlot.None, Weight = 0.5f,
-            IconR = 0.75f, IconG = 0.7f, IconB = 0.6f
+            Id = "cloth",
+            Name = "Cloth",
+            Type = ItemType.Material,
+            Slot = ItemSlot.None,
+            Weight = 0.5f,
+            IconR = 0.75f,
+            IconG = 0.7f,
+            IconB = 0.6f
         });
         Register(new ItemData
         {
-            Id = "strength_elixir", Name = "Strength Elixir", Type = ItemType.Consumable,
-            Slot = ItemSlot.None, Weight = 0.5f,
-            AttackBonus = 10f, IconR = 0.8f, IconG = 0.4f, IconB = 0.1f
+            Id = "strength_elixir",
+            Name = "Strength Elixir",
+            Type = ItemType.Consumable,
+            Slot = ItemSlot.None,
+            Weight = 0.5f,
+            AttackBonus = 10f,
+            IconR = 0.8f,
+            IconG = 0.4f,
+            IconB = 0.1f
         });
         Register(new ItemData
         {
-            Id = "mana_potion", Name = "Mana Potion", Type = ItemType.Consumable,
-            Slot = ItemSlot.None, Weight = 0.5f,
+            Id = "mana_potion",
+            Name = "Mana Potion",
+            Type = ItemType.Consumable,
+            Slot = ItemSlot.None,
+            Weight = 0.5f,
             HealthBonus = 40f, // Repurposed as mana restore amount
-            IconR = 0.2f, IconG = 0.3f, IconB = 0.9f
+            IconR = 0.2f,
+            IconG = 0.3f,
+            IconB = 0.9f
         });
         Register(new ItemData
         {
-            Id = "leather_chest", Name = "Leather Armor", Type = ItemType.Armor,
-            Slot = ItemSlot.Chest, Weight = 5f,
-            DefenseBonus = 5f, IconR = 0.5f, IconG = 0.35f, IconB = 0.2f
+            Id = "leather_chest",
+            Name = "Leather Armor",
+            Type = ItemType.Armor,
+            Slot = ItemSlot.Chest,
+            Weight = 5f,
+            DefenseBonus = 5f,
+            IconR = 0.5f,
+            IconG = 0.35f,
+            IconB = 0.2f
         });
         Register(new ItemData
         {
-            Id = "wolf_cloak", Name = "Wolf Cloak", Type = ItemType.Armor,
-            Slot = ItemSlot.Chest, Weight = 4f,
-            DefenseBonus = 6f, SpeedBonus = 0.5f,
-            IconR = 0.35f, IconG = 0.3f, IconB = 0.25f
+            Id = "wolf_cloak",
+            Name = "Wolf Cloak",
+            Type = ItemType.Armor,
+            Slot = ItemSlot.Chest,
+            Weight = 4f,
+            DefenseBonus = 6f,
+            SpeedBonus = 0.5f,
+            IconR = 0.35f,
+            IconG = 0.3f,
+            IconB = 0.25f
         });
         Register(new ItemData
         {
-            Id = "bone", Name = "Bone", Type = ItemType.Material,
-            Slot = ItemSlot.None, Weight = 1f,
-            IconR = 0.85f, IconG = 0.82f, IconB = 0.75f
+            Id = "bone",
+            Name = "Bone",
+            Type = ItemType.Material,
+            Slot = ItemSlot.None,
+            Weight = 1f,
+            IconR = 0.85f,
+            IconG = 0.82f,
+            IconB = 0.75f
         });
         Register(new ItemData
         {
-            Id = "bone_club", Name = "Bone Club", Type = ItemType.Weapon,
-            Slot = ItemSlot.MainHand, Weight = 6f,
-            AttackBonus = 12f, SpeedBonus = -0.5f,
-            IconR = 0.8f, IconG = 0.75f, IconB = 0.65f
+            Id = "bone_club",
+            Name = "Bone Club",
+            Type = ItemType.Weapon,
+            Slot = ItemSlot.MainHand,
+            Weight = 6f,
+            AttackBonus = 12f,
+            SpeedBonus = -0.5f,
+            IconR = 0.8f,
+            IconG = 0.75f,
+            IconB = 0.65f
         });
         Register(new ItemData
         {
-            Id = "troll_hide", Name = "Troll Hide", Type = ItemType.Material,
-            Slot = ItemSlot.None, Weight = 5f,
-            IconR = 0.3f, IconG = 0.4f, IconB = 0.25f
+            Id = "troll_hide",
+            Name = "Troll Hide",
+            Type = ItemType.Material,
+            Slot = ItemSlot.None,
+            Weight = 5f,
+            IconR = 0.3f,
+            IconG = 0.4f,
+            IconB = 0.25f
         });
     }
 

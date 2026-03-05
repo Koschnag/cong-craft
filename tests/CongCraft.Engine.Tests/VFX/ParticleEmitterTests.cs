@@ -18,8 +18,11 @@ public class ParticleEmitterTests
     {
         var config = new ParticleEmitterConfig
         {
-            MaxParticles = 20, MinLife = 1f, MaxLife = 2f,
-            MinSpeed = 1f, MaxSpeed = 2f
+            MaxParticles = 20,
+            MinLife = 1f,
+            MaxLife = 2f,
+            MinSpeed = 1f,
+            MaxSpeed = 2f
         };
         var emitter = new ParticleEmitter(config, seed: 42);
         emitter.Emit(5);
@@ -32,8 +35,12 @@ public class ParticleEmitterTests
     {
         var config = new ParticleEmitterConfig
         {
-            MaxParticles = 10, MinLife = 0.1f, MaxLife = 0.1f,
-            MinSpeed = 1f, MaxSpeed = 1f, Gravity = Vector3.Zero
+            MaxParticles = 10,
+            MinLife = 0.1f,
+            MaxLife = 0.1f,
+            MinSpeed = 1f,
+            MaxSpeed = 1f,
+            Gravity = Vector3.Zero
         };
         var emitter = new ParticleEmitter(config, seed: 42);
         emitter.Emit(5);
@@ -48,8 +55,11 @@ public class ParticleEmitterTests
     {
         var config = new ParticleEmitterConfig
         {
-            MaxParticles = 5, MinLife = 1f, MaxLife = 1f,
-            MinSpeed = 5f, MaxSpeed = 5f,
+            MaxParticles = 5,
+            MinLife = 1f,
+            MaxLife = 1f,
+            MinSpeed = 5f,
+            MaxSpeed = 5f,
             Gravity = Vector3.Zero,
             Position = Vector3.Zero
         };
@@ -82,8 +92,11 @@ public class ParticleEmitterTests
     {
         var config = new ParticleEmitterConfig
         {
-            MaxParticles = 5, MinLife = 2f, MaxLife = 2f,
-            MinSpeed = 1f, MaxSpeed = 1f,
+            MaxParticles = 5,
+            MinLife = 2f,
+            MaxLife = 2f,
+            MinSpeed = 1f,
+            MaxSpeed = 1f,
             Gravity = new Vector3(0, -20f, 0),
             SpreadAngle = 0.01f, // Mostly upward
             EmitDirection = Vector3.UnitY,

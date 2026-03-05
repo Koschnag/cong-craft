@@ -13,7 +13,8 @@ public static class DialogueDatabase
         Register(new DialogueTree { Id = "blacksmith", StartNodeId = "greeting" }
             .AddNode(new DialogueNode
             {
-                Id = "greeting", SpeakerName = "Blacksmith Aldric",
+                Id = "greeting",
+                SpeakerName = "Blacksmith Aldric",
                 Text = "The forge burns day and night. What brings you here, traveler?",
                 Choices = new()
                 {
@@ -24,7 +25,8 @@ public static class DialogueDatabase
             })
             .AddNode(new DialogueNode
             {
-                Id = "weapon_talk", SpeakerName = "Blacksmith Aldric",
+                Id = "weapon_talk",
+                SpeakerName = "Blacksmith Aldric",
                 Text = "Iron is scarce since the mines fell to darkness. Bring me wolf pelts and I can trade you a fine blade.",
                 Choices = new()
                 {
@@ -41,13 +43,15 @@ public static class DialogueDatabase
             })
             .AddNode(new DialogueNode
             {
-                Id = "trade_success", SpeakerName = "Blacksmith Aldric",
+                Id = "trade_success",
+                SpeakerName = "Blacksmith Aldric",
                 Text = "Fine pelts! Here, take this blade. Forged it myself. May it serve you well against the darkness.",
                 NextNodeId = null
             })
             .AddNode(new DialogueNode
             {
-                Id = "about_town", SpeakerName = "Blacksmith Aldric",
+                Id = "about_town",
+                SpeakerName = "Blacksmith Aldric",
                 Text = "This was once a prosperous village. Now shadows creep from the east. The guards are spread thin and beasts roam closer each night.",
                 Choices = new()
                 {
@@ -57,13 +61,15 @@ public static class DialogueDatabase
             })
             .AddNode(new DialogueNode
             {
-                Id = "help_offer", SpeakerName = "Blacksmith Aldric",
+                Id = "help_offer",
+                SpeakerName = "Blacksmith Aldric",
                 Text = "A brave soul! Speak to the Elder near the well. She knows more about the threat than any of us.",
                 NextNodeId = null
             })
             .AddNode(new DialogueNode
             {
-                Id = "goodbye", SpeakerName = "Blacksmith Aldric",
+                Id = "goodbye",
+                SpeakerName = "Blacksmith Aldric",
                 Text = "Safe travels, friend.",
                 NextNodeId = null
             }));
@@ -72,7 +78,8 @@ public static class DialogueDatabase
         Register(new DialogueTree { Id = "elder", StartNodeId = "greeting" }
             .AddNode(new DialogueNode
             {
-                Id = "greeting", SpeakerName = "Elder Maren",
+                Id = "greeting",
+                SpeakerName = "Elder Maren",
                 Text = "Ah, a wanderer. These are dark times. The creatures from the eastern woods grow bolder with each passing moon.",
                 Choices = new()
                 {
@@ -83,13 +90,15 @@ public static class DialogueDatabase
             })
             .AddNode(new DialogueNode
             {
-                Id = "story", SpeakerName = "Elder Maren",
+                Id = "story",
+                SpeakerName = "Elder Maren",
                 Text = "An ancient evil stirs beneath the mountains. Our scouts never returned from the caves. Something woke down there... something old.",
                 NextNodeId = "greeting"
             })
             .AddNode(new DialogueNode
             {
-                Id = "quest_offer", SpeakerName = "Elder Maren",
+                Id = "quest_offer",
+                SpeakerName = "Elder Maren",
                 Text = "The beasts must be culled. Slay them and bring proof of your deed. I can reward you with knowledge of the dark blade hidden in the old shrine.",
                 Choices = new()
                 {
@@ -99,13 +108,15 @@ public static class DialogueDatabase
             })
             .AddNode(new DialogueNode
             {
-                Id = "quest_accepted", SpeakerName = "Elder Maren",
+                Id = "quest_accepted",
+                SpeakerName = "Elder Maren",
                 Text = "May the old gods watch over you. Return when the deed is done.",
                 NextNodeId = null
             })
             .AddNode(new DialogueNode
             {
-                Id = "goodbye", SpeakerName = "Elder Maren",
+                Id = "goodbye",
+                SpeakerName = "Elder Maren",
                 Text = "Be careful out there. The night holds many dangers.",
                 NextNodeId = null
             }));
@@ -114,7 +125,8 @@ public static class DialogueDatabase
         Register(new DialogueTree { Id = "merchant", StartNodeId = "greeting" }
             .AddNode(new DialogueNode
             {
-                Id = "greeting", SpeakerName = "Merchant Gregor",
+                Id = "greeting",
+                SpeakerName = "Merchant Gregor",
                 Text = "Wares for sale! Potions, supplies, everything a traveler needs. What catches your eye?",
                 Choices = new()
                 {
@@ -132,19 +144,22 @@ public static class DialogueDatabase
             })
             .AddNode(new DialogueNode
             {
-                Id = "bought_potion", SpeakerName = "Merchant Gregor",
+                Id = "bought_potion",
+                SpeakerName = "Merchant Gregor",
                 Text = "A wise purchase. One can never have too many potions in these troubled times.",
                 NextNodeId = "greeting"
             })
             .AddNode(new DialogueNode
             {
-                Id = "news", SpeakerName = "Merchant Gregor",
+                Id = "news",
+                SpeakerName = "Merchant Gregor",
                 Text = "Bandits on the north road, wolves in the eastern forest, and strange lights from the mountains at night. Business has never been worse... or better, depending on how you look at it.",
                 NextNodeId = "greeting"
             })
             .AddNode(new DialogueNode
             {
-                Id = "goodbye", SpeakerName = "Merchant Gregor",
+                Id = "goodbye",
+                SpeakerName = "Merchant Gregor",
                 Text = "Come back anytime! Gold is always welcome.",
                 NextNodeId = null
             }));

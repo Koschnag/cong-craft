@@ -178,33 +178,33 @@ public sealed class FastNoiseLite
         int i1, j1, k1, i2, j2, k2;
         if (x0 >= y0)
         {
-            if (y0 >= z0) { i1=1; j1=0; k1=0; i2=1; j2=1; k2=0; }
-            else if (x0 >= z0) { i1=1; j1=0; k1=0; i2=1; j2=0; k2=1; }
-            else { i1=0; j1=0; k1=1; i2=1; j2=0; k2=1; }
+            if (y0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 1; k2 = 0; }
+            else if (x0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 0; k2 = 1; }
+            else { i1 = 0; j1 = 0; k1 = 1; i2 = 1; j2 = 0; k2 = 1; }
         }
         else
         {
-            if (y0 < z0) { i1=0; j1=0; k1=1; i2=0; j2=1; k2=1; }
-            else if (x0 < z0) { i1=0; j1=1; k1=0; i2=0; j2=1; k2=1; }
-            else { i1=0; j1=1; k1=0; i2=1; j2=1; k2=0; }
+            if (y0 < z0) { i1 = 0; j1 = 0; k1 = 1; i2 = 0; j2 = 1; k2 = 1; }
+            else if (x0 < z0) { i1 = 0; j1 = 1; k1 = 0; i2 = 0; j2 = 1; k2 = 1; }
+            else { i1 = 0; j1 = 1; k1 = 0; i2 = 1; j2 = 1; k2 = 0; }
         }
 
-        float x1 = x0 - i1 + 1/6f, y1 = y0 - j1 + 1/6f, z1 = z0 - k1 + 1/6f;
-        float x2 = x0 - i2 + 1/3f, y2 = y0 - j2 + 1/3f, z2 = z0 - k2 + 1/3f;
+        float x1 = x0 - i1 + 1 / 6f, y1 = y0 - j1 + 1 / 6f, z1 = z0 - k1 + 1 / 6f;
+        float x2 = x0 - i2 + 1 / 3f, y2 = y0 - j2 + 1 / 3f, z2 = z0 - k2 + 1 / 3f;
         float x3 = x0 - 0.5f, y3 = y0 - 0.5f, z3 = z0 - 0.5f;
 
         float n = 0;
-        float t0 = 0.6f - x0*x0 - y0*y0 - z0*z0;
+        float t0 = 0.6f - x0 * x0 - y0 * y0 - z0 * z0;
         if (t0 > 0) { t0 *= t0; n += t0 * t0 * GradCoord3D(seed, i, j, k, x0, y0, z0); }
 
-        float t1 = 0.6f - x1*x1 - y1*y1 - z1*z1;
-        if (t1 > 0) { t1 *= t1; n += t1 * t1 * GradCoord3D(seed, i+i1, j+j1, k+k1, x1, y1, z1); }
+        float t1 = 0.6f - x1 * x1 - y1 * y1 - z1 * z1;
+        if (t1 > 0) { t1 *= t1; n += t1 * t1 * GradCoord3D(seed, i + i1, j + j1, k + k1, x1, y1, z1); }
 
-        float t2 = 0.6f - x2*x2 - y2*y2 - z2*z2;
-        if (t2 > 0) { t2 *= t2; n += t2 * t2 * GradCoord3D(seed, i+i2, j+j2, k+k2, x2, y2, z2); }
+        float t2 = 0.6f - x2 * x2 - y2 * y2 - z2 * z2;
+        if (t2 > 0) { t2 *= t2; n += t2 * t2 * GradCoord3D(seed, i + i2, j + j2, k + k2, x2, y2, z2); }
 
-        float t3 = 0.6f - x3*x3 - y3*y3 - z3*z3;
-        if (t3 > 0) { t3 *= t3; n += t3 * t3 * GradCoord3D(seed, i+1, j+1, k+1, x3, y3, z3); }
+        float t3 = 0.6f - x3 * x3 - y3 * y3 - z3 * z3;
+        if (t3 > 0) { t3 *= t3; n += t3 * t3 * GradCoord3D(seed, i + 1, j + 1, k + 1, x3, y3, z3); }
 
         return n * 32f;
     }
@@ -230,10 +230,10 @@ public sealed class FastNoiseLite
         float xd1 = xd0 - 1, yd1 = yd0 - 1, zd1 = zd0 - 1;
         float xs = InterpQuintic(xd0), ys = InterpQuintic(yd0), zs = InterpQuintic(zd0);
 
-        float xf00 = Lerp(GradCoord3D(seed, x0, y0, z0, xd0, yd0, zd0), GradCoord3D(seed, x0+1, y0, z0, xd1, yd0, zd0), xs);
-        float xf10 = Lerp(GradCoord3D(seed, x0, y0+1, z0, xd0, yd1, zd0), GradCoord3D(seed, x0+1, y0+1, z0, xd1, yd1, zd0), xs);
-        float xf01 = Lerp(GradCoord3D(seed, x0, y0, z0+1, xd0, yd0, zd1), GradCoord3D(seed, x0+1, y0, z0+1, xd1, yd0, zd1), xs);
-        float xf11 = Lerp(GradCoord3D(seed, x0, y0+1, z0+1, xd0, yd1, zd1), GradCoord3D(seed, x0+1, y0+1, z0+1, xd1, yd1, zd1), xs);
+        float xf00 = Lerp(GradCoord3D(seed, x0, y0, z0, xd0, yd0, zd0), GradCoord3D(seed, x0 + 1, y0, z0, xd1, yd0, zd0), xs);
+        float xf10 = Lerp(GradCoord3D(seed, x0, y0 + 1, z0, xd0, yd1, zd0), GradCoord3D(seed, x0 + 1, y0 + 1, z0, xd1, yd1, zd0), xs);
+        float xf01 = Lerp(GradCoord3D(seed, x0, y0, z0 + 1, xd0, yd0, zd1), GradCoord3D(seed, x0 + 1, y0, z0 + 1, xd1, yd0, zd1), xs);
+        float xf11 = Lerp(GradCoord3D(seed, x0, y0 + 1, z0 + 1, xd0, yd1, zd1), GradCoord3D(seed, x0 + 1, y0 + 1, z0 + 1, xd1, yd1, zd1), xs);
 
         float yf0 = Lerp(xf00, xf10, ys);
         float yf1 = Lerp(xf01, xf11, ys);
@@ -260,15 +260,15 @@ public sealed class FastNoiseLite
         float minDist = float.MaxValue;
 
         for (int xi = xr - 1; xi <= xr + 1; xi++)
-        for (int yi = yr - 1; yi <= yr + 1; yi++)
-        {
-            int hash = Hash2D(seed, xi, yi);
-            float vx = xi + (hash & 0xFF) / 255f - 0.5f;
-            float vy = yi + ((hash >> 8) & 0xFF) / 255f - 0.5f;
-            float dx = x - vx, dy = y - vy;
-            float dist = dx * dx + dy * dy;
-            minDist = MathF.Min(minDist, dist);
-        }
+            for (int yi = yr - 1; yi <= yr + 1; yi++)
+            {
+                int hash = Hash2D(seed, xi, yi);
+                float vx = xi + (hash & 0xFF) / 255f - 0.5f;
+                float vy = yi + ((hash >> 8) & 0xFF) / 255f - 0.5f;
+                float dx = x - vx, dy = y - vy;
+                float dist = dx * dx + dy * dy;
+                minDist = MathF.Min(minDist, dist);
+            }
 
         return MathF.Sqrt(minDist) - 1f;
     }

@@ -1,5 +1,5 @@
-using Silk.NET.OpenGL;
 using CongCraft.Engine.Rendering;
+using Silk.NET.OpenGL;
 
 namespace CongCraft.Engine.Procedural;
 

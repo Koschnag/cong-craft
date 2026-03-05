@@ -36,29 +36,29 @@ public sealed class TerrainGenerator
 
         // Generate heights
         for (int z = 0; z <= resolution; z++)
-        for (int x = 0; x <= resolution; x++)
-        {
-            int idx = z * (resolution + 1) + x;
-            float worldX = originX + x * step;
-            float worldZ = originZ + z * step;
-            float height = _noise.GetNoise(worldX, worldZ) * _amplitude;
+            for (int x = 0; x <= resolution; x++)
+            {
+                int idx = z * (resolution + 1) + x;
+                float worldX = originX + x * step;
+                float worldZ = originZ + z * step;
+                float height = _noise.GetNoise(worldX, worldZ) * _amplitude;
 
-            heights[idx] = height;
-            positions[idx] = new Vector3(worldX, height, worldZ);
-        }
+                heights[idx] = height;
+                positions[idx] = new Vector3(worldX, height, worldZ);
+            }
 
         // Compute normals from adjacent heights
         for (int z = 0; z <= resolution; z++)
-        for (int x = 0; x <= resolution; x++)
-        {
-            int idx = z * (resolution + 1) + x;
-            float hL = GetHeight(heights, resolution, x - 1, z);
-            float hR = GetHeight(heights, resolution, x + 1, z);
-            float hD = GetHeight(heights, resolution, x, z - 1);
-            float hU = GetHeight(heights, resolution, x, z + 1);
+            for (int x = 0; x <= resolution; x++)
+            {
+                int idx = z * (resolution + 1) + x;
+                float hL = GetHeight(heights, resolution, x - 1, z);
+                float hR = GetHeight(heights, resolution, x + 1, z);
+                float hD = GetHeight(heights, resolution, x, z - 1);
+                float hU = GetHeight(heights, resolution, x, z + 1);
 
-            normals[idx] = Vector3.Normalize(new Vector3(hL - hR, 2f * step, hD - hU));
-        }
+                normals[idx] = Vector3.Normalize(new Vector3(hL - hR, 2f * step, hD - hU));
+            }
 
         return new HeightmapData(heights, normals, positions, resolution, chunkX, chunkZ, _chunkSize);
     }
@@ -107,22 +107,22 @@ public sealed class HeightmapData
         var verts = new float[vertCount * 8];
 
         for (int z = 0; z <= Resolution; z++)
-        for (int x = 0; x <= Resolution; x++)
-        {
-            int idx = z * (Resolution + 1) + x;
-            int vi = idx * 8;
-            var pos = Positions[idx];
-            var norm = Normals[idx];
+            for (int x = 0; x <= Resolution; x++)
+            {
+                int idx = z * (Resolution + 1) + x;
+                int vi = idx * 8;
+                var pos = Positions[idx];
+                var norm = Normals[idx];
 
-            verts[vi + 0] = pos.X;
-            verts[vi + 1] = pos.Y;
-            verts[vi + 2] = pos.Z;
-            verts[vi + 3] = norm.X;
-            verts[vi + 4] = norm.Y;
-            verts[vi + 5] = norm.Z;
-            verts[vi + 6] = (float)x / Resolution;
-            verts[vi + 7] = (float)z / Resolution;
-        }
+                verts[vi + 0] = pos.X;
+                verts[vi + 1] = pos.Y;
+                verts[vi + 2] = pos.Z;
+                verts[vi + 3] = norm.X;
+                verts[vi + 4] = norm.Y;
+                verts[vi + 5] = norm.Z;
+                verts[vi + 6] = (float)x / Resolution;
+                verts[vi + 7] = (float)z / Resolution;
+            }
 
         return verts;
     }
@@ -136,20 +136,20 @@ public sealed class HeightmapData
         int idx = 0;
 
         for (int z = 0; z < Resolution; z++)
-        for (int x = 0; x < Resolution; x++)
-        {
-            uint tl = (uint)(z * (Resolution + 1) + x);
-            uint tr = tl + 1;
-            uint bl = tl + (uint)(Resolution + 1);
-            uint br = bl + 1;
+            for (int x = 0; x < Resolution; x++)
+            {
+                uint tl = (uint)(z * (Resolution + 1) + x);
+                uint tr = tl + 1;
+                uint bl = tl + (uint)(Resolution + 1);
+                uint br = bl + 1;
 
-            indices[idx++] = tl;
-            indices[idx++] = bl;
-            indices[idx++] = br;
-            indices[idx++] = tl;
-            indices[idx++] = br;
-            indices[idx++] = tr;
-        }
+                indices[idx++] = tl;
+                indices[idx++] = bl;
+                indices[idx++] = br;
+                indices[idx++] = tl;
+                indices[idx++] = br;
+                indices[idx++] = tr;
+            }
 
         return indices;
     }

@@ -149,11 +149,19 @@ public class SaveLoadIntegrationTests
         {
             Player = new PlayerSaveData
             {
-                PositionX = 99f, PositionY = 22f, PositionZ = 33f,
-                Health = 50f, MaxHealth = 150f,
-                Mana = 10f, MaxMana = 80f,
-                Level = 7, Experience = 500, SkillPoints = 5,
-                Strength = 8, Endurance = 6, Agility = 4
+                PositionX = 99f,
+                PositionY = 22f,
+                PositionZ = 33f,
+                Health = 50f,
+                MaxHealth = 150f,
+                Mana = 10f,
+                MaxMana = 80f,
+                Level = 7,
+                Experience = 500,
+                SkillPoints = 5,
+                Strength = 8,
+                Endurance = 6,
+                Agility = 4
             },
             Inventory =
             {

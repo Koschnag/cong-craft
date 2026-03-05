@@ -20,29 +20,29 @@ public static class DungeonMeshBuilder
         var inds = new List<uint>();
 
         for (int x = 0; x < layout.Width; x++)
-        for (int y = 0; y < layout.Height; y++)
-        {
-            if (layout.Grid[x, y] == TileType.Wall) continue;
-
-            float wx = x * TileSize;
-            float wz = y * TileSize;
-
-            // Choose color based on tile type
-            var (r, g, b) = layout.Grid[x, y] switch
+            for (int y = 0; y < layout.Height; y++)
             {
-                TileType.Entrance => (0.3f, 0.5f, 0.3f),
-                TileType.Exit => (0.5f, 0.3f, 0.3f),
-                TileType.Corridor => (0.22f, 0.2f, 0.18f),
-                _ => (0.25f, 0.23f, 0.2f) // Floor
-            };
+                if (layout.Grid[x, y] == TileType.Wall) continue;
 
-            AddQuad(verts, inds,
-                new Vector3(wx, 0, wz),
-                new Vector3(wx + TileSize, 0, wz),
-                new Vector3(wx + TileSize, 0, wz + TileSize),
-                new Vector3(wx, 0, wz + TileSize),
-                Vector3.UnitY, r, g, b);
-        }
+                float wx = x * TileSize;
+                float wz = y * TileSize;
+
+                // Choose color based on tile type
+                var (r, g, b) = layout.Grid[x, y] switch
+                {
+                    TileType.Entrance => (0.3f, 0.5f, 0.3f),
+                    TileType.Exit => (0.5f, 0.3f, 0.3f),
+                    TileType.Corridor => (0.22f, 0.2f, 0.18f),
+                    _ => (0.25f, 0.23f, 0.2f) // Floor
+                };
+
+                AddQuad(verts, inds,
+                    new Vector3(wx, 0, wz),
+                    new Vector3(wx + TileSize, 0, wz),
+                    new Vector3(wx + TileSize, 0, wz + TileSize),
+                    new Vector3(wx, 0, wz + TileSize),
+                    Vector3.UnitY, r, g, b);
+            }
 
         return new MeshData(verts.ToArray(), inds.ToArray());
     }
@@ -53,26 +53,26 @@ public static class DungeonMeshBuilder
         var inds = new List<uint>();
 
         for (int x = 0; x < layout.Width; x++)
-        for (int y = 0; y < layout.Height; y++)
-        {
-            if (layout.Grid[x, y] == TileType.Wall) continue;
+            for (int y = 0; y < layout.Height; y++)
+            {
+                if (layout.Grid[x, y] == TileType.Wall) continue;
 
-            float wx = x * TileSize;
-            float wz = y * TileSize;
+                float wx = x * TileSize;
+                float wz = y * TileSize;
 
-            // Check each neighbor: if wall, add wall face
-            if (x > 0 && layout.Grid[x - 1, y] == TileType.Wall)
-                AddWallFace(verts, inds, wx, wz, wx, wz + TileSize, Vector3.UnitX);
+                // Check each neighbor: if wall, add wall face
+                if (x > 0 && layout.Grid[x - 1, y] == TileType.Wall)
+                    AddWallFace(verts, inds, wx, wz, wx, wz + TileSize, Vector3.UnitX);
 
-            if (x < layout.Width - 1 && layout.Grid[x + 1, y] == TileType.Wall)
-                AddWallFace(verts, inds, wx + TileSize, wz + TileSize, wx + TileSize, wz, -Vector3.UnitX);
+                if (x < layout.Width - 1 && layout.Grid[x + 1, y] == TileType.Wall)
+                    AddWallFace(verts, inds, wx + TileSize, wz + TileSize, wx + TileSize, wz, -Vector3.UnitX);
 
-            if (y > 0 && layout.Grid[x, y - 1] == TileType.Wall)
-                AddWallFace(verts, inds, wx + TileSize, wz, wx, wz, Vector3.UnitZ);
+                if (y > 0 && layout.Grid[x, y - 1] == TileType.Wall)
+                    AddWallFace(verts, inds, wx + TileSize, wz, wx, wz, Vector3.UnitZ);
 
-            if (y < layout.Height - 1 && layout.Grid[x, y + 1] == TileType.Wall)
-                AddWallFace(verts, inds, wx, wz + TileSize, wx + TileSize, wz + TileSize, -Vector3.UnitZ);
-        }
+                if (y < layout.Height - 1 && layout.Grid[x, y + 1] == TileType.Wall)
+                    AddWallFace(verts, inds, wx, wz + TileSize, wx + TileSize, wz + TileSize, -Vector3.UnitZ);
+            }
 
         return new MeshData(verts.ToArray(), inds.ToArray());
     }
@@ -83,20 +83,20 @@ public static class DungeonMeshBuilder
         var inds = new List<uint>();
 
         for (int x = 0; x < layout.Width; x++)
-        for (int y = 0; y < layout.Height; y++)
-        {
-            if (layout.Grid[x, y] == TileType.Wall) continue;
+            for (int y = 0; y < layout.Height; y++)
+            {
+                if (layout.Grid[x, y] == TileType.Wall) continue;
 
-            float wx = x * TileSize;
-            float wz = y * TileSize;
+                float wx = x * TileSize;
+                float wz = y * TileSize;
 
-            AddQuad(verts, inds,
-                new Vector3(wx, WallHeight, wz + TileSize),
-                new Vector3(wx + TileSize, WallHeight, wz + TileSize),
-                new Vector3(wx + TileSize, WallHeight, wz),
-                new Vector3(wx, WallHeight, wz),
-                -Vector3.UnitY, 0.15f, 0.13f, 0.12f);
-        }
+                AddQuad(verts, inds,
+                    new Vector3(wx, WallHeight, wz + TileSize),
+                    new Vector3(wx + TileSize, WallHeight, wz + TileSize),
+                    new Vector3(wx + TileSize, WallHeight, wz),
+                    new Vector3(wx, WallHeight, wz),
+                    -Vector3.UnitY, 0.15f, 0.13f, 0.12f);
+            }
 
         return new MeshData(verts.ToArray(), inds.ToArray());
     }

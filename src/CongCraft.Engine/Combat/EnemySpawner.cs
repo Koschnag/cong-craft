@@ -170,11 +170,11 @@ public sealed class EnemySpawner : ISystem
     {
         return type switch
         {
-            EnemyType.Wolf     => (35f,  6f,  2f,   3.5f, 5.5f, 18f, 0.8f, 12f),
-            EnemyType.Bandit   => (60f,  10f, 2.5f, 2.5f, 4f,   15f, 1.2f, 8f),
-            EnemyType.Skeleton => (80f,  15f, 2.5f, 1.5f, 3f,   12f, 1.8f, 6f),
-            EnemyType.Troll    => (200f, 25f, 3f,   1f,   2.5f, 20f, 2.5f, 5f),
-            _                  => (50f,  8f,  2f,   2.5f, 4f,   15f, 1.2f, 10f)
+            EnemyType.Wolf => (35f, 6f, 2f, 3.5f, 5.5f, 18f, 0.8f, 12f),
+            EnemyType.Bandit => (60f, 10f, 2.5f, 2.5f, 4f, 15f, 1.2f, 8f),
+            EnemyType.Skeleton => (80f, 15f, 2.5f, 1.5f, 3f, 12f, 1.8f, 6f),
+            EnemyType.Troll => (200f, 25f, 3f, 1f, 2.5f, 20f, 2.5f, 5f),
+            _ => (50f, 8f, 2f, 2.5f, 4f, 15f, 1.2f, 10f)
         };
     }
 

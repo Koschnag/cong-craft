@@ -12,7 +12,8 @@ public static class CraftingDatabase
         // Anvil recipes (weapons and heavy armor)
         Register(new CraftingRecipe
         {
-            Id = "craft_iron_sword", Name = "Forge Iron Sword",
+            Id = "craft_iron_sword",
+            Name = "Forge Iron Sword",
             Station = CraftingStationType.Anvil,
             Ingredients = new List<CraftingIngredient>
             {
@@ -23,7 +24,8 @@ public static class CraftingDatabase
         });
         Register(new CraftingRecipe
         {
-            Id = "craft_chain_mail", Name = "Forge Chain Mail",
+            Id = "craft_chain_mail",
+            Name = "Forge Chain Mail",
             Station = CraftingStationType.Anvil,
             Ingredients = new List<CraftingIngredient>
             {
@@ -34,7 +36,8 @@ public static class CraftingDatabase
         });
         Register(new CraftingRecipe
         {
-            Id = "craft_iron_greaves", Name = "Forge Iron Greaves",
+            Id = "craft_iron_greaves",
+            Name = "Forge Iron Greaves",
             Station = CraftingStationType.Anvil,
             Ingredients = new List<CraftingIngredient>
             {
@@ -47,7 +50,8 @@ public static class CraftingDatabase
         // Alchemy recipes (potions and elixirs)
         Register(new CraftingRecipe
         {
-            Id = "craft_health_potion", Name = "Brew Health Potion",
+            Id = "craft_health_potion",
+            Name = "Brew Health Potion",
             Station = CraftingStationType.Alchemy,
             Ingredients = new List<CraftingIngredient>
             {
@@ -58,7 +62,8 @@ public static class CraftingDatabase
         });
         Register(new CraftingRecipe
         {
-            Id = "craft_strength_elixir", Name = "Brew Strength Elixir",
+            Id = "craft_strength_elixir",
+            Name = "Brew Strength Elixir",
             Station = CraftingStationType.Alchemy,
             Ingredients = new List<CraftingIngredient>
             {
@@ -71,7 +76,8 @@ public static class CraftingDatabase
         // Workbench recipes (light armor and tools)
         Register(new CraftingRecipe
         {
-            Id = "craft_leather_helm", Name = "Craft Leather Helm",
+            Id = "craft_leather_helm",
+            Name = "Craft Leather Helm",
             Station = CraftingStationType.Workbench,
             Ingredients = new List<CraftingIngredient>
             {
@@ -82,7 +88,8 @@ public static class CraftingDatabase
         });
         Register(new CraftingRecipe
         {
-            Id = "craft_dark_blade", Name = "Forge Dark Blade",
+            Id = "craft_dark_blade",
+            Name = "Forge Dark Blade",
             Station = CraftingStationType.Anvil,
             Ingredients = new List<CraftingIngredient>
             {
@@ -96,7 +103,8 @@ public static class CraftingDatabase
         // Mana Potion — Alchemy
         Register(new CraftingRecipe
         {
-            Id = "craft_mana_potion", Name = "Brew Mana Potion",
+            Id = "craft_mana_potion",
+            Name = "Brew Mana Potion",
             Station = CraftingStationType.Alchemy,
             Ingredients = new List<CraftingIngredient>
             {
@@ -109,7 +117,8 @@ public static class CraftingDatabase
         // Leather Armor — Workbench
         Register(new CraftingRecipe
         {
-            Id = "craft_leather_chest", Name = "Craft Leather Armor",
+            Id = "craft_leather_chest",
+            Name = "Craft Leather Armor",
             Station = CraftingStationType.Workbench,
             Ingredients = new List<CraftingIngredient>
             {
@@ -122,7 +131,8 @@ public static class CraftingDatabase
         // Wolf Cloak — Workbench (endgame)
         Register(new CraftingRecipe
         {
-            Id = "craft_wolf_cloak", Name = "Craft Wolf Cloak",
+            Id = "craft_wolf_cloak",
+            Name = "Craft Wolf Cloak",
             Station = CraftingStationType.Workbench,
             Ingredients = new List<CraftingIngredient>
             {
@@ -136,7 +146,8 @@ public static class CraftingDatabase
         // Bone Club — Anvil
         Register(new CraftingRecipe
         {
-            Id = "craft_bone_club", Name = "Forge Bone Club",
+            Id = "craft_bone_club",
+            Name = "Forge Bone Club",
             Station = CraftingStationType.Anvil,
             Ingredients = new List<CraftingIngredient>
             {

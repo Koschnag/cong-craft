@@ -10,7 +10,9 @@ public class DialogueStateTests
         return new DialogueTree { Id = "test", StartNodeId = "start" }
             .AddNode(new DialogueNode
             {
-                Id = "start", SpeakerName = "NPC", Text = "Hello!",
+                Id = "start",
+                SpeakerName = "NPC",
+                Text = "Hello!",
                 Choices = new()
                 {
                     new() { Text = "Option A", NextNodeId = "node_a" },
