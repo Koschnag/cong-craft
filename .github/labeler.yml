@@ -1,0 +1,54 @@
+# Auto-label PRs based on changed files
+"area: engine":
+  - changed-files:
+    - any-glob-to-any-file: 'src/CongCraft.Engine/**'
+
+"area: game":
+  - changed-files:
+    - any-glob-to-any-file: 'src/CongCraft.Game/**'
+
+"area: tests":
+  - changed-files:
+    - any-glob-to-any-file: 'tests/**'
+
+"area: devops":
+  - changed-files:
+    - any-glob-to-any-file: '.github/**'
+
+"area: rendering":
+  - changed-files:
+    - any-glob-to-any-file: 'src/CongCraft.Engine/Rendering/**'
+
+"area: combat":
+  - changed-files:
+    - any-glob-to-any-file: 'src/CongCraft.Engine/Combat/**'
+
+"area: magic":
+  - changed-files:
+    - any-glob-to-any-file: 'src/CongCraft.Engine/Magic/**'
+
+"area: quest-system":
+  - changed-files:
+    - any-glob-to-any-file: 'src/CongCraft.Engine/Quest/**'
+    - any-glob-to-any-file: 'src/CongCraft.Engine/Dialogue/**'
+
+"area: inventory":
+  - changed-files:
+    - any-glob-to-any-file: 'src/CongCraft.Engine/Inventory/**'
+
+"area: world-gen":
+  - changed-files:
+    - any-glob-to-any-file: 'src/CongCraft.Engine/Terrain/**'
+    - any-glob-to-any-file: 'src/CongCraft.Engine/Procedural/**'
+
+"area: audio":
+  - changed-files:
+    - any-glob-to-any-file: 'src/CongCraft.Engine/Audio/**'
+
+"area: save-system":
+  - changed-files:
+    - any-glob-to-any-file: 'src/CongCraft.Engine/SaveLoad/**'
+
+"documentation":
+  - changed-files:
+    - any-glob-to-any-file: '*.md'

@@ -1,5 +1,11 @@
 # CongCraft - Medieval RPG
 
+[![CI](https://github.com/Koschnag/cong-craft/actions/workflows/ci.yml/badge.svg)](https://github.com/Koschnag/cong-craft/actions/workflows/ci.yml)
+[![Build & Release](https://github.com/Koschnag/cong-craft/actions/workflows/release.yml/badge.svg)](https://github.com/Koschnag/cong-craft/actions/workflows/release.yml)
+[![Nightly](https://github.com/Koschnag/cong-craft/actions/workflows/nightly.yml/badge.svg)](https://github.com/Koschnag/cong-craft/actions/workflows/nightly.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/download/dotnet/8.0)
+
 A Gothic/Risen-inspired action RPG built from scratch in .NET 8 with OpenGL 3.3. No game engine — all systems hand-crafted, all graphics procedurally generated.
 
 ## Features
@@ -89,6 +95,17 @@ dotnet run --project src/CongCraft.Game
 - **Silk.NET 2.21** — OpenGL 3.3 Core, GLFW windowing, OpenAL audio
 - **xUnit** — 338 unit tests
 - **System.Text.Json** — Save/load serialization
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+
+## Project Management
+
+- **Issues**: Use [issue templates](https://github.com/Koschnag/cong-craft/issues/new/choose) for bugs, features, tasks, and epics
+- **PRs**: Auto-labeled by files changed and size, with CI/CD and pre-release builds
+- **Releases**: Automated multi-platform builds on version tags
+- **Monitoring**: Nightly health checks, weekly metrics, dependency updates via Dependabot
 
 ## License
 
