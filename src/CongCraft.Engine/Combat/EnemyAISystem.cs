@@ -103,7 +103,7 @@ public sealed class EnemyAISystem : ISystem
                         enemy.State = EnemyState.Chase;
                         break;
                     }
-                    UpdateAttack(enemy, transform, playerPos, playerCombat, playerHealth, dt);
+                    UpdateAttack(entity, enemy, transform, playerPos, playerCombat, playerHealth, dt);
                     break;
             }
 
@@ -173,7 +173,7 @@ public sealed class EnemyAISystem : ISystem
         }
     }
 
-    private void UpdateAttack(EnemyComponent enemy, TransformComponent transform,
+    private void UpdateAttack(Entity enemyEntity, EnemyComponent enemy, TransformComponent transform,
         Vector3 playerPos, CombatComponent? playerCombat, HealthComponent? playerHealth, float dt)
     {
         enemy.AttackTimer -= dt;
@@ -184,7 +184,10 @@ public sealed class EnemyAISystem : ISystem
 
         if (playerHealth == null || !playerHealth.IsAlive) return;
 
-        float damage = 8f; // Base enemy damage
+        // Use enemy's actual combat component damage
+        float damage = _world.HasComponent<CombatComponent>(enemyEntity)
+            ? _world.GetComponent<CombatComponent>(enemyEntity).AttackDamage
+            : 8f;
 
         // Check if player is blocking
         if (playerCombat != null && playerCombat.IsBlocking)

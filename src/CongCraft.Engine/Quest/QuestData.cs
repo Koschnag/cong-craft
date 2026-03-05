@@ -10,6 +10,7 @@ public sealed class QuestData
     public required string Description { get; init; }
     public List<QuestObjective> Objectives { get; init; } = new();
     public List<QuestReward> Rewards { get; init; } = new();
+    public int XpReward { get; init; }
 }
 
 /// <summary>

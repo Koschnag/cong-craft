@@ -1,0 +1,109 @@
+name: Auto Version & Tag
+
+# After merge to main, auto-create a version tag to trigger the release pipeline
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  auto-tag:
+    name: Auto Version Tag
+    runs-on: ubuntu-latest
+    # Don't run for workflow-generated commits (auto-fix, dependabot)
+    if: |
+      !contains(github.event.head_commit.message, 'style: auto-format') &&
+      !contains(github.event.head_commit.message, '[skip-release]')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for tag detection
+
+      - name: Get latest version
+        id: version
+        run: |
+          # Get the latest version tag
+          LATEST=$(git tag -l 'v*' --sort=-version:refname | head -1)
+          if [ -z "$LATEST" ]; then
+            LATEST="v0.0.0"
+          fi
+          echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "Latest version: $LATEST"
+
+      - name: Determine bump type
+        id: bump
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "type=${{ github.event.inputs.bump }}" >> "$GITHUB_OUTPUT"
+          else
+            # Auto-detect from commit messages since last tag
+            LATEST="${{ steps.version.outputs.latest }}"
+            COMMITS=$(git log "$LATEST"..HEAD --oneline 2>/dev/null || git log --oneline)
+
+            if echo "$COMMITS" | grep -qiE "^[a-f0-9]+ (feat!|BREAKING)"; then
+              echo "type=major" >> "$GITHUB_OUTPUT"
+            elif echo "$COMMITS" | grep -qiE "^[a-f0-9]+ feat"; then
+              echo "type=minor" >> "$GITHUB_OUTPUT"
+            else
+              echo "type=patch" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - name: Calculate new version
+        id: new_version
+        run: |
+          LATEST="${{ steps.version.outputs.latest }}"
+          BUMP="${{ steps.bump.outputs.type }}"
+
+          # Parse version
+          VERSION="${LATEST#v}"
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          PATCH=$(echo "$VERSION" | cut -d. -f3)
+
+          case "$BUMP" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "tag=$NEW" >> "$GITHUB_OUTPUT"
+          echo "New version: $NEW (bump: $BUMP)"
+
+      - name: Create and push tag
+        run: |
+          TAG="${{ steps.new_version.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG
+
+          Auto-tagged from merge to main.
+          Bump type: ${{ steps.bump.outputs.type }}
+          Previous: ${{ steps.version.outputs.latest }}"
+          git push origin "$TAG"
+          echo "Tagged and pushed: $TAG"

@@ -1,10 +1,15 @@
 name: Auto Approve & Merge
 
-# Only runs AFTER CI and Quality Gate complete - avoids race condition
+# Triggers:
+# 1. After CI or Quality Gate completes (workflow_run)
+# 2. When user approves a PR (pull_request_review)
+# 3. Manual dispatch
 on:
   workflow_run:
     workflows: ["CI", "Code Quality Enforcement"]
     types: [completed]
+  pull_request_review:
+    types: [submitted]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -22,9 +27,9 @@ jobs:
   auto-merge:
     name: Evaluate & Merge
     runs-on: ubuntu-latest
-    # Only run if triggered by completed workflow on a PR, or manual dispatch
     if: >
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'pull_request_review' ||
       (github.event.workflow_run.event == 'pull_request' &&
        github.event.workflow_run.conclusion == 'success')
     steps:
@@ -33,12 +38,14 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
 
-            // Find the PR number
+            // Find the PR number based on trigger type
             let prNumber;
             if (context.eventName === 'workflow_dispatch') {
               prNumber = parseInt('${{ github.event.inputs.pr_number }}');
+            } else if (context.eventName === 'pull_request_review') {
+              prNumber = context.payload.pull_request.number;
             } else {
-              // Get PRs associated with the head branch of the workflow run
+              // workflow_run: find PR from the head branch
               const headBranch = context.payload.workflow_run.head_branch;
               const prs = await github.rest.pulls.list({
                 owner, repo,
@@ -56,6 +63,12 @@ jobs:
 
             // Get PR details
             const pr = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+
+            // Skip if already merged or closed
+            if (pr.data.merged || pr.data.state === 'closed') {
+              core.info('PR already merged or closed');
+              return;
+            }
 
             // Skip draft PRs
             if (pr.data.draft) {
@@ -77,8 +90,8 @@ jobs:
             });
 
             const ignoredChecks = [
-              'Evaluate & Merge',      // This workflow
-              'Auto Approve & Merge',  // Legacy name
+              'Evaluate & Merge',
+              'Auto Approve & Merge',
             ];
 
             const relevantChecks = checks.data.check_runs.filter(c =>
@@ -107,10 +120,10 @@ jobs:
               return;
             }
 
-            // All checks passed - approve and merge
+            // All checks passed - now approve and merge
             core.info('All checks passed! Auto-approving and merging.');
 
-            // Check if already approved
+            // Check if already approved by a human or bot
             const reviews = await github.rest.pulls.listReviews({
               owner, repo,
               pull_number: prNumber
@@ -128,10 +141,11 @@ jobs:
                 });
               } catch (e) {
                 core.info(`Could not auto-approve (may need different token): ${e.message}`);
+                // Continue anyway - merge might still work without required reviews
               }
             }
 
-            // Merge
+            // Merge with squash
             try {
               await github.rest.pulls.merge({
                 owner, repo,
@@ -144,7 +158,7 @@ jobs:
               await github.rest.issues.createComment({
                 owner, repo,
                 issue_number: prNumber,
-                body: '## Merged Automatically\n\nAll quality gates passed. Changes have been squash-merged into `main`.'
+                body: '## Merged Automatically\n\nAll quality gates passed. Changes have been squash-merged into `main`.\n\nA version tag will be created automatically to trigger the release pipeline.'
               });
             } catch (e) {
               core.warning(`Failed to merge: ${e.message}`);

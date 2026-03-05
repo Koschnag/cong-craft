@@ -38,9 +38,9 @@ public class QuestDatabaseTests
     }
 
     [Fact]
-    public void All_HasThreeQuests()
+    public void All_HasExpectedQuestCount()
     {
-        Assert.Equal(3, QuestDatabase.All.Count);
+        Assert.Equal(8, QuestDatabase.All.Count);
     }
 
     [Fact]
@@ -50,5 +50,46 @@ public class QuestDatabaseTests
         {
             Assert.NotEmpty(quest.Rewards);
         }
+    }
+
+    [Fact]
+    public void AllQuests_HaveXpRewards()
+    {
+        foreach (var (_, quest) in QuestDatabase.All)
+        {
+            Assert.True(quest.XpReward > 0, $"Quest '{quest.Id}' should give XP");
+        }
+    }
+
+    [Fact]
+    public void Get_DungeonDelve()
+    {
+        var quest = QuestDatabase.Get("dungeon_delve");
+        Assert.NotNull(quest);
+        Assert.Equal(150, quest.XpReward);
+    }
+
+    [Fact]
+    public void Get_TrollSlayer()
+    {
+        var quest = QuestDatabase.Get("troll_slayer");
+        Assert.NotNull(quest);
+        Assert.Equal(200, quest.XpReward);
+    }
+
+    [Fact]
+    public void Get_GatherMaterials_HasTwoObjectives()
+    {
+        var quest = QuestDatabase.Get("gather_materials");
+        Assert.NotNull(quest);
+        Assert.Equal(2, quest.Objectives.Count);
+    }
+
+    [Fact]
+    public void Get_BoneCollector()
+    {
+        var quest = QuestDatabase.Get("bone_collector");
+        Assert.NotNull(quest);
+        Assert.Equal("bone", quest.Objectives[0].TargetId);
     }
 }

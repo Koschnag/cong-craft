@@ -60,15 +60,18 @@ CongCraft.sln
 - **CI**: Runs on every push/PR - build, test, code coverage
 - **Quality Gate**: Code formatting, build warnings, test coverage threshold (30%)
 - **Auto-Merge**: PRs auto-approved and squash-merged when all quality gates pass
+- **Auto-Version**: After merge to main, auto-creates `v*` tag (semantic versioning)
 - **Auto-Fix**: Formatting issues auto-fixed via PR when self-test detects them
 - **Release**: Tag `v*` triggers multi-platform release (Windows/macOS/Linux)
 - **Pre-release**: PR builds create testing pre-releases (macOS ARM64)
 - **Nightly**: Daily health check builds across all platforms
 - **Self-Test Loop**: Every 6 hours - build, test, code health analysis
+- **Daily Report**: Every day at 20:00 UTC - full status report as GitHub Issue
+- **Weekly Metrics**: Every Sunday - codebase statistics
 - **Dependabot**: Weekly NuGet and GitHub Actions dependency updates
 
 ## Fully Autonomous System
-Everything runs automatically. No manual setup needed after first merge.
+Everything runs automatically. Zero manual intervention needed.
 
 ### Bootstrap (runs once on merge to main)
 - Labels, variables, branch protection all auto-configured
@@ -79,11 +82,18 @@ Everything runs automatically. No manual setup needed after first merge.
 1. Code pushed to feature branch -> PR auto-created
 2. CI + Quality Gate run automatically
 3. All checks pass -> Auto-approved and auto-merged
-4. Tag `vX.Y.Z` -> Multi-platform release built
-5. Release published -> Feedback issue created for @Koschnag
-6. User tests, gives feedback, approves
-7. Feedback parsed -> Bug/Feature issues auto-created
-8. Next cycle begins
+4. Merge to main -> Auto-version tag created (vX.Y.Z)
+5. Tag triggers multi-platform release (Windows/macOS/Linux)
+6. Release published -> Feedback issue created for @Koschnag
+7. User tests, gives feedback, approves (thumbs-up or "passt")
+8. Feedback parsed -> Bug/Feature issues auto-created
+9. Next cycle begins
+
+### Daily Report (Tagesbericht)
+- Runs every day at 20:00 UTC (21:00 CET)
+- Posted as comment to pinned "Tagesbericht" issue
+- Contains: build status, test results, coverage, open issues, recent commits, workflow activity
+- No action needed - just read it
 
 ### Self-Healing
 - Self-test loop runs every 6 hours

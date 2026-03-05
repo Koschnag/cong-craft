@@ -1,0 +1,256 @@
+name: Daily Status Report
+
+on:
+  schedule:
+    - cron: '0 20 * * *'  # Every day at 20:00 UTC (21:00 CET / 22:00 CEST)
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+  actions: read
+  pull-requests: read
+
+jobs:
+  daily-report:
+    name: Generate Daily Report
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore & Build
+        id: build
+        run: |
+          dotnet restore
+          if dotnet build --configuration Release --no-restore 2>&1 | tee build-output.txt; then
+            echo "status=passing" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=failing" >> "$GITHUB_OUTPUT"
+          fi
+          WARNINGS=$(grep -c "warning " build-output.txt || true)
+          echo "warnings=${WARNINGS:-0}" >> "$GITHUB_OUTPUT"
+
+      - name: Run Tests
+        id: tests
+        run: |
+          TEST_OUTPUT=$(dotnet test --configuration Release --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./coverage \
+            --verbosity normal 2>&1) || true
+          echo "$TEST_OUTPUT"
+
+          PASSED=$(echo "$TEST_OUTPUT" | grep -oP 'Passed:\s*\K\d+' || echo "0")
+          FAILED=$(echo "$TEST_OUTPUT" | grep -oP 'Failed:\s*\K\d+' || echo "0")
+          TOTAL=$((PASSED + FAILED))
+          echo "passed=$PASSED" >> "$GITHUB_OUTPUT"
+          echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
+          echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+
+          if [ "$FAILED" -gt "0" ]; then
+            echo "status=failing" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=passing" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Parse Coverage
+        id: coverage
+        run: |
+          COVERAGE_FILE=$(find coverage -name "coverage.cobertura.xml" 2>/dev/null | head -1)
+          if [ -n "$COVERAGE_FILE" ]; then
+            RATE=$(grep -oP 'line-rate="\K[^"]+' "$COVERAGE_FILE" | head -1 || echo "0")
+            PCT=$(awk "BEGIN {printf \"%.1f\", $RATE * 100}" 2>/dev/null || echo "0")
+            echo "percentage=$PCT" >> "$GITHUB_OUTPUT"
+          else
+            echo "percentage=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Code Stats
+        id: stats
+        run: |
+          echo "src_files=$(find src -name '*.cs' | wc -l)" >> "$GITHUB_OUTPUT"
+          echo "test_files=$(find tests -name '*.cs' | wc -l)" >> "$GITHUB_OUTPUT"
+          echo "src_lines=$(find src -name '*.cs' -exec cat {} + | wc -l)" >> "$GITHUB_OUTPUT"
+          echo "test_lines=$(find tests -name '*.cs' -exec cat {} + | wc -l)" >> "$GITHUB_OUTPUT"
+          TODOS=$(grep -rc "TODO\|FIXME\|HACK\|XXX" src/ --include="*.cs" | awk -F: '{s+=$2} END {print s+0}')
+          echo "todos=$TODOS" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const date = new Date().toISOString().split('T')[0];
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+
+            const buildStatus = '${{ steps.build.outputs.status }}';
+            const testStatus = '${{ steps.tests.outputs.status }}';
+            const warnings = '${{ steps.build.outputs.warnings }}' || '0';
+            const passed = '${{ steps.tests.outputs.passed }}' || '0';
+            const failed = '${{ steps.tests.outputs.failed }}' || '0';
+            const coverage = '${{ steps.coverage.outputs.percentage }}' || '0';
+            const srcFiles = '${{ steps.stats.outputs.src_files }}' || '0';
+            const testFiles = '${{ steps.stats.outputs.test_files }}' || '0';
+            const srcLines = '${{ steps.stats.outputs.src_lines }}' || '0';
+            const testLines = '${{ steps.stats.outputs.test_lines }}' || '0';
+            const todos = '${{ steps.stats.outputs.todos }}' || '0';
+
+            const healthy = buildStatus === 'passing' && testStatus === 'passing';
+            const statusEmoji = healthy ? ':white_check_mark:' : ':rotating_light:';
+
+            // Get recent commits (last 24h)
+            const since = new Date(Date.now() - 86400000).toISOString();
+            let recentCommits = [];
+            try {
+              const commits = await github.rest.repos.listCommits({
+                owner, repo,
+                since,
+                per_page: 20
+              });
+              recentCommits = commits.data.map(c =>
+                `- [\`${c.sha.substring(0, 7)}\`](${c.html_url}) ${c.commit.message.split('\n')[0]}`
+              );
+            } catch (e) {
+              recentCommits = ['Could not fetch commits.'];
+            }
+
+            // Get open issues summary
+            const openIssues = await github.rest.issues.listForRepo({
+              owner, repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            const bugs = openIssues.data.filter(i =>
+              !i.pull_request && i.labels.some(l => l.name === 'bug')
+            ).length;
+            const enhancements = openIssues.data.filter(i =>
+              !i.pull_request && i.labels.some(l => l.name === 'enhancement')
+            ).length;
+            const critical = openIssues.data.filter(i =>
+              !i.pull_request && i.labels.some(l => l.name === 'priority: critical')
+            ).length;
+            const openPRs = openIssues.data.filter(i => i.pull_request).length;
+            const totalIssues = openIssues.data.filter(i => !i.pull_request).length;
+
+            // Get latest release
+            let latestRelease = 'None';
+            try {
+              const releases = await github.rest.repos.listReleases({
+                owner, repo, per_page: 1
+              });
+              if (releases.data.length > 0) {
+                const r = releases.data[0];
+                latestRelease = `[${r.tag_name}](${r.html_url}) (${r.published_at.split('T')[0]})`;
+              }
+            } catch (e) {}
+
+            // Check workflow runs from last 24h
+            let workflowSummary = [];
+            try {
+              const runs = await github.rest.actions.listWorkflowRunsForRepo({
+                owner, repo,
+                created: `>=${since.split('T')[0]}`,
+                per_page: 50
+              });
+              const grouped = {};
+              for (const run of runs.data.workflow_runs) {
+                if (!grouped[run.name]) grouped[run.name] = [];
+                grouped[run.name].push(run.conclusion || run.status);
+              }
+              for (const [name, results] of Object.entries(grouped)) {
+                const successes = results.filter(r => r === 'success').length;
+                const failures = results.filter(r => r === 'failure').length;
+                const icon = failures > 0 ? ':x:' : ':white_check_mark:';
+                workflowSummary.push(`| ${name} | ${icon} ${successes}/${results.length} passed |`);
+              }
+            } catch (e) {
+              workflowSummary = ['| Workflows | Could not fetch |'];
+            }
+
+            const report = [
+              `## ${statusEmoji} Tagesbericht - ${date}`,
+              '',
+              `**System Status: ${healthy ? 'GESUND' : 'PROBLEME ERKANNT'}**`,
+              '',
+              '---',
+              '',
+              '### Build & Tests',
+              '',
+              '| Metrik | Status |',
+              '|--------|--------|',
+              `| Build | ${buildStatus === 'passing' ? ':white_check_mark: Passing' : ':x: Failing'} (${warnings} warnings) |`,
+              `| Tests | ${testStatus === 'passing' ? ':white_check_mark: Passing' : ':x: Failing'} (${passed}/${parseInt(passed)+parseInt(failed)} bestanden) |`,
+              `| Coverage | ${coverage}% |`,
+              '',
+              '### Codebase',
+              '',
+              '| Metrik | Wert |',
+              '|--------|------|',
+              `| Source Files | ${srcFiles} |`,
+              `| Test Files | ${testFiles} |`,
+              `| Source LOC | ${srcLines} |`,
+              `| Test LOC | ${testLines} |`,
+              `| TODOs/FIXMEs | ${todos} |`,
+              '',
+              '### Issues & PRs',
+              '',
+              '| Kategorie | Anzahl |',
+              '|-----------|--------|',
+              `| Offene Issues | ${totalIssues} |`,
+              `| Bugs | ${bugs} |`,
+              `| Features | ${enhancements} |`,
+              `| Kritisch | ${critical} |`,
+              `| Offene PRs | ${openPRs} |`,
+              '',
+              '### Letztes Release',
+              '',
+              latestRelease,
+              '',
+              '### Workflow-Aktivitaet (24h)',
+              '',
+              '| Workflow | Ergebnis |',
+              '|----------|----------|',
+              ...workflowSummary,
+              '',
+              '### Commits heute',
+              '',
+              recentCommits.length > 0 ? recentCommits.join('\n') : 'Keine Commits heute.',
+              '',
+              '---',
+              '',
+              `> Automatisch generiert um ${new Date().toISOString().split('T')[1].split('.')[0]} UTC`,
+              `> [Details ansehen](${runUrl})`,
+            ].join('\n');
+
+            // Find or create daily report issue
+            const reportTitle = 'Tagesbericht';
+            const existing = await github.rest.issues.listForRepo({
+              owner, repo,
+              labels: 'automated,metrics',
+              state: 'open'
+            });
+
+            const reportIssue = existing.data.find(i => i.title === reportTitle);
+
+            if (reportIssue) {
+              // Add as comment to existing report issue
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: reportIssue.number,
+                body: report
+              });
+            } else {
+              // Create new report issue
+              await github.rest.issues.create({
+                owner, repo,
+                title: reportTitle,
+                body: report,
+                labels: ['automated', 'metrics', 'pinned']
+              });
+            }
+
+            core.info(`Daily report generated for ${date}`);

@@ -5,8 +5,6 @@ on:
     types: [opened, closed, reopened, labeled]
   pull_request:
     types: [opened, closed, reopened, review_requested, ready_for_review]
-  issue_comment:
-    types: [created]
 
 jobs:
   track-issue:
@@ -34,32 +32,25 @@ jobs:
             }
 
             // Auto-categorize by keywords
-            if (text.includes('render') || text.includes('shader') || text.includes('opengl') || text.includes('graphics')) {
-              newLabels.push('area: rendering');
-            }
-            if (text.includes('combat') || text.includes('attack') || text.includes('damage')) {
-              newLabels.push('area: combat');
-            }
-            if (text.includes('quest') || text.includes('dialogue') || text.includes('npc')) {
-              newLabels.push('area: quest-system');
-            }
-            if (text.includes('inventory') || text.includes('item') || text.includes('equipment')) {
-              newLabels.push('area: inventory');
-            }
-            if (text.includes('magic') || text.includes('spell') || text.includes('mana')) {
-              newLabels.push('area: magic');
-            }
-            if (text.includes('terrain') || text.includes('procedural') || text.includes('world')) {
-              newLabels.push('area: world-gen');
-            }
-            if (text.includes('audio') || text.includes('sound') || text.includes('music')) {
-              newLabels.push('area: audio');
-            }
-            if (text.includes('save') || text.includes('load') || text.includes('serializ')) {
-              newLabels.push('area: save-system');
-            }
-            if (text.includes('ci') || text.includes('build') || text.includes('pipeline') || text.includes('workflow')) {
-              newLabels.push('area: devops');
+            const categories = {
+              'area: rendering': ['render', 'shader', 'opengl', 'graphics', 'mesh', 'texture'],
+              'area: combat': ['combat', 'attack', 'damage', 'enemy', 'health', 'dodge', 'block'],
+              'area: quest-system': ['quest', 'dialogue', 'npc', 'objective'],
+              'area: inventory': ['inventory', 'item', 'equipment', 'loot', 'crafting', 'recipe'],
+              'area: magic': ['magic', 'spell', 'mana', 'fireball', 'shield'],
+              'area: world-gen': ['terrain', 'procedural', 'world', 'dungeon', 'chunk'],
+              'area: audio': ['audio', 'sound', 'music'],
+              'area: save-system': ['save', 'load', 'serializ'],
+              'area: devops': ['ci', 'build', 'pipeline', 'workflow', 'deploy'],
+              'area: leveling': ['xp', 'experience', 'level', 'skill tree', 'skill point'],
+              'area: weather': ['weather', 'rain', 'storm', 'fog', 'day/night'],
+              'area: ui': ['hud', 'minimap', 'ui', 'menu', 'interface'],
+            };
+
+            for (const [label, keywords] of Object.entries(categories)) {
+              if (keywords.some(k => text.includes(k))) {
+                newLabels.push(label);
+              }
             }
 
             if (newLabels.length > 0) {
@@ -96,3 +87,7 @@ jobs:
                 body: `Welcome to CongCraft, @${creator}! Thanks for opening your first issue. A maintainer will review it shortly.`
               });
             }
+
+  # NOTE: Inline commands (Bug:, Feature:, /priority, /close, etc.) are handled
+  # exclusively by issue-to-pr.yml to avoid creating duplicate issues.
+  # Do NOT add command parsing here.

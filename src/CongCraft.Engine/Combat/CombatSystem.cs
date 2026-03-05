@@ -138,6 +138,17 @@ public sealed class CombatSystem : ISystem
     {
         combat.AttackTimer = MathF.Max(0, combat.AttackTimer - dt);
         combat.DodgeCooldownTimer = MathF.Max(0, combat.DodgeCooldownTimer - dt);
+
+        // Tick down consumable buffs
+        if (combat.BuffDuration > 0)
+        {
+            combat.BuffDuration -= dt;
+            if (combat.BuffDuration <= 0)
+            {
+                combat.BuffDuration = 0;
+                combat.BuffAttackBonus = 0;
+            }
+        }
     }
 
     private IEnumerable<(Entity, PlayerComponent, CombatComponent, HealthComponent)> QueryPlayerCombat()
