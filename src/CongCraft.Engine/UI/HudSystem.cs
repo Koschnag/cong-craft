@@ -11,7 +11,7 @@ using CongCraft.Engine.Magic;
 using CongCraft.Engine.Quest;
 using CongCraft.Engine.SaveLoad;
 using CongCraft.Engine.Boss;
-using CongCraft.Engine.Terrain;
+using CongCraft.Engine.Level;
 using CongCraft.Engine.Weather;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
@@ -35,7 +35,7 @@ public sealed class HudSystem : ISystem
     private Shader _texShader = null!;
     private Mesh _quad = null!;
     private IWindow _window = null!;
-    private TerrainGenerator? _terrainGen;
+    private LevelTerrainGenerator? _terrainGen;
     private BitmapFont _font = null!;
     private TextRenderer _textRenderer = null!;
     private UITextureAtlas _textures = null!;

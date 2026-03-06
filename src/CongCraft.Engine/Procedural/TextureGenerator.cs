@@ -41,12 +41,13 @@ public static class TextureGenerator
             float fg = fineGrain.GetNoise(x, y) * 0.5f + 0.5f;
             float combined = n * 0.35f + d * 0.30f + bl * 0.20f + fg * 0.15f;
 
-            // Richer, more varied greens with earthy undertones
+            // Rich natural greens with earthy patches and dry grass hints
             int i = (y * size + x) * 4;
-            float warmth = n * 0.15f; // Slight warm patches
-            pixels[i + 0] = (byte)Math.Clamp(30 + combined * 50 + warmth * 40, 0, 255);
-            pixels[i + 1] = (byte)Math.Clamp(50 + combined * 115, 0, 255);
-            pixels[i + 2] = (byte)Math.Clamp(10 + combined * 22, 0, 255);
+            float warmth = n * 0.18f;
+            float dryPatch = bl > 0.7f ? (bl - 0.7f) * 0.5f : 0f;
+            pixels[i + 0] = (byte)Math.Clamp(25 + combined * 45 + warmth * 50 + dryPatch * 60, 0, 255);
+            pixels[i + 1] = (byte)Math.Clamp(45 + combined * 120 - dryPatch * 20, 0, 255);
+            pixels[i + 2] = (byte)Math.Clamp(8 + combined * 18 + dryPatch * 8, 0, 255);
             pixels[i + 3] = 255;
         }
         return pixels;
@@ -83,12 +84,13 @@ public static class TextureGenerator
             float vn = veins.GetNoise(x, y) * 0.5f + 0.5f;
             float combined = n * 0.35f + cr * 0.30f + rough * 0.25f + vn * 0.10f;
 
-            // Warmer stone with slight color variation (like Gothic 3 mountain stone)
+            // Natural stone with mineral veins and weathering (Gothic 3 style)
             int i = (y * size + x) * 4;
-            float warmShift = vn * 8f;
-            byte rVal = (byte)Math.Clamp(88 + combined * 92 + warmShift, 0, 255);
-            byte gVal = (byte)Math.Clamp(84 + combined * 88, 0, 255);
-            byte bVal = (byte)Math.Clamp(78 + combined * 82, 0, 255);
+            float warmShift = vn * 10f;
+            float crackDarken = cr < 0.25f ? (0.25f - cr) * 0.4f : 0f; // Dark crack lines
+            byte rVal = (byte)Math.Clamp(85 + combined * 95 + warmShift - crackDarken * 60, 0, 255);
+            byte gVal = (byte)Math.Clamp(82 + combined * 90 - crackDarken * 55, 0, 255);
+            byte bVal = (byte)Math.Clamp(76 + combined * 85 - crackDarken * 50, 0, 255);
             pixels[i + 0] = rVal;
             pixels[i + 1] = gVal;
             pixels[i + 2] = bVal;

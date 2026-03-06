@@ -16,29 +16,29 @@ public static class HighResPlayerMeshBuilder
     private const int LimbSeg = 16;   // Limb segments
     private const int DetailSeg = 12; // Detail elements
 
-    // ── Skin tones ──
-    private const float SkR = 0.72f, SkG = 0.58f, SkB = 0.48f;
-    private const float SkDR = 0.68f, SkDG = 0.52f, SkDB = 0.42f; // shadow skin
+    // ── Skin tones (warm peach — distinct from armor for shader material classification) ──
+    private const float SkR = 0.76f, SkG = 0.56f, SkB = 0.42f;
+    private const float SkDR = 0.70f, SkDG = 0.50f, SkDB = 0.36f; // shadow skin
 
-    // ── Armor layers ──
-    private const float PlR = 0.52f, PlG = 0.48f, PlB = 0.44f;   // plate steel
-    private const float PlDR = 0.42f, PlDG = 0.38f, PlDB = 0.34f; // dark steel
-    private const float ChR = 0.38f, ChG = 0.36f, ChB = 0.34f;   // chainmail
-    private const float GdR = 0.78f, GdG = 0.62f, GdB = 0.18f;   // gold trim
+    // ── Armor layers (cool steel — low warmth for metal shader detection) ──
+    private const float PlR = 0.48f, PlG = 0.48f, PlB = 0.50f;   // plate steel (slightly blue-cool)
+    private const float PlDR = 0.38f, PlDG = 0.38f, PlDB = 0.40f; // dark steel
+    private const float ChR = 0.34f, ChG = 0.34f, ChB = 0.36f;   // chainmail (neutral cool)
+    private const float GdR = 0.82f, GdG = 0.65f, GdB = 0.15f;   // gold trim (warm metallic)
 
-    // ── Leather ──
-    private const float LtR = 0.42f, LtG = 0.30f, LtB = 0.18f;
-    private const float LtDR = 0.34f, LtDG = 0.24f, LtDB = 0.14f; // dark leather
+    // ── Leather (warm brown — medium luminance for leather shader detection) ──
+    private const float LtR = 0.45f, LtG = 0.28f, LtB = 0.14f;
+    private const float LtDR = 0.36f, LtDG = 0.22f, LtDB = 0.10f; // dark leather
 
-    // ── Fabric / Cloth ──
-    private const float CkR = 0.14f, CkG = 0.18f, CkB = 0.10f;   // cloak green
-    private const float PnR = 0.30f, PnG = 0.22f, PnB = 0.14f;   // pants
+    // ── Fabric / Cloth (dark muted — low luminance for fabric shader detection) ──
+    private const float CkR = 0.12f, CkG = 0.16f, CkB = 0.08f;   // cloak dark green
+    private const float PnR = 0.28f, PnG = 0.20f, PnB = 0.12f;   // pants
 
-    // ── Boots ──
-    private const float BtR = 0.24f, BtG = 0.16f, BtB = 0.10f;
+    // ── Boots (dark leather) ──
+    private const float BtR = 0.22f, BtG = 0.14f, BtB = 0.08f;
 
     // ── Hair ──
-    private const float HrR = 0.22f, HrG = 0.14f, HrB = 0.08f;
+    private const float HrR = 0.20f, HrG = 0.12f, HrB = 0.06f;
 
     public static MeshData GenerateData()
     {

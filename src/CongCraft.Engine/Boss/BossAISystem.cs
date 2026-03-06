@@ -4,7 +4,7 @@ using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
-using CongCraft.Engine.Terrain;
+using CongCraft.Engine.Level;
 using CongCraft.Engine.VFX;
 using Silk.NET.OpenGL;
 using Shader = CongCraft.Engine.Rendering.Shader;
@@ -21,7 +21,7 @@ public sealed class BossAISystem : ISystem
 
     private World _world = null!;
     private GL _gl = null!;
-    private TerrainGenerator _terrainGen = null!;
+    private LevelTerrainGenerator _terrainGen = null!;
     private Mesh _bossMesh = null!;
     private Shader _basicShader = null!;
     private MaterialTextures? _materialTextures;
@@ -33,7 +33,7 @@ public sealed class BossAISystem : ISystem
     {
         _gl = services.Get<GL>();
         _world = services.Get<World>();
-        _terrainGen = services.Get<TerrainGenerator>();
+        _terrainGen = services.Get<LevelTerrainGenerator>();
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _materialTextures = services.Get<MaterialTextures>();
 

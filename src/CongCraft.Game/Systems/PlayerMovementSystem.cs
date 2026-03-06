@@ -5,7 +5,7 @@ using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
 using CongCraft.Engine.Input;
 using CongCraft.Engine.Rendering;
-using CongCraft.Engine.Terrain;
+using CongCraft.Engine.Level;
 using Silk.NET.Input;
 
 namespace CongCraft.Game.Systems;
@@ -19,7 +19,7 @@ public sealed class PlayerMovementSystem : ISystem
 
     private World _world = null!;
     private Camera _camera = null!;
-    private TerrainGenerator _terrainGen = null!;
+    private LevelTerrainGenerator _terrainGen = null!;
     private float _mouseSensitivity = 0.15f;
     private float _footstepTimer;
 
@@ -27,7 +27,7 @@ public sealed class PlayerMovementSystem : ISystem
     {
         _world = services.Get<World>();
         _camera = services.Get<Camera>();
-        _terrainGen = services.Get<TerrainGenerator>();
+        _terrainGen = services.Get<LevelTerrainGenerator>();
     }
 
     public void Update(GameTime time)

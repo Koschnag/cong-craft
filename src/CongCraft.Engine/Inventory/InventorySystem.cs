@@ -7,7 +7,7 @@ using CongCraft.Engine.Input;
 using CongCraft.Engine.Magic;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
-using CongCraft.Engine.Terrain;
+using CongCraft.Engine.Level;
 using Silk.NET.Input;
 using Silk.NET.OpenGL;
 using Shader = CongCraft.Engine.Rendering.Shader;
@@ -24,7 +24,7 @@ public sealed class InventorySystem : ISystem
 
     private World _world = null!;
     private GL _gl = null!;
-    private TerrainGenerator _terrainGen = null!;
+    private LevelTerrainGenerator _terrainGen = null!;
     private Mesh _lootMesh = null!;
     private readonly Dictionary<ItemType, Mesh> _lootMeshes = new();
     private Shader _basicShader = null!;
@@ -92,7 +92,7 @@ public sealed class InventorySystem : ISystem
     {
         _gl = services.Get<GL>();
         _world = services.Get<World>();
-        _terrainGen = services.Get<TerrainGenerator>();
+        _terrainGen = services.Get<LevelTerrainGenerator>();
         _lootMesh = PrimitiveMeshBuilder.CreateCube(_gl, 0.3f, 0.9f, 0.8f, 0.2f);
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _materialTextures = services.Get<MaterialTextures>();

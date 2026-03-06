@@ -3,7 +3,7 @@ using CongCraft.Engine.Audio;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
-using CongCraft.Engine.Terrain;
+using CongCraft.Engine.Level;
 
 namespace CongCraft.Engine.Combat;
 
@@ -15,13 +15,13 @@ public sealed class EnemyAISystem : ISystem
     public int Priority => 20; // After combat, before physics
 
     private World _world = null!;
-    private TerrainGenerator _terrainGen = null!;
+    private LevelTerrainGenerator _terrainGen = null!;
     private Random _rng = new(12345);
 
     public void Initialize(ServiceLocator services)
     {
         _world = services.Get<World>();
-        _terrainGen = services.Get<TerrainGenerator>();
+        _terrainGen = services.Get<LevelTerrainGenerator>();
     }
 
     public void Update(GameTime time)
