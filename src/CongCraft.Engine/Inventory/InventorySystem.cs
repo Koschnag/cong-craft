@@ -1,4 +1,5 @@
 using System.Numerics;
+using CongCraft.Engine.Audio;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
@@ -236,6 +237,9 @@ public sealed class InventorySystem : ISystem
             if (inventory.TryAdd(loot.Item, loot.Quantity))
                 toPickup.Add(entity);
         }
+
+        if (toPickup.Count > 0)
+            AudioSystem.Instance?.PlaySfx(SfxType.ItemPickup);
 
         foreach (var entity in toPickup)
             _world.DestroyEntity(entity);

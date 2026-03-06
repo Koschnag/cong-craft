@@ -1,3 +1,5 @@
+using System.Numerics;
+using CongCraft.Engine.Combat;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
@@ -175,6 +177,10 @@ public sealed class AudioSystem : ISystem
             // Paused keeps the current gameplay music (just quieter)
             if (targetMode == GameMode.Paused)
                 targetMode = GameMode.Playing;
+
+            // Switch to combat music when enemies are nearby
+            if (targetMode == GameMode.Playing && IsPlayerInCombat())
+                targetMode = GameMode.Combat;
         }
 
         if (targetMode != _currentPlaying)
@@ -215,8 +221,47 @@ public sealed class AudioSystem : ISystem
     {
         GameMode.MainMenu => _menuSource,
         GameMode.Playing => _explorationSource,
+        GameMode.Combat => _combatSource,
         _ => _explorationSource
     };
+
+    private const float CombatDetectionRange = 25f;
+
+    private bool IsPlayerInCombat()
+    {
+        if (_world == null) return false;
+
+        Vector3 playerPos = default;
+        bool foundPlayer = false;
+
+        foreach (var (entity, _, transform) in _world.Query<PlayerComponent, TransformComponent>())
+        {
+            playerPos = transform.Position;
+            foundPlayer = true;
+            break;
+        }
+
+        if (!foundPlayer) return false;
+
+        foreach (var (entity, enemy, health, transform) in QueryAliveEnemies())
+        {
+            float dist = Vector3.Distance(playerPos, transform.Position);
+            if (dist < CombatDetectionRange)
+                return true;
+        }
+
+        return false;
+    }
+
+    private IEnumerable<(Entity, EnemyComponent, HealthComponent, TransformComponent)> QueryAliveEnemies()
+    {
+        foreach (var (entity, enemy, health) in _world!.Query<EnemyComponent, HealthComponent>())
+        {
+            if (!health.IsAlive) continue;
+            if (_world.HasComponent<TransformComponent>(entity))
+                yield return (entity, enemy, health, _world.GetComponent<TransformComponent>(entity));
+        }
+    }
 
     private void StopSource(uint source)
     {

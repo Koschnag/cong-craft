@@ -35,5 +35,6 @@ public enum GameMode
 {
     MainMenu,
     Playing,
-    Paused
+    Paused,
+    Combat
 }
