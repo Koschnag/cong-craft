@@ -162,28 +162,29 @@ void main()
     stoneSample = mix(stoneSample * (0.6 + stoneDetail.r * 0.8), stoneSample, detailBlend);
 
     // Height-based blending with smooth transitions (5 layers)
+    // Terrain amplitude is 20 so heights range from ~-20 to ~+20
     vec3 baseColor;
-    if (Height < 0.5)
-        baseColor = mix(pathSample, dirtSample, smoothstep(-1.0, 0.5, Height));
-    else if (Height < 2.0)
-        baseColor = mix(dirtSample, grassSample, smoothstep(0.5, 2.0, Height));
-    else if (Height < 8.0)
+    if (Height < -8.0)
+        baseColor = mix(pathSample, dirtSample, smoothstep(-14.0, -8.0, Height));
+    else if (Height < -2.0)
+        baseColor = mix(dirtSample, grassSample, smoothstep(-8.0, -2.0, Height));
+    else if (Height < 10.0)
         baseColor = grassSample;
-    else if (Height < 14.0)
-        baseColor = mix(grassSample, stoneSample, smoothstep(8.0, 14.0, Height));
+    else if (Height < 16.0)
+        baseColor = mix(grassSample, stoneSample, smoothstep(10.0, 16.0, Height));
     else
-        baseColor = mix(stoneSample, snowSample, smoothstep(14.0, 22.0, Height));
+        baseColor = mix(stoneSample, snowSample, smoothstep(16.0, 22.0, Height));
 
     // Steep slopes get stone texture
     baseColor = mix(baseColor, stoneSample, smoothstep(0.35, 0.65, slope));
 
     // Snow accumulation on flat surfaces at high altitude
     float flatness = max(dot(norm, vec3(0.0, 1.0, 0.0)), 0.0);
-    float snowAccum = smoothstep(10.0, 16.0, Height) * smoothstep(0.2, 0.8, flatness);
+    float snowAccum = smoothstep(16.0, 20.0, Height) * smoothstep(0.2, 0.8, flatness);
     baseColor = mix(baseColor, snowSample, snowAccum);
 
     // Path blending near low flat areas (natural paths in valleys)
-    float pathWeight = smoothstep(2.5, 1.5, Height) * smoothstep(0.1, 0.0, slope);
+    float pathWeight = smoothstep(-4.0, -8.0, Height) * smoothstep(0.1, 0.0, slope);
     baseColor = mix(baseColor, pathSample, pathWeight * 0.6);
 
     // Half-Lambert diffuse for softer terrain shading (Gothic 3 style)
@@ -655,8 +656,10 @@ uniform vec3 uPosition;
 uniform float uSize;
 uniform vec3 uCameraRight;
 uniform vec3 uCameraUp;
+out vec2 vQuadCoord;
 void main()
 {
+    vQuadCoord = aQuad + vec2(0.5);
     vec3 worldPos = uPosition
         + uCameraRight * aQuad.x * uSize
         + uCameraUp * aQuad.y * uSize;
@@ -666,11 +669,12 @@ void main()
 
     public const string ParticleFragment = @"
 #version 330 core
+in vec2 vQuadCoord;
 uniform vec4 uColor;
 out vec4 FragColor;
 void main()
 {
-    vec2 center = gl_PointCoord - vec2(0.5);
+    vec2 center = vQuadCoord - vec2(0.5);
     float dist = length(center) * 2.0;
     float alpha = uColor.a * smoothstep(1.0, 0.3, dist);
     FragColor = vec4(uColor.rgb, alpha);

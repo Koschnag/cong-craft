@@ -172,6 +172,56 @@ public sealed class TextRenderer : IDisposable
         return maxLineLen * BitmapFont.LogicalWidth * scale;
     }
 
+    /// <summary>
+    /// Word-wrap text to fit within maxWidthPx at the given scale.
+    /// Inserts '\n' at word boundaries so lines don't exceed the width.
+    /// </summary>
+    public static string WrapText(string text, float maxWidthPx, float scale)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        float charW = BitmapFont.LogicalWidth * scale;
+        int maxCharsPerLine = Math.Max(1, (int)(maxWidthPx / charW));
+
+        var result = new System.Text.StringBuilder(text.Length + 20);
+        int lineLen = 0;
+
+        var words = text.Split(' ');
+        for (int w = 0; w < words.Length; w++)
+        {
+            string word = words[w];
+
+            // Handle explicit newlines within a word
+            if (word.Contains('\n'))
+            {
+                var parts = word.Split('\n');
+                for (int p = 0; p < parts.Length; p++)
+                {
+                    if (p > 0) { result.Append('\n'); lineLen = 0; }
+                    if (lineLen + parts[p].Length > maxCharsPerLine && lineLen > 0)
+                    {
+                        result.Append('\n');
+                        lineLen = 0;
+                    }
+                    if (lineLen > 0) { result.Append(' '); lineLen++; }
+                    result.Append(parts[p]);
+                    lineLen += parts[p].Length;
+                }
+                continue;
+            }
+
+            int needed = (lineLen > 0 ? 1 : 0) + word.Length;
+            if (lineLen + needed > maxCharsPerLine && lineLen > 0)
+            {
+                result.Append('\n');
+                lineLen = 0;
+            }
+            if (lineLen > 0) { result.Append(' '); lineLen++; }
+            result.Append(word);
+            lineLen += word.Length;
+        }
+        return result.ToString();
+    }
+
     public void Dispose()
     {
         _gl.DeleteVertexArray(_vao);

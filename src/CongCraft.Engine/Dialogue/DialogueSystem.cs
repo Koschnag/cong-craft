@@ -1,4 +1,5 @@
 using System.Numerics;
+using CongCraft.Engine.Audio;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
@@ -103,6 +104,7 @@ public sealed class DialogueSystem : ISystem
             // Select choice with Enter
             if (input.IsKeyPressed(Key.Enter))
             {
+                AudioSystem.Instance?.PlaySfx(SfxType.Click);
                 var choice = node.Choices[_dialogueState.SelectedChoice];
 
                 // Check requirements and process rewards
@@ -115,6 +117,7 @@ public sealed class DialogueSystem : ISystem
             // No choices: advance or end with Enter
             if (input.IsKeyPressed(Key.Enter))
             {
+                AudioSystem.Instance?.PlaySfx(SfxType.Click);
                 if (node.NextNodeId != null)
                     _dialogueState.GoToNode(node.NextNodeId);
                 else

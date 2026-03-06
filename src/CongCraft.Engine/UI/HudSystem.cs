@@ -413,13 +413,21 @@ public sealed class HudSystem : ISystem
         _hudShader.SetUniform("uProjection", ortho);
         DrawRect(new HudElement(new Vector2(panelX + 10, panelY + panelH - 28), new Vector2(panelW - 20, 2), DarkGold));
 
-        // Dialogue text
-        _textRenderer.DrawText(node.Text ?? "", panelX + 15, panelY + panelH - 50, 1.5f, DarkInk, ortho);
+        // Dialogue text (word-wrapped to fit panel)
+        float textScale = 1.5f;
+        float textAreaW = panelW - 30f;
+        string wrappedText = TextRenderer.WrapText(node.Text ?? "", textAreaW, textScale);
+        _textRenderer.DrawText(wrappedText, panelX + 15, panelY + panelH - 50, textScale, DarkInk, ortho);
+
+        // Count text lines to position choices below the text
+        int textLines = 1;
+        foreach (char c in wrappedText) if (c == '\n') textLines++;
+        float textBottomY = panelY + panelH - 50 - textLines * (BitmapFont.LogicalHeight * textScale + 2 * textScale);
 
         // Choices
         if (node.Choices.Count > 0)
         {
-            float choiceY = panelY + panelH - 80;
+            float choiceY = textBottomY - 8;
             for (int i = 0; i < node.Choices.Count; i++)
             {
                 bool selected = i == state.SelectedChoice;
@@ -434,7 +442,8 @@ public sealed class HudSystem : ISystem
                     DrawRect(new HudElement(new Vector2(panelX + 14, choiceY - i * 28 + 7), new Vector2(5, 10), GoldColor));
                 }
 
-                _textRenderer.DrawText(node.Choices[i].Text, panelX + 30, choiceY - i * 28 + 5, 1.5f,
+                string wrappedChoice = TextRenderer.WrapText(node.Choices[i].Text, textAreaW - 30f, textScale);
+                _textRenderer.DrawText(wrappedChoice, panelX + 30, choiceY - i * 28 + 5, textScale,
                     selected ? CreamText : new Vector4(0.5f, 0.45f, 0.35f, 0.8f), ortho);
             }
         }
