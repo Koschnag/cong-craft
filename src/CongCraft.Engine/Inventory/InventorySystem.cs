@@ -27,6 +27,7 @@ public sealed class InventorySystem : ISystem
     private Mesh _lootMesh = null!;
     private readonly Dictionary<ItemType, Mesh> _lootMeshes = new();
     private Shader _basicShader = null!;
+    private MaterialTextures? _materialTextures;
     private Random _rng = new(99999);
 
     // Track which enemies already dropped loot (by entity ID)
@@ -93,6 +94,7 @@ public sealed class InventorySystem : ISystem
         _terrainGen = services.Get<TerrainGenerator>();
         _lootMesh = PrimitiveMeshBuilder.CreateCube(_gl, 0.3f, 0.9f, 0.8f, 0.2f);
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
+        _materialTextures = services.Get<MaterialTextures>();
 
         // Pre-create type-specific loot meshes for visual variety
         _lootMeshes[ItemType.Weapon] = LootMeshBuilder.Create(_gl, ItemType.Weapon, 0.7f, 0.7f, 0.75f);

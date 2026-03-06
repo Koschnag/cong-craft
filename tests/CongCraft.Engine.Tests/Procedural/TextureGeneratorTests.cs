@@ -57,4 +57,55 @@ public class TextureGeneratorTests
         var p2 = TextureGenerator.GenerateGrassPixels(size: 32, seed: 42);
         Assert.Equal(p1, p2);
     }
+
+    [Theory]
+    [InlineData(nameof(TextureGenerator.GenerateMetalPixels))]
+    [InlineData(nameof(TextureGenerator.GenerateLeatherPixels))]
+    [InlineData(nameof(TextureGenerator.GenerateSkinPixels))]
+    [InlineData(nameof(TextureGenerator.GenerateWoodPixels))]
+    [InlineData(nameof(TextureGenerator.GenerateFabricPixels))]
+    [InlineData(nameof(TextureGenerator.GenerateSnowPixels))]
+    [InlineData(nameof(TextureGenerator.GeneratePathPixels))]
+    public void MaterialTexture_CorrectSize(string methodName)
+    {
+        int size = 64;
+        var pixels = methodName switch
+        {
+            nameof(TextureGenerator.GenerateMetalPixels) => TextureGenerator.GenerateMetalPixels(size),
+            nameof(TextureGenerator.GenerateLeatherPixels) => TextureGenerator.GenerateLeatherPixels(size),
+            nameof(TextureGenerator.GenerateSkinPixels) => TextureGenerator.GenerateSkinPixels(size),
+            nameof(TextureGenerator.GenerateWoodPixels) => TextureGenerator.GenerateWoodPixels(size),
+            nameof(TextureGenerator.GenerateFabricPixels) => TextureGenerator.GenerateFabricPixels(size),
+            nameof(TextureGenerator.GenerateSnowPixels) => TextureGenerator.GenerateSnowPixels(size),
+            nameof(TextureGenerator.GeneratePathPixels) => TextureGenerator.GeneratePathPixels(size),
+            _ => throw new ArgumentException($"Unknown texture: {methodName}")
+        };
+        Assert.Equal(size * size * 4, pixels.Length);
+    }
+
+    [Theory]
+    [InlineData(nameof(TextureGenerator.GenerateMetalPixels))]
+    [InlineData(nameof(TextureGenerator.GenerateLeatherPixels))]
+    [InlineData(nameof(TextureGenerator.GenerateSkinPixels))]
+    [InlineData(nameof(TextureGenerator.GenerateWoodPixels))]
+    [InlineData(nameof(TextureGenerator.GenerateFabricPixels))]
+    [InlineData(nameof(TextureGenerator.GenerateSnowPixels))]
+    [InlineData(nameof(TextureGenerator.GeneratePathPixels))]
+    public void MaterialTexture_AllAlphaOpaque(string methodName)
+    {
+        int size = 32;
+        var pixels = methodName switch
+        {
+            nameof(TextureGenerator.GenerateMetalPixels) => TextureGenerator.GenerateMetalPixels(size),
+            nameof(TextureGenerator.GenerateLeatherPixels) => TextureGenerator.GenerateLeatherPixels(size),
+            nameof(TextureGenerator.GenerateSkinPixels) => TextureGenerator.GenerateSkinPixels(size),
+            nameof(TextureGenerator.GenerateWoodPixels) => TextureGenerator.GenerateWoodPixels(size),
+            nameof(TextureGenerator.GenerateFabricPixels) => TextureGenerator.GenerateFabricPixels(size),
+            nameof(TextureGenerator.GenerateSnowPixels) => TextureGenerator.GenerateSnowPixels(size),
+            nameof(TextureGenerator.GeneratePathPixels) => TextureGenerator.GeneratePathPixels(size),
+            _ => throw new ArgumentException($"Unknown texture: {methodName}")
+        };
+        for (int i = 3; i < pixels.Length; i += 4)
+            Assert.Equal(255, pixels[i]);
+    }
 }

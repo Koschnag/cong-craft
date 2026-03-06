@@ -24,6 +24,7 @@ public sealed class BossAISystem : ISystem
     private TerrainGenerator _terrainGen = null!;
     private Mesh _bossMesh = null!;
     private Shader _basicShader = null!;
+    private MaterialTextures? _materialTextures;
     private ParticleEmitter _bossVfx = null!;
     private bool _spawned;
     private Random _rng = new(888);
@@ -34,6 +35,7 @@ public sealed class BossAISystem : ISystem
         _world = services.Get<World>();
         _terrainGen = services.Get<TerrainGenerator>();
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
+        _materialTextures = services.Get<MaterialTextures>();
 
         // Boss mesh: larger humanoid from boxes
         _bossMesh = PrimitiveMeshBuilder.CreateCube(_gl, 1f, 0.4f, 0.2f, 0.3f);

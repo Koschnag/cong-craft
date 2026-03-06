@@ -20,6 +20,7 @@ public sealed class RenderSystem : ISystem, IShadowCaster
     private LightingData _lighting = null!;
     private Shader _basicShader = null!;
     private ShadowMap? _shadowMap;
+    private MaterialTextures? _materialTextures;
 
     public Shader BasicShader => _basicShader;
 
@@ -30,6 +31,7 @@ public sealed class RenderSystem : ISystem, IShadowCaster
         _camera = services.Get<Camera>();
         _lighting = services.Get<LightingData>();
         _shadowMap = services.Get<ShadowMap>();
+        _materialTextures = services.Get<MaterialTextures>();
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
     }
 
@@ -55,6 +57,7 @@ public sealed class RenderSystem : ISystem, IShadowCaster
         _basicShader.SetUniform("uCameraPos", _camera.Position);
         _lighting.ApplyToShader(_basicShader);
         _shadowMap?.BindToShader(_basicShader, 0);
+        _materialTextures?.BindToShader(_basicShader);
 
         foreach (var (entity, meshComp) in _world.Query<MeshRendererComponent>())
         {

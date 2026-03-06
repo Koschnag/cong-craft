@@ -25,7 +25,7 @@ public sealed class TerrainSystem : ISystem, IShadowCaster
     private LightingData _lighting = null!;
     private ShadowMap? _shadowMap;
 
-    private uint _grassTex, _stoneTex, _dirtTex;
+    private uint _grassTex, _stoneTex, _dirtTex, _snowTex, _pathTex;
 
     private readonly int _viewDistance;
     private readonly Dictionary<(int, int), Entity> _loadedChunks = new();
@@ -57,6 +57,12 @@ public sealed class TerrainSystem : ISystem, IShadowCaster
 
         var dirtPixels = TextureGenerator.GenerateDirtPixels();
         _dirtTex = TextureGenerator.UploadTexture(_gl, dirtPixels, 512, 512);
+
+        var snowPixels = TextureGenerator.GenerateSnowPixels();
+        _snowTex = TextureGenerator.UploadTexture(_gl, snowPixels, 512, 512);
+
+        var pathPixels = TextureGenerator.GeneratePathPixels();
+        _pathTex = TextureGenerator.UploadTexture(_gl, pathPixels, 512, 512);
 
         // Load initial chunks around origin
         LoadChunksAround(0, 0);
@@ -101,8 +107,16 @@ public sealed class TerrainSystem : ISystem, IShadowCaster
         _gl.BindTexture(TextureTarget.Texture2D, _dirtTex);
         _terrainShader.SetUniform("uDirtTex", 2);
 
+        _gl.ActiveTexture(TextureUnit.Texture3);
+        _gl.BindTexture(TextureTarget.Texture2D, _snowTex);
+        _terrainShader.SetUniform("uSnowTex", 3);
+
+        _gl.ActiveTexture(TextureUnit.Texture4);
+        _gl.BindTexture(TextureTarget.Texture2D, _pathTex);
+        _terrainShader.SetUniform("uPathTex", 4);
+
         // Bind shadow map
-        _shadowMap?.BindToShader(_terrainShader, 3);
+        _shadowMap?.BindToShader(_terrainShader, 5);
 
         foreach (var (entity, chunk) in _world.Query<TerrainChunkComponent>())
         {
@@ -169,5 +183,7 @@ public sealed class TerrainSystem : ISystem, IShadowCaster
         _gl.DeleteTexture(_grassTex);
         _gl.DeleteTexture(_stoneTex);
         _gl.DeleteTexture(_dirtTex);
+        _gl.DeleteTexture(_snowTex);
+        _gl.DeleteTexture(_pathTex);
     }
 }

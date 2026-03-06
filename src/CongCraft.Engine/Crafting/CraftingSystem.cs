@@ -26,6 +26,7 @@ public sealed class CraftingSystem : ISystem
     private TerrainGenerator _terrainGen = null!;
     private Mesh _stationMesh = null!;
     private Shader _basicShader = null!;
+    private MaterialTextures? _materialTextures;
     private bool _stationsSpawned;
 
     // Station placement positions (near NPCs)
@@ -42,6 +43,7 @@ public sealed class CraftingSystem : ISystem
         _world = services.Get<World>();
         _terrainGen = services.Get<TerrainGenerator>();
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
+        _materialTextures = services.Get<MaterialTextures>();
         _stationMesh = PrimitiveMeshBuilder.CreateCube(_gl, 0.8f, 0.55f, 0.4f, 0.25f);
 
         _world.SetSingleton(new CraftingState());
