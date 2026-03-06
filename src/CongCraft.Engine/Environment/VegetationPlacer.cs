@@ -23,6 +23,7 @@ public sealed class VegetationPlacer : ISystem
     private LightingData _lighting = null!;
     private TerrainGenerator _terrainGen = null!;
     private Shader _basicShader = null!;
+    private MaterialTextures? _materialTextures;
     private Mesh _treeMesh = null!;
     private Mesh _rockMesh = null!;
     private Mesh _ruinPillarMesh = null!;
@@ -42,6 +43,7 @@ public sealed class VegetationPlacer : ISystem
         _lighting = services.Get<LightingData>();
         _terrainGen = services.Get<TerrainGenerator>();
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
+        _materialTextures = services.Get<MaterialTextures>();
         _treeMesh = TreeMeshBuilder.Create(_gl);
         _rockMesh = RockMeshBuilder.Create(_gl);
         _ruinPillarMesh = RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.Pillar, 11);
@@ -227,6 +229,7 @@ public sealed class VegetationPlacer : ISystem
         _basicShader.SetUniform("uProjection", _camera.ProjectionMatrix);
         _basicShader.SetUniform("uCameraPos", _camera.Position);
         _lighting.ApplyToShader(_basicShader);
+        _materialTextures?.BindToShader(_basicShader);
 
         foreach (var (entity, meshComp) in _world.Query<MeshRendererComponent>())
         {

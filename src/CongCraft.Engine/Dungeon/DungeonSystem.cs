@@ -24,6 +24,7 @@ public sealed class DungeonSystem : ISystem
     private Camera _camera = null!;
     private LightingData _lighting = null!;
     private Shader _dungeonShader = null!;
+    private MaterialTextures? _materialTextures;
 
     private DungeonLayout? _currentLayout;
     private Mesh? _floorMesh;
@@ -61,6 +62,7 @@ public sealed class DungeonSystem : ISystem
             ? ShaderSources.BasicFragmentPointLights
             : ShaderSources.BasicFragment);
 
+        _materialTextures = services.Get<MaterialTextures>();
         services.Register(this);
     }
 
@@ -290,6 +292,7 @@ public sealed class DungeonSystem : ISystem
         _dungeonShader.SetUniform("uProjection", _camera.ProjectionMatrix);
         _dungeonShader.SetUniform("uCameraPos", _camera.Position);
         _lighting.ApplyToShader(_dungeonShader);
+        _materialTextures?.BindToShader(_dungeonShader);
 
         // Apply point lights if available
         if (_world.TryGetSingleton<InputState>(out _)) // Just checking world is valid

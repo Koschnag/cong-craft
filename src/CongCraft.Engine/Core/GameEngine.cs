@@ -29,6 +29,7 @@ public sealed class GameEngine : IDisposable
 
     private ShadowMap? _shadowMap;
     private PostProcessing? _postProcessing;
+    private MaterialTextures? _materialTextures;
 
     public World World => _world;
     public ServiceLocator Services => _services;
@@ -119,6 +120,10 @@ public sealed class GameEngine : IDisposable
         _postProcessing = new PostProcessing(_gl, _window.Size.X, _window.Size.Y);
         _services.Register(_postProcessing);
 
+        // Generate and upload procedural material textures for entity rendering
+        _materialTextures = new MaterialTextures(_gl);
+        _services.Register(_materialTextures);
+
         DevLog.Section("System Init");
         _systems.InitializeAll(_services);
 
@@ -170,6 +175,7 @@ public sealed class GameEngine : IDisposable
         _systems.Dispose();
         _shadowMap?.Dispose();
         _postProcessing?.Dispose();
+        _materialTextures?.Dispose();
     }
 
     public void Dispose()
@@ -177,5 +183,6 @@ public sealed class GameEngine : IDisposable
         _systems.Dispose();
         _shadowMap?.Dispose();
         _postProcessing?.Dispose();
+        _materialTextures?.Dispose();
     }
 }

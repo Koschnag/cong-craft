@@ -25,6 +25,7 @@ public sealed class EnemySpawner : ISystem
     private Mesh _skeletonMesh = null!;
     private Mesh _swordMesh = null!;
     private Shader _basicShader = null!;
+    private MaterialTextures? _materialTextures;
     private bool _initialSpawnDone;
 
     // Respawn tracking
@@ -40,6 +41,7 @@ public sealed class EnemySpawner : ISystem
         _skeletonMesh = EnemyMeshBuilder.CreateSkeleton(_gl);
         _swordMesh = SwordMeshBuilder.Create(_gl);
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
+        _materialTextures = services.Get<MaterialTextures>();
     }
 
     public void Update(GameTime time)

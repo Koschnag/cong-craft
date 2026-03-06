@@ -24,6 +24,7 @@ public sealed class TorchSystem : ISystem
     private PointLightData _pointLightData = null!;
     private Mesh _torchMesh = null!;
     private Shader _basicShader = null!;
+    private MaterialTextures? _materialTextures;
     private bool _spawned;
 
     private readonly List<ParticleEmitter> _fireEmitters = new();
@@ -38,6 +39,7 @@ public sealed class TorchSystem : ISystem
         _terrainGen = services.Get<TerrainGenerator>();
         _torchMesh = CreateTorchMesh();
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
+        _materialTextures = services.Get<MaterialTextures>();
 
         _pointLightData = new PointLightData();
         services.Register(_pointLightData);

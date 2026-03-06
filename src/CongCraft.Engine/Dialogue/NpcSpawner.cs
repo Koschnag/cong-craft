@@ -22,6 +22,7 @@ public sealed class NpcSpawner : ISystem
     private TerrainGenerator _terrainGen = null!;
     private readonly Dictionary<string, Mesh> _npcMeshes = new();
     private Shader _basicShader = null!;
+    private MaterialTextures? _materialTextures;
     private bool _spawned;
 
     public void Initialize(ServiceLocator services)
@@ -30,6 +31,7 @@ public sealed class NpcSpawner : ISystem
         _world = services.Get<World>();
         _terrainGen = services.Get<TerrainGenerator>();
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
+        _materialTextures = services.Get<MaterialTextures>();
     }
 
     public void Update(GameTime time)
