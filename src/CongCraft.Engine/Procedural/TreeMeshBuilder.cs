@@ -18,15 +18,15 @@ public static class TreeMeshBuilder
         int Segments = 14
     );
 
-    // Bark colors (warm brown, darker at base)
-    private const float BarkDR = 0.28f, BarkDG = 0.17f, BarkDB = 0.07f; // dark bark (base)
-    private const float BarkR = 0.35f, BarkG = 0.22f, BarkB = 0.10f;    // main bark
-    private const float BarkLR = 0.38f, BarkLG = 0.25f, BarkLB = 0.12f; // light bark (top)
+    // Bark colors (rich warm brown with lichen tones — wood shader picks these up)
+    private const float BarkDR = 0.24f, BarkDG = 0.14f, BarkDB = 0.06f; // dark bark (base, mossy)
+    private const float BarkR = 0.32f, BarkG = 0.20f, BarkB = 0.09f;    // main bark (warm brown)
+    private const float BarkLR = 0.36f, BarkLG = 0.24f, BarkLB = 0.11f; // light bark (sun-bleached)
 
-    // Foliage colors (varied greens)
-    private const float LeafDR = 0.07f, LeafDG = 0.22f, LeafDB = 0.04f; // dark leaves (interior/bottom)
-    private const float LeafR = 0.10f, LeafG = 0.30f, LeafB = 0.06f;    // main leaves
-    private const float LeafLR = 0.14f, LeafLG = 0.38f, LeafLB = 0.10f; // light leaves (top/sun)
+    // Foliage colors (rich varied greens — distinct hues for natural look)
+    private const float LeafDR = 0.05f, LeafDG = 0.18f, LeafDB = 0.03f; // dark leaves (deep shadow)
+    private const float LeafR = 0.08f, LeafG = 0.28f, LeafB = 0.05f;    // main leaves (forest green)
+    private const float LeafLR = 0.12f, LeafLG = 0.36f, LeafLB = 0.08f; // light leaves (sun-lit canopy)
 
     public static MeshData GenerateData(TreeParams? p = null)
     {

@@ -23,11 +23,11 @@ public sealed class EnemySpawner : ISystem
     private World _world = null!;
     private LevelTerrainGenerator _levelGen = null!;
     private LevelData? _levelData;
+    private AssetManager? _assets;
     private Mesh _enemyMesh = null!;
     private Mesh _skeletonMesh = null!;
     private Mesh _wolfMesh = null!;
     private Mesh _trollMesh = null!;
-    private Mesh _swordMesh = null!;
     private Shader _basicShader = null!;
     private MaterialTextures? _materialTextures;
     private bool _initialSpawnDone;
@@ -42,11 +42,17 @@ public sealed class EnemySpawner : ISystem
         _world = services.Get<World>();
         _levelGen = services.Get<LevelTerrainGenerator>();
         services.TryGet(out _levelData);
-        _enemyMesh = HighResEnemyMeshBuilder.Create(_gl);
-        _skeletonMesh = HighResEnemyMeshBuilder.CreateSkeleton(_gl);
-        _wolfMesh = HighResEnemyMeshBuilder.CreateWolf(_gl);
-        _trollMesh = HighResEnemyMeshBuilder.CreateTroll(_gl);
-        _swordMesh = SwordMeshBuilder.Create(_gl);
+        services.TryGet(out _assets);
+
+        // Load from OBJ assets if available, otherwise fall back to procedural
+        _enemyMesh = _assets?.LoadOrGenerate("enemy_bandit", HighResEnemyMeshBuilder.GenerateData)
+            ?? HighResEnemyMeshBuilder.Create(_gl);
+        _skeletonMesh = _assets?.LoadOrGenerate("enemy_skeleton", HighResEnemyMeshBuilder.GenerateSkeletonData)
+            ?? HighResEnemyMeshBuilder.CreateSkeleton(_gl);
+        _wolfMesh = _assets?.LoadOrGenerate("enemy_wolf", HighResEnemyMeshBuilder.GenerateWolfData)
+            ?? HighResEnemyMeshBuilder.CreateWolf(_gl);
+        _trollMesh = _assets?.LoadOrGenerate("enemy_troll", HighResEnemyMeshBuilder.GenerateTrollData)
+            ?? HighResEnemyMeshBuilder.CreateTroll(_gl);
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _materialTextures = services.Get<MaterialTextures>();
     }
@@ -219,7 +225,6 @@ public sealed class EnemySpawner : ISystem
         _skeletonMesh.Dispose();
         _wolfMesh.Dispose();
         _trollMesh.Dispose();
-        _swordMesh.Dispose();
         _basicShader.Dispose();
     }
 

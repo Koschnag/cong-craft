@@ -548,6 +548,121 @@ public static class ProceduralMusic
         return data;
     }
 
+    // ─── Voice Synthesis (AI-style procedural speech) ──────────────────
+
+    /// <summary>
+    /// Generates a procedural voice line for NPC dialogue.
+    /// Uses formant synthesis to produce speech-like sounds.
+    /// pitch: 0.5 = deep male, 1.0 = normal, 1.5 = high female
+    /// textLength: approximate number of characters (affects duration)
+    /// </summary>
+    public static short[] GenerateVoiceLine(float pitch = 1.0f, int textLength = 40, int seed = 0)
+    {
+        float wordsPerSec = 3.0f;
+        float durationSec = Math.Max(0.5f, textLength / 5f / wordsPerSec);
+        int totalSamples = (int)(SampleRate * durationSec);
+        var data = new short[totalSamples];
+        var rng = new Random(seed);
+
+        // Formant frequencies for vowel-like sounds (A, E, I, O, U)
+        float[][] formants = {
+            new[] { 800f, 1200f, 2500f },  // A
+            new[] { 500f, 1800f, 2500f },  // E
+            new[] { 300f, 2300f, 3000f },  // I
+            new[] { 500f, 900f, 2500f },   // O
+            new[] { 350f, 600f, 2500f },   // U
+        };
+
+        float glottalFreq = 120f * pitch; // fundamental voice frequency
+        float syllableDuration = 0.12f + (float)rng.NextDouble() * 0.08f;
+
+        for (int i = 0; i < totalSamples; i++)
+        {
+            float t = (float)i / SampleRate;
+
+            // Syllable index and phase
+            int syllableIdx = (int)(t / syllableDuration);
+            float syllablePhase = (t % syllableDuration) / syllableDuration;
+
+            // Choose formant set based on syllable
+            int formantIdx = (syllableIdx + seed) % formants.Length;
+            var f = formants[formantIdx];
+
+            // Glottal pulse (voice source — buzzy waveform)
+            float glottal = 0f;
+            float gPhase = (t * glottalFreq) % 1f;
+            // Rosenberg glottal pulse approximation
+            if (gPhase < 0.4f)
+                glottal = 0.5f * (1f - MathF.Cos(gPhase / 0.4f * MathF.PI));
+            else if (gPhase < 0.6f)
+                glottal = 0.5f * (1f + MathF.Cos((gPhase - 0.4f) / 0.2f * MathF.PI));
+
+            // Apply pitch variation (natural speech prosody)
+            float pitchVar = 1.0f + 0.05f * MathF.Sin(t * 3f * MathF.Tau)
+                                  + 0.03f * MathF.Sin(t * 7f * MathF.Tau);
+            glottal *= pitchVar;
+
+            // Formant resonances
+            float voiced = 0f;
+            for (int fi = 0; fi < 3; fi++)
+            {
+                float freq = f[fi] * pitch;
+                float amp = 1.0f / (1f + fi * 0.5f);
+                // Bandwidth-modulated formant: narrower bandwidth = sharper resonance
+                float bwFactor = 1.0f + MathF.Sin(t * freq * 0.12f * MathF.Tau) * 0.15f;
+                voiced += MathF.Sin(t * freq * MathF.Tau) * amp * glottal * bwFactor;
+            }
+
+            // Consonant-like noise bursts at syllable boundaries
+            float consonant = 0f;
+            if (syllablePhase < 0.15f || syllablePhase > 0.85f)
+            {
+                float noise = (float)(rng.NextDouble() * 2 - 1);
+                float consEnv = syllablePhase < 0.15f
+                    ? MathF.Sin(syllablePhase / 0.15f * MathF.PI * 0.5f)
+                    : MathF.Sin((syllablePhase - 0.85f) / 0.15f * MathF.PI * 0.5f);
+                consonant = noise * 0.15f * consEnv;
+
+                // Sibilant (S/SH) on some syllables
+                if (syllableIdx % 3 == 0)
+                    consonant += MathF.Sin(t * 5000f * MathF.Tau) * noise * 0.05f * consEnv;
+            }
+
+            // Syllable amplitude envelope
+            float env = MathF.Sin(syllablePhase * MathF.PI);
+            // Add micro-pauses between words (every ~3-5 syllables)
+            int wordBoundary = 3 + (seed % 3);
+            if (syllableIdx % wordBoundary == wordBoundary - 1 && syllablePhase > 0.7f)
+                env *= MathF.Max(0f, 1f - (syllablePhase - 0.7f) * 5f);
+
+            float sample = (voiced * 0.4f + consonant) * env;
+
+            // Overall fade in/out
+            float fadeSamples = SampleRate * 0.1f;
+            float fadeIn = Math.Min(1f, i / fadeSamples);
+            float fadeOut = Math.Min(1f, (totalSamples - i) / fadeSamples);
+            sample *= fadeIn * fadeOut;
+
+            data[i] = (short)(Math.Clamp(sample, -0.95f, 0.95f) * short.MaxValue);
+        }
+        return data;
+    }
+
+    /// <summary>NPC greeting voice — warm, medium pitch.</summary>
+    public static short[] GenerateNpcGreetingSfx() => GenerateVoiceLine(1.0f, 30, 701);
+
+    /// <summary>NPC farewell voice — slightly lower pitch.</summary>
+    public static short[] GenerateNpcFarewellSfx() => GenerateVoiceLine(0.9f, 20, 702);
+
+    /// <summary>Female NPC voice — higher pitch.</summary>
+    public static short[] GenerateNpcFemaleVoiceSfx() => GenerateVoiceLine(1.3f, 35, 703);
+
+    /// <summary>Deep male voice (blacksmith, warrior).</summary>
+    public static short[] GenerateNpcDeepVoiceSfx() => GenerateVoiceLine(0.7f, 40, 704);
+
+    /// <summary>Merchant haggling voice.</summary>
+    public static short[] GenerateNpcMerchantVoiceSfx() => GenerateVoiceLine(1.1f, 25, 705);
+
     // ─── Ambient Loops ──────────────────────────────────────────────────
 
     /// <summary>Procedural wind ambience — layered filtered noise with gusts.</summary>

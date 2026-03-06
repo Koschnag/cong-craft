@@ -281,8 +281,8 @@ public static class RuinMeshBuilder
         }
     }
 
-    // Dark weathered stone color helpers with slight variation
-    private static float StoneR(Random rng) => 0.22f + (float)rng.NextDouble() * 0.08f;
-    private static float StoneG(Random rng) => 0.20f + (float)rng.NextDouble() * 0.07f;
-    private static float StoneB(Random rng) => 0.19f + (float)rng.NextDouble() * 0.06f;
+    // Weathered ancient stone with natural color variation (warm/cool mix)
+    private static float StoneR(Random rng) => 0.28f + (float)rng.NextDouble() * 0.10f;
+    private static float StoneG(Random rng) => 0.26f + (float)rng.NextDouble() * 0.08f;
+    private static float StoneB(Random rng) => 0.24f + (float)rng.NextDouble() * 0.07f;
 }

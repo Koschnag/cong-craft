@@ -69,22 +69,32 @@ public static class RockMeshBuilder
             float py = ny * deform * 0.6f; // flatten vertically
             float pz = nz * deform;
 
-            // Gray-brown rock color with variation and moss patches
-            float colorVar = (float)rng.NextDouble() * 0.1f;
+            // Natural stone coloring with weathering, strata, and moss
+            float colorVar = (float)rng.NextDouble() * 0.12f;
+            float strataVar = MathF.Sin(py * 8f) * 0.04f; // horizontal strata lines
             float r, g, b;
-            // Moss on upward-facing surfaces (top of rock)
-            if (ny > 0.3f && rng.NextDouble() > 0.4f)
+            // Moss/lichen on upward-facing surfaces
+            if (ny > 0.25f && rng.NextDouble() > 0.35f)
             {
-                // Green moss/lichen patches
-                r = 0.15f + colorVar * 0.5f;
-                g = 0.25f + colorVar;
-                b = 0.10f + colorVar * 0.3f;
+                // Rich moss/lichen patches with variation
+                float mossVar = (float)rng.NextDouble() * 0.06f;
+                r = 0.12f + colorVar * 0.4f + mossVar;
+                g = 0.22f + colorVar * 1.2f + mossVar * 0.5f;
+                b = 0.08f + colorVar * 0.2f;
+            }
+            else if (ny < -0.2f)
+            {
+                // Darker underside with earthy tones
+                r = 0.30f + colorVar * 0.8f;
+                g = 0.28f + colorVar * 0.7f;
+                b = 0.24f + colorVar * 0.6f;
             }
             else
             {
-                r = 0.40f + colorVar;
-                g = 0.38f + colorVar;
-                b = 0.35f + colorVar;
+                // Main stone with warm-cool variation and strata
+                r = 0.38f + colorVar + strataVar;
+                g = 0.36f + colorVar * 0.9f + strataVar * 0.8f;
+                b = 0.33f + colorVar * 0.8f + strataVar * 0.6f;
             }
 
             verts.AddRange(new[] { px, py, pz, nx, ny, nz, r, g, b });

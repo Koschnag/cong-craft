@@ -28,6 +28,7 @@ public sealed class VegetationPlacer : ISystem
     private Shader _basicShader = null!;
     private ShadowMap? _shadowMap;
     private MaterialTextures? _materialTextures;
+    private AssetManager? _assets;
     private Mesh _treeMesh = null!;
     private Mesh _rockMesh = null!;
     private Mesh _ruinPillarMesh = null!;
@@ -47,22 +48,34 @@ public sealed class VegetationPlacer : ISystem
         _lighting = services.Get<LightingData>();
         _levelGen = services.Get<LevelTerrainGenerator>();
         services.TryGet(out _levelData);
+        services.TryGet(out _assets);
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _shadowMap = services.Get<ShadowMap>();
         _materialTextures = services.Get<MaterialTextures>();
-        _treeMesh = TreeMeshBuilder.Create(_gl);
-        _rockMesh = RockMeshBuilder.Create(_gl);
-        _ruinPillarMesh = RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.Pillar, 11);
-        _ruinBrokenPillarMesh = RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.BrokenPillar, 22);
-        _ruinWallMesh = RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.WallSegment, 33);
-        _ruinArchMesh = RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.ArchFragment, 44);
 
-        var scrubData = BushMeshBuilder.GenerateScrub(101);
-        _scrubMesh = new Mesh(_gl, scrubData.Vertices, scrubData.Indices, VertexLayout.PositionNormalColor);
-        var berryData = BushMeshBuilder.GenerateBerry(202);
-        _berryBushMesh = new Mesh(_gl, berryData.Vertices, berryData.Indices, VertexLayout.PositionNormalColor);
-        var grassData = BushMeshBuilder.GenerateGrassTuft(303);
-        _grassTuftMesh = new Mesh(_gl, grassData.Vertices, grassData.Indices, VertexLayout.PositionNormalColor);
+        // Load from OBJ assets if available, otherwise fall back to procedural generation
+        _treeMesh = _assets?.LoadOrGenerate("tree_default", () => TreeMeshBuilder.GenerateData())
+            ?? TreeMeshBuilder.Create(_gl);
+        _rockMesh = _assets?.LoadOrGenerate("rock_default", () => RockMeshBuilder.GenerateData())
+            ?? RockMeshBuilder.Create(_gl);
+        _ruinPillarMesh = _assets?.LoadOrGenerate("ruin_pillar", () =>
+            { var (v, i) = RuinMeshBuilder.GenerateData(RuinMeshBuilder.RuinType.Pillar); return new MeshData(v, i); })
+            ?? RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.Pillar, 11);
+        _ruinBrokenPillarMesh = _assets?.LoadOrGenerate("ruin_broken_pillar", () =>
+            { var (v, i) = RuinMeshBuilder.GenerateData(RuinMeshBuilder.RuinType.BrokenPillar); return new MeshData(v, i); })
+            ?? RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.BrokenPillar, 22);
+        _ruinWallMesh = _assets?.LoadOrGenerate("ruin_wall", () =>
+            { var (v, i) = RuinMeshBuilder.GenerateData(RuinMeshBuilder.RuinType.WallSegment); return new MeshData(v, i); })
+            ?? RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.WallSegment, 33);
+        _ruinArchMesh = _assets?.LoadOrGenerate("ruin_arch", () =>
+            { var (v, i) = RuinMeshBuilder.GenerateData(RuinMeshBuilder.RuinType.ArchFragment); return new MeshData(v, i); })
+            ?? RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.ArchFragment, 44);
+        _scrubMesh = _assets?.LoadOrGenerate("bush_scrub", () => BushMeshBuilder.GenerateScrub(101))
+            ?? new Mesh(_gl, BushMeshBuilder.GenerateScrub(101).Vertices, BushMeshBuilder.GenerateScrub(101).Indices, VertexLayout.PositionNormalColor);
+        _berryBushMesh = _assets?.LoadOrGenerate("bush_berry", () => BushMeshBuilder.GenerateBerry(202))
+            ?? new Mesh(_gl, BushMeshBuilder.GenerateBerry(202).Vertices, BushMeshBuilder.GenerateBerry(202).Indices, VertexLayout.PositionNormalColor);
+        _grassTuftMesh = _assets?.LoadOrGenerate("bush_grass", () => BushMeshBuilder.GenerateGrassTuft(303))
+            ?? new Mesh(_gl, BushMeshBuilder.GenerateGrassTuft(303).Vertices, BushMeshBuilder.GenerateGrassTuft(303).Indices, VertexLayout.PositionNormalColor);
     }
 
     public void Update(GameTime time)

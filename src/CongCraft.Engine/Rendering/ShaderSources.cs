@@ -239,6 +239,7 @@ uniform mat4 uProjection;
 uniform mat4 uLightSpaceMatrix;
 
 out vec3 FragPos;
+out vec3 LocalPos;
 out vec3 Normal;
 out vec3 VertexColor;
 out vec4 FragPosLightSpace;
@@ -247,6 +248,7 @@ void main()
 {
     vec4 worldPos = uModel * vec4(aPosition, 1.0);
     FragPos = worldPos.xyz;
+    LocalPos = aPosition;
     Normal = mat3(transpose(inverse(uModel))) * aNormal;
     VertexColor = aColor;
     FragPosLightSpace = uLightSpaceMatrix * worldPos;
@@ -257,6 +259,7 @@ void main()
     public const string BasicFragment = @"
 #version 330 core
 in vec3 FragPos;
+in vec3 LocalPos;
 in vec3 Normal;
 in vec3 VertexColor;
 in vec4 FragPosLightSpace;
@@ -321,29 +324,50 @@ void main()
 
     // Material properties from vertex color brightness
     float luminance = dot(VertexColor, vec3(0.299, 0.587, 0.114));
-    float metallic = smoothstep(0.35, 0.55, luminance) * 0.6;
-    float roughness = mix(0.3, 0.8, 1.0 - metallic);
+    float metallic = smoothstep(0.32, 0.52, luminance) * 0.7;
+    float roughness = mix(0.20, 0.90, 1.0 - metallic);
 
-    // --- Material texture sampling via triplanar mapping ---
-    float texScale = 1.2;
-    vec3 metalSample = triplanarSample(uMetalTex, FragPos, norm, texScale);
-    vec3 leatherSample = triplanarSample(uLeatherTex, FragPos, norm, texScale);
-    vec3 skinSample = triplanarSample(uSkinTex, FragPos, norm, texScale);
-    vec3 woodSample = triplanarSample(uWoodTex, FragPos, norm, texScale * 0.8);
-    vec3 fabricSample = triplanarSample(uFabricTex, FragPos, norm, texScale * 1.2);
+    // --- Material texture sampling via triplanar in object space ---
+    float texScale = 2.5;
+    vec3 metalSample = triplanarSample(uMetalTex, LocalPos, norm, texScale);
+    vec3 leatherSample = triplanarSample(uLeatherTex, LocalPos, norm, texScale * 1.1);
+    vec3 skinSample = triplanarSample(uSkinTex, LocalPos, norm, texScale * 1.3);
+    vec3 woodSample = triplanarSample(uWoodTex, LocalPos, norm, texScale * 0.7);
+    vec3 fabricSample = triplanarSample(uFabricTex, LocalPos, norm, texScale * 1.4);
+
+    // Multi-scale detail layers for close-up richness (Two Worlds style micro-detail)
+    float detailScale = texScale * 3.5;
+    float microScale = texScale * 7.0;
+    vec3 metalDetail = triplanarSample(uMetalTex, LocalPos, norm, detailScale);
+    vec3 leatherDetail = triplanarSample(uLeatherTex, LocalPos, norm, detailScale);
+    vec3 skinDetail = triplanarSample(uSkinTex, LocalPos, norm, detailScale);
+    vec3 woodDetail = triplanarSample(uWoodTex, LocalPos, norm, detailScale * 0.8);
+    vec3 microNoise = triplanarSample(uFabricTex, LocalPos, norm, microScale);
+    float camDist = length(FragPos - uCameraPos);
+    float detailMix = smoothstep(2.0, 25.0, camDist);
+    metalSample = mix(metalSample * (0.50 + metalDetail.r * 1.0), metalSample, detailMix);
+    leatherSample = mix(leatherSample * (0.50 + leatherDetail.r * 1.0), leatherSample, detailMix);
+    skinSample = mix(skinSample * (0.55 + skinDetail.r * 0.9), skinSample, detailMix);
+    woodSample = mix(woodSample * (0.50 + woodDetail.r * 1.0), woodSample, detailMix);
 
     // Classify material from vertex color hue/brightness
     float warmth = VertexColor.r - VertexColor.b;
     float greenness = VertexColor.g - (VertexColor.r + VertexColor.b) * 0.5;
 
-    float metalWeight = smoothstep(0.4, 0.6, luminance) * smoothstep(-0.05, 0.05, -warmth);
-    float skinWeight = smoothstep(0.15, 0.35, warmth) * smoothstep(0.35, 0.5, luminance);
-    float woodWeight = max(smoothstep(0.05, 0.25, greenness),
-                           smoothstep(-0.15, -0.05, warmth) * step(luminance, 0.3));
-    float leatherWeight = smoothstep(0.0, 0.2, warmth) * step(luminance, 0.4) * (1.0 - skinWeight);
+    // Material classification with separation
+    float metalWeight = smoothstep(0.36, 0.55, luminance) * smoothstep(-0.02, 0.08, -warmth) * 1.2;
+    float skinWeight = smoothstep(0.12, 0.28, warmth) * smoothstep(0.40, 0.55, luminance);
+    float woodWeight = max(smoothstep(0.04, 0.20, greenness),
+                           smoothstep(0.10, 0.30, warmth) * step(luminance, 0.28));
+    float leatherWeight = smoothstep(0.05, 0.22, warmth) * step(luminance, 0.38) * (1.0 - skinWeight * 0.8);
     float fabricWeight = max(0.0, 1.0 - metalWeight - skinWeight - woodWeight - leatherWeight);
 
-    // Normalize weights
+    // Gold/ornate detection
+    float goldWeight = smoothstep(0.35, 0.55, warmth) * smoothstep(0.45, 0.60, luminance);
+    metalWeight += goldWeight * 0.6;
+    skinWeight *= (1.0 - goldWeight);
+
+    // Normalize
     float totalWeight = max(metalWeight + leatherWeight + skinWeight + woodWeight + fabricWeight, 0.001);
     metalWeight /= totalWeight;
     leatherWeight /= totalWeight;
@@ -356,57 +380,73 @@ void main()
                      + skinSample * skinWeight + woodSample * woodWeight
                      + fabricSample * fabricWeight;
 
-    // Convert to detail multiplier (texture centered around mid-gray = 1.0)
+    // Texture detail with micro-noise for surface grain (Two Worlds style)
     vec3 texDetail = materialTex / vec3(0.5);
-    texDetail = clamp(texDetail, 0.6, 1.4);
+    float microMix = smoothstep(1.0, 15.0, camDist);
+    float microGrain = mix(microNoise.r * 0.15 + 0.925, 1.0, microMix);
+    texDetail = clamp(texDetail * microGrain, 0.45, 1.60);
 
-    // Apply texture detail to vertex color
     vec3 texturedColor = VertexColor * texDetail;
 
-    // Distance-based fade (texture detail fades far away for performance/aesthetics)
-    float camDist = length(FragPos - uCameraPos);
-    float textureFade = smoothstep(5.0, 45.0, camDist);
+    // Distance-based fade
+    float textureFade = smoothstep(3.0, 55.0, camDist);
     vec3 baseColor = mix(texturedColor, VertexColor, textureFade);
 
-    // Diffuse with half-Lambert for softer shading (Gothic/Two Worlds style)
+    // Two Worlds style: warm color grading shift
+    baseColor *= vec3(1.02, 1.00, 0.96);
+
+    // Diffuse with wrapped lighting for softer, more atmospheric look
     float NdotL = dot(norm, lightDir);
     float diff = NdotL * 0.5 + 0.5;
     diff = diff * diff;
+    // Soften shadows on skin surfaces
+    diff = mix(diff, diff * 0.7 + 0.3, skinWeight);
 
     // Blinn-Phong specular with material-dependent shininess
     vec3 halfDir = normalize(lightDir + viewDir);
-    float shininess = mix(24.0, 96.0, 1.0 - roughness);
+    float shininess = mix(12.0, 160.0, 1.0 - roughness);
     float spec = pow(max(dot(norm, halfDir), 0.0), shininess);
-    float specIntensity = mix(0.15, 0.45, metallic);
+    float specIntensity = mix(0.10, 0.60, metallic);
+    // Gold gets warmer specular highlights
     vec3 specColor = mix(vec3(1.0), baseColor, metallic);
+    specColor = mix(specColor, vec3(1.0, 0.85, 0.5), goldWeight * 0.4);
     vec3 specular = spec * specColor * specIntensity * uSunIntensity;
 
-    // Hemisphere ambient with fake AO
+    // Hemisphere ambient with fake AO (Two Worlds had deep ambient in crevices)
     float hemiBlend = dot(norm, vec3(0.0, 1.0, 0.0)) * 0.5 + 0.5;
-    vec3 ambient = mix(uAmbientColor * 0.5, uAmbientColor * 1.2, hemiBlend);
-    float cavityAO = smoothstep(-0.3, 0.4, norm.y) * 0.3 + 0.7;
-    ambient *= cavityAO;
+    vec3 ambient = mix(uAmbientColor * 0.40, uAmbientColor * 1.3, hemiBlend);
+    // Cavity AO — deeper darks in crevices for more sculpted look
+    float cavityAO = smoothstep(-0.4, 0.5, norm.y) * 0.25 + 0.75;
+    // Micro-AO from texture detail for surface depth
+    float microAO = mix(microGrain, 1.0, 0.5);
+    ambient *= cavityAO * microAO;
 
-    // Shadow
+    // Bounce light — warm fill from below (ground reflection, Two Worlds style)
+    vec3 bounceLight = vec3(0.08, 0.06, 0.03) * max(0.0, -norm.y) * uSunIntensity;
+
+    // Shadow with deeper darkening
     float shadow = ShadowCalculation(FragPosLightSpace, norm, lightDir);
-    vec3 diffuse = diff * uSunColor * uSunIntensity * (1.0 - shadow * 0.7);
-    vec3 lighting = (ambient + diffuse) * baseColor + specular * (1.0 - shadow);
+    vec3 diffuse = diff * uSunColor * uSunIntensity * (1.0 - shadow * 0.75);
+    vec3 lighting = (ambient + diffuse + bounceLight) * baseColor + specular * (1.0 - shadow);
 
-    // Rim lighting
+    // Rim lighting (atmospheric backlight, Two Worlds golden rim)
     float rim = 1.0 - max(dot(viewDir, norm), 0.0);
-    rim = smoothstep(0.4, 1.0, rim);
-    vec3 rimColor = mix(uSunColor * 0.08, baseColor * 0.12, 1.0 - metallic);
+    rim = smoothstep(0.35, 1.0, rim);
+    vec3 rimColor = mix(uSunColor * 0.10, baseColor * 0.15, 1.0 - metallic);
+    rimColor = mix(rimColor, vec3(0.9, 0.7, 0.3) * 0.12, goldWeight);
     lighting += rim * rimColor * uSunIntensity;
 
-    // Fresnel edge highlighting
+    // Fresnel edge highlighting (stronger on metallic)
     float fresnel = pow(1.0 - max(dot(viewDir, norm), 0.0), 3.0);
-    lighting += fresnel * uSunColor * 0.04 * metallic * uSunIntensity;
+    lighting += fresnel * uSunColor * 0.07 * metallic * uSunIntensity;
 
-    // Fog with height-based density
+    // Fog with height-based density and warm atmospheric scattering
     float fogDist = length(FragPos - uCameraPos);
-    float heightFog = max(0.0, 1.0 - (FragPos.y - uCameraPos.y) * 0.015);
-    float fog = 1.0 - exp(-fogDist * uFogDensity * (1.0 + heightFog * 0.4));
-    lighting = mix(lighting, uFogColor, clamp(fog, 0.0, 1.0));
+    float heightFog = max(0.0, 1.0 - (FragPos.y - uCameraPos.y) * 0.012);
+    float fog = 1.0 - exp(-fogDist * uFogDensity * (1.0 + heightFog * 0.5));
+    // Slightly warm the fog color for atmospheric scatter
+    vec3 warmFog = uFogColor + vec3(0.02, 0.01, -0.01);
+    lighting = mix(lighting, warmFog, clamp(fog, 0.0, 1.0));
 
     FragColor = vec4(lighting, 1.0);
 }
@@ -759,6 +799,7 @@ uniform mat4 uProjection;
 uniform mat4 uLightSpaceMatrix;
 
 out vec3 FragPos;
+out vec3 LocalPos;
 out vec3 Normal;
 out vec3 VertexColor;
 out vec4 FragPosLightSpace;
@@ -767,6 +808,7 @@ void main()
 {
     vec4 worldPos = uModel * vec4(aPosition, 1.0);
     FragPos = worldPos.xyz;
+    LocalPos = aPosition;
     Normal = mat3(transpose(inverse(uModel))) * aNormal;
     VertexColor = aColor;
     FragPosLightSpace = uLightSpaceMatrix * worldPos;
@@ -777,6 +819,7 @@ void main()
     public const string BasicFragmentPointLights = @"
 #version 330 core
 in vec3 FragPos;
+in vec3 LocalPos;
 in vec3 Normal;
 in vec3 VertexColor;
 in vec4 FragPosLightSpace;
@@ -842,26 +885,29 @@ void main()
 
     // Material properties
     float luminance = dot(VertexColor, vec3(0.299, 0.587, 0.114));
-    float metallic = smoothstep(0.35, 0.55, luminance) * 0.6;
-    float roughness = mix(0.3, 0.8, 1.0 - metallic);
+    float metallic = smoothstep(0.32, 0.52, luminance) * 0.7;
+    float roughness = mix(0.25, 0.85, 1.0 - metallic);
 
-    // --- Material texture sampling via triplanar mapping ---
-    float texScale = 1.2;
-    vec3 metalSample = triplanarSample(uMetalTex, FragPos, norm, texScale);
-    vec3 leatherSample = triplanarSample(uLeatherTex, FragPos, norm, texScale);
-    vec3 skinSample = triplanarSample(uSkinTex, FragPos, norm, texScale);
-    vec3 woodSample = triplanarSample(uWoodTex, FragPos, norm, texScale * 0.8);
-    vec3 fabricSample = triplanarSample(uFabricTex, FragPos, norm, texScale * 1.2);
+    // --- Material texture sampling via triplanar in object space ---
+    float texScale = 2.5;
+    vec3 metalSample = triplanarSample(uMetalTex, LocalPos, norm, texScale);
+    vec3 leatherSample = triplanarSample(uLeatherTex, LocalPos, norm, texScale * 1.1);
+    vec3 skinSample = triplanarSample(uSkinTex, LocalPos, norm, texScale * 1.3);
+    vec3 woodSample = triplanarSample(uWoodTex, LocalPos, norm, texScale * 0.7);
+    vec3 fabricSample = triplanarSample(uFabricTex, LocalPos, norm, texScale * 1.4);
 
     float warmth = VertexColor.r - VertexColor.b;
     float greenness = VertexColor.g - (VertexColor.r + VertexColor.b) * 0.5;
 
-    float metalWeight = smoothstep(0.4, 0.6, luminance) * smoothstep(-0.05, 0.05, -warmth);
-    float skinWeight = smoothstep(0.15, 0.35, warmth) * smoothstep(0.35, 0.5, luminance);
-    float woodWeight = max(smoothstep(0.05, 0.25, greenness),
-                           smoothstep(-0.15, -0.05, warmth) * step(luminance, 0.3));
-    float leatherWeight = smoothstep(0.0, 0.2, warmth) * step(luminance, 0.4) * (1.0 - skinWeight);
+    float metalWeight = smoothstep(0.36, 0.55, luminance) * smoothstep(-0.02, 0.08, -warmth) * 1.2;
+    float skinWeight = smoothstep(0.12, 0.28, warmth) * smoothstep(0.40, 0.55, luminance);
+    float woodWeight = max(smoothstep(0.04, 0.20, greenness),
+                           smoothstep(0.10, 0.30, warmth) * step(luminance, 0.28));
+    float leatherWeight = smoothstep(0.05, 0.22, warmth) * step(luminance, 0.38) * (1.0 - skinWeight * 0.8);
     float fabricWeight = max(0.0, 1.0 - metalWeight - skinWeight - woodWeight - leatherWeight);
+    float goldWeight = smoothstep(0.35, 0.55, warmth) * smoothstep(0.45, 0.60, luminance);
+    metalWeight += goldWeight * 0.6;
+    skinWeight *= (1.0 - goldWeight);
 
     float totalWeight = max(metalWeight + leatherWeight + skinWeight + woodWeight + fabricWeight, 0.001);
     metalWeight /= totalWeight;
@@ -875,35 +921,42 @@ void main()
                      + fabricSample * fabricWeight;
 
     vec3 texDetail = materialTex / vec3(0.5);
-    texDetail = clamp(texDetail, 0.6, 1.4);
+    texDetail = clamp(texDetail, 0.5, 1.55);
 
     vec3 texturedColor = VertexColor * texDetail;
     float camDist = length(FragPos - uCameraPos);
-    float textureFade = smoothstep(5.0, 45.0, camDist);
+    float textureFade = smoothstep(3.0, 50.0, camDist);
     vec3 baseColor = mix(texturedColor, VertexColor, textureFade);
 
-    // Half-Lambert diffuse
+    // Two Worlds style warm color grading
+    baseColor *= vec3(1.02, 1.00, 0.96);
+
+    // Wrapped diffuse
     float NdotL = dot(norm, lightDir);
     float diff = NdotL * 0.5 + 0.5;
     diff = diff * diff;
 
     // Material-dependent specular
     vec3 halfDir = normalize(lightDir + viewDir);
-    float shininess = mix(24.0, 96.0, 1.0 - roughness);
+    float shininess = mix(12.0, 160.0, 1.0 - roughness);
     float spec = pow(max(dot(norm, halfDir), 0.0), shininess);
-    float specIntensity = mix(0.15, 0.45, metallic);
+    float specIntensity = mix(0.10, 0.60, metallic);
     vec3 specColor = mix(vec3(1.0), baseColor, metallic);
+    specColor = mix(specColor, vec3(1.0, 0.85, 0.5), goldWeight * 0.4);
     vec3 specular = spec * specColor * specIntensity * uSunIntensity;
 
-    // Hemisphere ambient with fake cavity AO
+    // Hemisphere ambient with deeper AO
     float hemiBlend = dot(norm, vec3(0.0, 1.0, 0.0)) * 0.5 + 0.5;
-    vec3 ambient = mix(uAmbientColor * 0.5, uAmbientColor * 1.2, hemiBlend);
-    float cavityAO = smoothstep(-0.3, 0.4, norm.y) * 0.3 + 0.7;
+    vec3 ambient = mix(uAmbientColor * 0.40, uAmbientColor * 1.3, hemiBlend);
+    float cavityAO = smoothstep(-0.4, 0.5, norm.y) * 0.25 + 0.75;
     ambient *= cavityAO;
 
+    // Bounce light from ground
+    vec3 bounceLight = vec3(0.08, 0.06, 0.03) * max(0.0, -norm.y) * uSunIntensity;
+
     float shadow = ShadowCalculation(FragPosLightSpace, norm, lightDir);
-    vec3 diffuse = diff * uSunColor * uSunIntensity * (1.0 - shadow * 0.7);
-    vec3 lighting = (ambient + diffuse) * baseColor + specular * (1.0 - shadow);
+    vec3 diffuse = diff * uSunColor * uSunIntensity * (1.0 - shadow * 0.75);
+    vec3 lighting = (ambient + diffuse + bounceLight) * baseColor + specular * (1.0 - shadow);
 
     for (int i = 0; i < uPointLightCount && i < 4; i++)
     {
@@ -920,17 +973,18 @@ void main()
                   * uPointLightColor[i] * uPointLightIntensity[i] * attenuation;
     }
 
-    // Rim lighting
+    // Rim lighting (golden atmospheric backlight)
     float rim = 1.0 - max(dot(viewDir, norm), 0.0);
-    rim = smoothstep(0.4, 1.0, rim);
-    vec3 rimColor = mix(uSunColor * 0.08, baseColor * 0.12, 1.0 - metallic);
+    rim = smoothstep(0.35, 1.0, rim);
+    vec3 rimColor = mix(uSunColor * 0.10, baseColor * 0.15, 1.0 - metallic);
     lighting += rim * rimColor * uSunIntensity;
 
-    // Fog
+    // Fog with warm atmospheric scattering
     float fogDist = length(FragPos - uCameraPos);
-    float heightFog = max(0.0, 1.0 - (FragPos.y - uCameraPos.y) * 0.015);
-    float fog = 1.0 - exp(-fogDist * uFogDensity * (1.0 + heightFog * 0.4));
-    lighting = mix(lighting, uFogColor, clamp(fog, 0.0, 1.0));
+    float heightFog = max(0.0, 1.0 - (FragPos.y - uCameraPos.y) * 0.012);
+    float fog = 1.0 - exp(-fogDist * uFogDensity * (1.0 + heightFog * 0.5));
+    vec3 warmFog = uFogColor + vec3(0.02, 0.01, -0.01);
+    lighting = mix(lighting, warmFog, clamp(fog, 0.0, 1.0));
 
     FragColor = vec4(lighting, 1.0);
 }
