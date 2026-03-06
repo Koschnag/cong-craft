@@ -98,7 +98,8 @@ public static class GameSetup
 
 /// <summary>
 /// One-shot system that creates the player entity on first frame.
-/// Uses level data for spawn position.
+/// Also initializes the AssetManager and exports procedural meshes as OBJ files
+/// so they can be replaced with AI-generated models.
 /// </summary>
 internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
 {
@@ -117,6 +118,12 @@ internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
     {
         _gl = services.Get<Silk.NET.OpenGL.GL>();
         _world = services.Get<Engine.ECS.World>();
+
+        // Initialize asset manager — exports procedural meshes as OBJ files on first run.
+        // Replace the OBJ files in assets/models/ with AI-generated models to upgrade quality.
+        var assets = new AssetManager(_gl);
+        services.Register(assets);
+        assets.GenerateAllAssets();
 
         // Create player at level spawn point
         var player = _world.CreateEntity();
@@ -163,8 +170,8 @@ internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
         _world.AddComponent(player, new ManaComponent());
         _world.AddComponent(player, new SpellState());
 
-        // Player warrior mesh (high-res detailed humanoid with plate armor)
-        var playerMesh = HighResPlayerMeshBuilder.Create(_gl);
+        // Player warrior mesh — load from OBJ asset or fall back to procedural
+        var playerMesh = assets.LoadOrGenerate("player_warrior", HighResPlayerMeshBuilder.GenerateData);
         var shader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _world.AddComponent(player, new MeshRendererComponent
         {

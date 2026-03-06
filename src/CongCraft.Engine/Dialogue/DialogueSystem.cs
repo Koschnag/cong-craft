@@ -75,6 +75,7 @@ public sealed class DialogueSystem : ISystem
 
         closestNpcComp.IsInteracting = true;
         _dialogueState.Start(closestNpc, tree);
+        PlayNpcVoice(closestNpcComp);
     }
 
     private void UpdateActiveDialogue(InputState input)
@@ -109,7 +110,10 @@ public sealed class DialogueSystem : ISystem
 
                 // Check requirements and process rewards
                 if (ProcessChoice(choice))
+                {
                     _dialogueState.GoToNode(choice.NextNodeId);
+                    PlayNpcVoiceForCurrentNode();
+                }
             }
         }
         else
@@ -119,7 +123,10 @@ public sealed class DialogueSystem : ISystem
             {
                 AudioSystem.Instance?.PlaySfx(SfxType.Click);
                 if (node.NextNodeId != null)
+                {
                     _dialogueState.GoToNode(node.NextNodeId);
+                    PlayNpcVoiceForCurrentNode();
+                }
                 else
                     EndDialogue();
             }
@@ -160,14 +167,39 @@ public sealed class DialogueSystem : ISystem
 
     private void EndDialogue()
     {
-        // Reset NPC interaction state
+        // Play farewell voice
         if (_world.HasEntity(_dialogueState.InteractingNpc) &&
             _world.HasComponent<NpcComponent>(_dialogueState.InteractingNpc))
         {
+            AudioSystem.Instance?.PlaySfx(SfxType.NpcFarewell);
             _world.GetComponent<NpcComponent>(_dialogueState.InteractingNpc).IsInteracting = false;
         }
 
         _dialogueState.End();
+    }
+
+    private void PlayNpcVoiceForCurrentNode()
+    {
+        if (!_world.HasEntity(_dialogueState.InteractingNpc) ||
+            !_world.HasComponent<NpcComponent>(_dialogueState.InteractingNpc))
+            return;
+        var npc = _world.GetComponent<NpcComponent>(_dialogueState.InteractingNpc);
+        PlayNpcVoice(npc);
+    }
+
+    /// <summary>
+    /// Play a voice SFX appropriate for the NPC type when dialogue starts or advances.
+    /// </summary>
+    private void PlayNpcVoice(NpcComponent npc)
+    {
+        var sfx = npc.DialogueTreeId switch
+        {
+            "blacksmith" => SfxType.NpcDeepVoice,
+            "merchant" or "trader" => SfxType.NpcMerchantVoice,
+            "elder" or "priestess" => SfxType.NpcFemaleVoice,
+            _ => SfxType.NpcGreeting
+        };
+        AudioSystem.Instance?.PlaySfx(sfx);
     }
 
     public void Render(GameTime time) { }

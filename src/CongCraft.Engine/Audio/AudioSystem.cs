@@ -90,6 +90,13 @@ public sealed class AudioSystem : ISystem
             LoadSfxType(SfxType.SpellCast, ProceduralMusic.GenerateSpellCastSfx());
             LoadSfxType(SfxType.DodgeWhoosh, ProceduralMusic.GenerateDodgeWhooshSfx());
 
+            // NPC voice lines (procedural formant synthesis)
+            LoadSfxType(SfxType.NpcGreeting, ProceduralMusic.GenerateNpcGreetingSfx());
+            LoadSfxType(SfxType.NpcFarewell, ProceduralMusic.GenerateNpcFarewellSfx());
+            LoadSfxType(SfxType.NpcFemaleVoice, ProceduralMusic.GenerateNpcFemaleVoiceSfx());
+            LoadSfxType(SfxType.NpcDeepVoice, ProceduralMusic.GenerateNpcDeepVoiceSfx());
+            LoadSfxType(SfxType.NpcMerchantVoice, ProceduralMusic.GenerateNpcMerchantVoiceSfx());
+
             // Ambient wind loop
             LoadTrack(ProceduralMusic.GenerateAmbientWind(20), out _ambientWindBuffer, out _ambientWindSource);
 
@@ -320,5 +327,10 @@ public enum SfxType
     PlayerHurt,
     ItemPickup,
     SpellCast,
-    DodgeWhoosh
+    DodgeWhoosh,
+    NpcGreeting,
+    NpcFarewell,
+    NpcFemaleVoice,
+    NpcDeepVoice,
+    NpcMerchantVoice
 }

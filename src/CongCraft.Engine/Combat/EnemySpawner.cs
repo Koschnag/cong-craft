@@ -23,6 +23,7 @@ public sealed class EnemySpawner : ISystem
     private World _world = null!;
     private LevelTerrainGenerator _levelGen = null!;
     private LevelData? _levelData;
+    private AssetManager? _assets;
     private Mesh _enemyMesh = null!;
     private Mesh _skeletonMesh = null!;
     private Mesh _wolfMesh = null!;
@@ -42,11 +43,19 @@ public sealed class EnemySpawner : ISystem
         _world = services.Get<World>();
         _levelGen = services.Get<LevelTerrainGenerator>();
         services.TryGet(out _levelData);
-        _enemyMesh = HighResEnemyMeshBuilder.Create(_gl);
-        _skeletonMesh = HighResEnemyMeshBuilder.CreateSkeleton(_gl);
-        _wolfMesh = HighResEnemyMeshBuilder.CreateWolf(_gl);
-        _trollMesh = HighResEnemyMeshBuilder.CreateTroll(_gl);
-        _swordMesh = SwordMeshBuilder.Create(_gl);
+        services.TryGet(out _assets);
+
+        // Load from OBJ assets if available, otherwise fall back to procedural
+        _enemyMesh = _assets?.LoadOrGenerate("enemy_bandit", HighResEnemyMeshBuilder.GenerateData)
+            ?? HighResEnemyMeshBuilder.Create(_gl);
+        _skeletonMesh = _assets?.LoadOrGenerate("enemy_skeleton", HighResEnemyMeshBuilder.GenerateSkeletonData)
+            ?? HighResEnemyMeshBuilder.CreateSkeleton(_gl);
+        _wolfMesh = _assets?.LoadOrGenerate("enemy_wolf", HighResEnemyMeshBuilder.GenerateWolfData)
+            ?? HighResEnemyMeshBuilder.CreateWolf(_gl);
+        _trollMesh = _assets?.LoadOrGenerate("enemy_troll", HighResEnemyMeshBuilder.GenerateTrollData)
+            ?? HighResEnemyMeshBuilder.CreateTroll(_gl);
+        _swordMesh = _assets?.LoadOrGenerate("weapon_sword", SwordMeshBuilder.GenerateData)
+            ?? SwordMeshBuilder.Create(_gl);
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _materialTextures = services.Get<MaterialTextures>();
     }
