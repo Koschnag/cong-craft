@@ -1,4 +1,5 @@
 using System.Numerics;
+using CongCraft.Engine.Audio;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
@@ -210,6 +211,7 @@ public sealed class EnemyAISystem : ISystem
         if (damage > 0)
         {
             playerHealth.TakeDamage(damage);
+            AudioSystem.Instance?.PlaySfx(SfxType.PlayerHurt);
         }
     }
 

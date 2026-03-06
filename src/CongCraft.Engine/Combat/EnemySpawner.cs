@@ -22,6 +22,7 @@ public sealed class EnemySpawner : ISystem
     private World _world = null!;
     private TerrainGenerator _terrainGen = null!;
     private Mesh _enemyMesh = null!;
+    private Mesh _skeletonMesh = null!;
     private Mesh _swordMesh = null!;
     private Shader _basicShader = null!;
     private bool _initialSpawnDone;
@@ -36,6 +37,7 @@ public sealed class EnemySpawner : ISystem
         _world = services.Get<World>();
         _terrainGen = services.Get<TerrainGenerator>();
         _enemyMesh = EnemyMeshBuilder.Create(_gl);
+        _skeletonMesh = EnemyMeshBuilder.CreateSkeleton(_gl);
         _swordMesh = SwordMeshBuilder.Create(_gl);
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
     }
@@ -155,7 +157,7 @@ public sealed class EnemySpawner : ISystem
         });
         _world.AddComponent(entity, new MeshRendererComponent
         {
-            Mesh = _enemyMesh,
+            Mesh = type == EnemyType.Skeleton ? _skeletonMesh : _enemyMesh,
             Shader = _basicShader
         });
 
@@ -183,6 +185,7 @@ public sealed class EnemySpawner : ISystem
     public void Dispose()
     {
         _enemyMesh.Dispose();
+        _skeletonMesh.Dispose();
         _swordMesh.Dispose();
         _basicShader.Dispose();
     }

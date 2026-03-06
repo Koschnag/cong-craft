@@ -810,13 +810,20 @@ void main()
     vec3 bloomColor = texture(uBloom, TexCoord).rgb;
     hdrColor += bloomColor * uBloomIntensity;
 
+    // Apply exposure
+    hdrColor *= uExposure;
+
     // ACES-like tonemapping
     vec3 mapped = (hdrColor * (2.51 * hdrColor + 0.03)) / (hdrColor * (2.43 * hdrColor + 0.59) + 0.14);
     mapped = pow(mapped, vec3(1.0 / 2.2));
 
-    // Subtle vignette
+    // Slight desaturation (~10%) for SpellForce/Gothic muted palette
+    float luma = dot(mapped, vec3(0.299, 0.587, 0.114));
+    mapped = mix(vec3(luma), mapped, 0.90);
+
+    // Stronger vignette for dark-fantasy framing
     vec2 uv = TexCoord * 2.0 - 1.0;
-    float vignette = 1.0 - dot(uv * 0.4, uv * 0.4);
+    float vignette = 1.0 - dot(uv * 0.55, uv * 0.55);
     mapped *= smoothstep(0.0, 1.0, vignette);
 
     FragColor = vec4(mapped, 1.0);

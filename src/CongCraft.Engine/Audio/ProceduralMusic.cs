@@ -348,4 +348,249 @@ public static class ProceduralMusic
         }
         return data;
     }
+
+    // ─── Gameplay Sound Effects ─────────────────────────────────────────
+
+    /// <summary>Sword swing whoosh — fast rising noise burst.</summary>
+    public static short[] GenerateSwordSwingSfx()
+    {
+        int samples = SampleRate / 5; // 200ms
+        var data = new short[samples];
+        var rng = new Random(101);
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / SampleRate;
+            float env = MathF.Exp(-t * 15f) * MathF.Min(1f, t * 200f);
+            float freq = 200f + t * 800f; // rising whoosh
+            float noise = (float)(rng.NextDouble() * 2 - 1);
+            float sample = noise * 0.3f * env;
+            sample += MathF.Sin(t * freq * MathF.Tau) * 0.15f * env;
+            sample += MathF.Sin(t * freq * 1.5f * MathF.Tau) * 0.08f * env;
+            data[i] = (short)(Math.Clamp(sample, -0.95f, 0.95f) * short.MaxValue);
+        }
+        return data;
+    }
+
+    /// <summary>Sword hit impact — metallic clang + thud.</summary>
+    public static short[] GenerateSwordHitSfx()
+    {
+        int samples = SampleRate / 4; // 250ms
+        var data = new short[samples];
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / SampleRate;
+            float decay = MathF.Exp(-t * 25f);
+            // Metallic ring
+            float metal = MathF.Sin(t * 1800f * MathF.Tau) * 0.25f * decay;
+            metal += MathF.Sin(t * 2400f * MathF.Tau) * 0.12f * MathF.Exp(-t * 35f);
+            metal += MathF.Sin(t * 3200f * MathF.Tau) * 0.06f * MathF.Exp(-t * 50f);
+            // Impact thud
+            float thud = MathF.Sin(t * 80f * MathF.Tau) * 0.3f * MathF.Exp(-t * 40f);
+            float sample = metal + thud;
+            data[i] = (short)(Math.Clamp(sample, -0.95f, 0.95f) * short.MaxValue);
+        }
+        return data;
+    }
+
+    /// <summary>Soft footstep on grass — muffled thump + rustle.</summary>
+    public static short[] GenerateFootstepGrassSfx()
+    {
+        int samples = SampleRate / 10; // 100ms
+        var data = new short[samples];
+        var rng = new Random(201);
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / SampleRate;
+            float decay = MathF.Exp(-t * 50f);
+            float thump = MathF.Sin(t * 60f * MathF.Tau) * 0.2f * decay;
+            float rustle = (float)(rng.NextDouble() * 2 - 1) * 0.12f * MathF.Exp(-t * 30f);
+            data[i] = (short)(Math.Clamp(thump + rustle, -0.95f, 0.95f) * short.MaxValue);
+        }
+        return data;
+    }
+
+    /// <summary>Footstep on stone — harder, sharper impact.</summary>
+    public static short[] GenerateFootstepStoneSfx()
+    {
+        int samples = SampleRate / 10; // 100ms
+        var data = new short[samples];
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / SampleRate;
+            float decay = MathF.Exp(-t * 60f);
+            float click = MathF.Sin(t * 400f * MathF.Tau) * 0.2f * decay;
+            click += MathF.Sin(t * 800f * MathF.Tau) * 0.1f * MathF.Exp(-t * 80f);
+            float thud = MathF.Sin(t * 120f * MathF.Tau) * 0.15f * MathF.Exp(-t * 50f);
+            data[i] = (short)(Math.Clamp(click + thud, -0.95f, 0.95f) * short.MaxValue);
+        }
+        return data;
+    }
+
+    /// <summary>Enemy taking a hit — fleshy impact + grunt.</summary>
+    public static short[] GenerateEnemyHitSfx()
+    {
+        int samples = SampleRate / 5; // 200ms
+        var data = new short[samples];
+        var rng = new Random(301);
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / SampleRate;
+            float impact = MathF.Sin(t * 100f * MathF.Tau) * 0.35f * MathF.Exp(-t * 30f);
+            // Vocal grunt (low formant)
+            float grunt = MathF.Sin(t * 150f * MathF.Tau) * 0.15f * MathF.Exp(-t * 12f);
+            grunt += MathF.Sin(t * 250f * MathF.Tau) * 0.08f * MathF.Exp(-t * 15f);
+            float noise = (float)(rng.NextDouble() * 2 - 1) * 0.05f * MathF.Exp(-t * 20f);
+            data[i] = (short)(Math.Clamp(impact + grunt + noise, -0.95f, 0.95f) * short.MaxValue);
+        }
+        return data;
+    }
+
+    /// <summary>Enemy death — descending groan + collapse thud.</summary>
+    public static short[] GenerateEnemyDeathSfx()
+    {
+        int samples = SampleRate / 2; // 500ms
+        var data = new short[samples];
+        var rng = new Random(302);
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / SampleRate;
+            // Descending groan
+            float freq = 180f - t * 120f;
+            float groan = MathF.Sin(t * freq * MathF.Tau) * 0.2f * MathF.Exp(-t * 5f);
+            groan += MathF.Sin(t * freq * 1.5f * MathF.Tau) * 0.08f * MathF.Exp(-t * 6f);
+            // Collapse thud
+            float thud = 0f;
+            if (t > 0.3f)
+            {
+                float tt = t - 0.3f;
+                thud = MathF.Sin(tt * 50f * MathF.Tau) * 0.25f * MathF.Exp(-tt * 30f);
+            }
+            float noise = (float)(rng.NextDouble() * 2 - 1) * 0.03f * MathF.Exp(-t * 8f);
+            data[i] = (short)(Math.Clamp(groan + thud + noise, -0.95f, 0.95f) * short.MaxValue);
+        }
+        return data;
+    }
+
+    /// <summary>Player taking damage — sharp yelp + impact.</summary>
+    public static short[] GeneratePlayerHurtSfx()
+    {
+        int samples = SampleRate / 4; // 250ms
+        var data = new short[samples];
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / SampleRate;
+            // Sharp vocal yelp (higher pitch)
+            float yelp = MathF.Sin(t * 320f * MathF.Tau) * 0.2f * MathF.Exp(-t * 10f);
+            yelp += MathF.Sin(t * 480f * MathF.Tau) * 0.12f * MathF.Exp(-t * 12f);
+            // Impact
+            float hit = MathF.Sin(t * 90f * MathF.Tau) * 0.25f * MathF.Exp(-t * 35f);
+            data[i] = (short)(Math.Clamp(yelp + hit, -0.95f, 0.95f) * short.MaxValue);
+        }
+        return data;
+    }
+
+    /// <summary>Item pickup — bright ascending chime.</summary>
+    public static short[] GenerateItemPickupSfx()
+    {
+        int samples = SampleRate / 5; // 200ms
+        var data = new short[samples];
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / SampleRate;
+            float decay = MathF.Exp(-t * 10f);
+            float freq = 600f + t * 1200f; // quick ascending sparkle
+            float sample = MathF.Sin(t * freq * MathF.Tau) * 0.25f * decay;
+            sample += MathF.Sin(t * freq * 2f * MathF.Tau) * 0.12f * MathF.Exp(-t * 15f);
+            sample += MathF.Sin(t * 880f * MathF.Tau) * 0.08f * decay; // bell overtone
+            data[i] = (short)(Math.Clamp(sample, -0.95f, 0.95f) * short.MaxValue);
+        }
+        return data;
+    }
+
+    /// <summary>Spell casting — ethereal whoosh + crystalline shimmer.</summary>
+    public static short[] GenerateSpellCastSfx()
+    {
+        int samples = SampleRate * 2 / 5; // 400ms
+        var data = new short[samples];
+        var rng = new Random(401);
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / SampleRate;
+            float env = MathF.Min(1f, t * 15f) * MathF.Exp(-t * 6f);
+            // Ethereal sweep
+            float sweep = 300f + MathF.Sin(t * 3f * MathF.Tau) * 200f;
+            float crystal = MathF.Sin(t * sweep * MathF.Tau) * 0.18f * env;
+            crystal += MathF.Sin(t * sweep * 1.5f * MathF.Tau) * 0.1f * env;
+            // Shimmer noise
+            float shimmer = (float)(rng.NextDouble() * 2 - 1) * 0.06f * env;
+            // Deep undertone
+            float bass = MathF.Sin(t * 80f * MathF.Tau) * 0.1f * env;
+            data[i] = (short)(Math.Clamp(crystal + shimmer + bass, -0.95f, 0.95f) * short.MaxValue);
+        }
+        return data;
+    }
+
+    /// <summary>Dodge roll whoosh — quick air displacement.</summary>
+    public static short[] GenerateDodgeWhooshSfx()
+    {
+        int samples = SampleRate / 6; // ~167ms
+        var data = new short[samples];
+        var rng = new Random(501);
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / SampleRate;
+            float env = MathF.Sin(t * 6f * MathF.PI) * MathF.Exp(-t * 12f);
+            if (env < 0) env = 0;
+            float noise = (float)(rng.NextDouble() * 2 - 1) * 0.3f * env;
+            float whoosh = MathF.Sin(t * (150f + t * 400f) * MathF.Tau) * 0.15f * env;
+            data[i] = (short)(Math.Clamp(noise + whoosh, -0.95f, 0.95f) * short.MaxValue);
+        }
+        return data;
+    }
+
+    // ─── Ambient Loops ──────────────────────────────────────────────────
+
+    /// <summary>Procedural wind ambience — layered filtered noise with gusts.</summary>
+    public static short[] GenerateAmbientWind(int durationSeconds = 20)
+    {
+        int totalSamples = SampleRate * durationSeconds;
+        var samples = new short[totalSamples];
+        var rng = new Random(600);
+
+        for (int i = 0; i < totalSamples; i++)
+        {
+            float t = (float)i / SampleRate;
+
+            // Base wind (filtered noise)
+            float noise = (float)(rng.NextDouble() * 2 - 1);
+            float windMod = 0.3f + 0.2f * MathF.Sin(t * 0.15f * MathF.Tau)
+                                 + 0.15f * MathF.Sin(t * 0.07f * MathF.Tau + 1.2f)
+                                 + 0.1f * MathF.Sin(t * 0.03f * MathF.Tau + 2.5f);
+
+            float sample = noise * 0.12f * windMod;
+
+            // Gentle tree rustle
+            float rustle = MathF.Sin(t * 1200f * MathF.Tau) * MathF.Sin(t * 7f * MathF.Tau);
+            sample += rustle * 0.02f * windMod;
+
+            // Occasional distant bird chirp (every ~8 seconds)
+            float birdPhase = (t * 0.125f) % 1f;
+            if (birdPhase < 0.02f)
+            {
+                float birdT = birdPhase / 0.02f;
+                float birdEnv = MathF.Sin(birdT * MathF.PI);
+                float birdFreq = 2200f + MathF.Sin(birdT * 12f * MathF.PI) * 600f;
+                sample += MathF.Sin(t * birdFreq * MathF.Tau) * 0.04f * birdEnv;
+            }
+
+            // Loop fade
+            float fadeSamples = SampleRate * 3f;
+            float fadeIn = Math.Min(1f, i / fadeSamples);
+            float fadeOut = Math.Min(1f, (totalSamples - i) / fadeSamples);
+            sample *= fadeIn * fadeOut;
+
+            samples[i] = (short)(Math.Clamp(sample, -0.95f, 0.95f) * short.MaxValue);
+        }
+        return samples;
+    }
 }

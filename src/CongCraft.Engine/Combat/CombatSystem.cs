@@ -1,4 +1,5 @@
 using System.Numerics;
+using CongCraft.Engine.Audio;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
@@ -92,6 +93,7 @@ public sealed class CombatSystem : ISystem
         combat.IsAttacking = true;
         combat.AttackTimer = combat.EffectiveAttackCooldown;
         combat.AttackAnimationProgress = 0;
+        AudioSystem.Instance?.PlaySfx(SfxType.SwordSwing);
     }
 
     private void StartDodge(CombatComponent combat, TransformComponent transform, InputState input)
@@ -99,6 +101,7 @@ public sealed class CombatSystem : ISystem
         combat.IsDodging = true;
         combat.DodgeTimer = combat.DodgeDuration;
         combat.DodgeCooldownTimer = combat.DodgeCooldown;
+        AudioSystem.Instance?.PlaySfx(SfxType.DodgeWhoosh);
     }
 
     private void ProcessPlayerAttackHits(TransformComponent playerTransform, CombatComponent playerCombat)
@@ -124,12 +127,18 @@ public sealed class CombatSystem : ISystem
 
             // Hit!
             enemyHealth.TakeDamage(playerCombat.EffectiveAttackDamage);
+            AudioSystem.Instance?.PlaySfx(SfxType.SwordHit);
 
             if (!enemyHealth.IsAlive)
             {
                 enemy.State = EnemyState.Dead;
                 enemy.IsDead = true;
                 enemy.DeathTimer = 3f; // Despawn after 3 seconds
+                AudioSystem.Instance?.PlaySfx(SfxType.EnemyDeath);
+            }
+            else
+            {
+                AudioSystem.Instance?.PlaySfx(SfxType.EnemyHit);
             }
         }
     }

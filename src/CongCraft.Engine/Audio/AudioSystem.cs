@@ -27,11 +27,12 @@ public sealed class AudioSystem : ISystem
     private uint _combatSource, _combatBuffer;
 
     // SFX (one-shot sources, pooled)
-    private uint _sfxClickBuffer;
-    private uint _sfxHoverBuffer;
-    private uint _sfxSelectBuffer;
-    private readonly uint[] _sfxSources = new uint[8];
+    private readonly Dictionary<SfxType, uint> _sfxBuffers = new();
+    private readonly uint[] _sfxSources = new uint[12];
     private int _nextSfxSource;
+
+    // Ambient loop
+    private uint _ambientWindSource, _ambientWindBuffer;
 
     private GameMode _currentPlaying = (GameMode)(-1);
     private const float MusicVolume = 0.4f;
@@ -73,9 +74,22 @@ public sealed class AudioSystem : ISystem
             LoadTrack(ProceduralMusic.GenerateCombatTheme(30), out _combatBuffer, out _combatSource);
 
             // Generate SFX
-            LoadSfxBuffer(ProceduralMusic.GenerateClickSfx(), out _sfxClickBuffer);
-            LoadSfxBuffer(ProceduralMusic.GenerateHoverSfx(), out _sfxHoverBuffer);
-            LoadSfxBuffer(ProceduralMusic.GenerateSelectSfx(), out _sfxSelectBuffer);
+            LoadSfxType(SfxType.Click, ProceduralMusic.GenerateClickSfx());
+            LoadSfxType(SfxType.Hover, ProceduralMusic.GenerateHoverSfx());
+            LoadSfxType(SfxType.Select, ProceduralMusic.GenerateSelectSfx());
+            LoadSfxType(SfxType.SwordSwing, ProceduralMusic.GenerateSwordSwingSfx());
+            LoadSfxType(SfxType.SwordHit, ProceduralMusic.GenerateSwordHitSfx());
+            LoadSfxType(SfxType.FootstepGrass, ProceduralMusic.GenerateFootstepGrassSfx());
+            LoadSfxType(SfxType.FootstepStone, ProceduralMusic.GenerateFootstepStoneSfx());
+            LoadSfxType(SfxType.EnemyHit, ProceduralMusic.GenerateEnemyHitSfx());
+            LoadSfxType(SfxType.EnemyDeath, ProceduralMusic.GenerateEnemyDeathSfx());
+            LoadSfxType(SfxType.PlayerHurt, ProceduralMusic.GeneratePlayerHurtSfx());
+            LoadSfxType(SfxType.ItemPickup, ProceduralMusic.GenerateItemPickupSfx());
+            LoadSfxType(SfxType.SpellCast, ProceduralMusic.GenerateSpellCastSfx());
+            LoadSfxType(SfxType.DodgeWhoosh, ProceduralMusic.GenerateDodgeWhooshSfx());
+
+            // Ambient wind loop
+            LoadTrack(ProceduralMusic.GenerateAmbientWind(20), out _ambientWindBuffer, out _ambientWindSource);
 
             // Create SFX source pool
             for (int i = 0; i < _sfxSources.Length; i++)
@@ -124,19 +138,18 @@ public sealed class AudioSystem : ISystem
         }
     }
 
+    private void LoadSfxType(SfxType type, short[] data)
+    {
+        LoadSfxBuffer(data, out uint buffer);
+        _sfxBuffers[type] = buffer;
+    }
+
     /// <summary>Play a one-shot SFX using a round-robin source pool.</summary>
     public void PlaySfx(SfxType type)
     {
         if (!_initialized || _al == null) return;
 
-        uint buffer = type switch
-        {
-            SfxType.Click => _sfxClickBuffer,
-            SfxType.Hover => _sfxHoverBuffer,
-            SfxType.Select => _sfxSelectBuffer,
-            _ => 0
-        };
-        if (buffer == 0) return;
+        if (!_sfxBuffers.TryGetValue(type, out uint buffer) || buffer == 0) return;
 
         uint src = _sfxSources[_nextSfxSource];
         _nextSfxSource = (_nextSfxSource + 1) % _sfxSources.Length;
@@ -147,6 +160,8 @@ public sealed class AudioSystem : ISystem
         _al.SetSourceProperty(src, SourceFloat.Gain, SfxVolume);
         _al.SourcePlay(src);
     }
+
+    private bool _ambientPlaying;
 
     public void Update(GameTime time)
     {
@@ -178,6 +193,21 @@ public sealed class AudioSystem : ISystem
             float vol = gs2.CurrentMode == GameMode.Paused ? MusicVolume * 0.4f : MusicVolume;
             var activeSource = GetSourceForMode(_currentPlaying);
             _al.SetSourceProperty(activeSource, SourceFloat.Gain, vol);
+
+            // Start ambient wind when playing
+            bool shouldAmbient = gs2.CurrentMode == GameMode.Playing;
+            if (shouldAmbient && !_ambientPlaying)
+            {
+                _al.SetSourceProperty(_ambientWindSource, SourceFloat.Gain, 0.18f);
+                _al.SourcePlay(_ambientWindSource);
+                _ambientPlaying = true;
+            }
+            else if (!shouldAmbient && _ambientPlaying)
+            {
+                _al.SetSourceProperty(_ambientWindSource, SourceFloat.Gain, 0f);
+                _al.SourceStop(_ambientWindSource);
+                _ambientPlaying = false;
+            }
         }
     }
 
@@ -211,13 +241,13 @@ public sealed class AudioSystem : ISystem
         Cleanup(_menuSource, _menuBuffer);
         Cleanup(_explorationSource, _explorationBuffer);
         Cleanup(_combatSource, _combatBuffer);
+        Cleanup(_ambientWindSource, _ambientWindBuffer);
 
         foreach (var src in _sfxSources)
             if (src != 0) { _al.SourceStop(src); _al.DeleteSource(src); }
 
-        if (_sfxClickBuffer != 0) _al.DeleteBuffer(_sfxClickBuffer);
-        if (_sfxHoverBuffer != 0) _al.DeleteBuffer(_sfxHoverBuffer);
-        if (_sfxSelectBuffer != 0) _al.DeleteBuffer(_sfxSelectBuffer);
+        foreach (var buf in _sfxBuffers.Values)
+            if (buf != 0) _al.DeleteBuffer(buf);
 
         unsafe
         {
@@ -235,5 +265,15 @@ public enum SfxType
 {
     Click,
     Hover,
-    Select
+    Select,
+    SwordSwing,
+    SwordHit,
+    FootstepGrass,
+    FootstepStone,
+    EnemyHit,
+    EnemyDeath,
+    PlayerHurt,
+    ItemPickup,
+    SpellCast,
+    DodgeWhoosh
 }
