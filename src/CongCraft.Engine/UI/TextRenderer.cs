@@ -86,8 +86,9 @@ public sealed class TextRenderer : IDisposable
 
         int charCount = Math.Min(text.Length, MaxChars);
         float cursorX = x;
-        float charW = BitmapFont.GlyphWidth * scale;
-        float charH = BitmapFont.GlyphHeight * scale;
+        // Use logical size for layout (8px advance), but render the higher-res glyph
+        float charW = BitmapFont.LogicalWidth * scale;
+        float charH = BitmapFont.LogicalHeight * scale;
         int vi = 0;
 
         for (int i = 0; i < charCount; i++)
@@ -168,7 +169,7 @@ public sealed class TextRenderer : IDisposable
             else lineLen++;
         }
         maxLineLen = Math.Max(maxLineLen, lineLen);
-        return maxLineLen * BitmapFont.GlyphWidth * scale;
+        return maxLineLen * BitmapFont.LogicalWidth * scale;
     }
 
     public void Dispose()

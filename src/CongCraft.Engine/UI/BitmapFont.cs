@@ -12,6 +12,10 @@ public sealed class BitmapFont : IDisposable
 {
     public const int GlyphWidth = 16;
     public const int GlyphHeight = 16;
+    /// <summary>Logical glyph advance width for text layout (keeps backward compat with 8px spacing).</summary>
+    public const int LogicalWidth = 8;
+    /// <summary>Logical glyph advance height for text layout.</summary>
+    public const int LogicalHeight = 8;
     public const int FirstChar = 32;
     public const int LastChar = 126;
     public const int CharCount = LastChar - FirstChar + 1;
