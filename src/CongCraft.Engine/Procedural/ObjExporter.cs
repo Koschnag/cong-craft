@@ -51,9 +51,12 @@ public static class ObjExporter
             // Use first vertex color as group key
             int o = (int)a * 9;
             string colorKey = $"{data.Vertices[o + 6]:F2}_{data.Vertices[o + 7]:F2}_{data.Vertices[o + 8]:F2}";
-            if (!faceGroups.ContainsKey(colorKey))
-                faceGroups[colorKey] = new();
-            faceGroups[colorKey].Add((a, b, c));
+            if (!faceGroups.TryGetValue(colorKey, out var group))
+            {
+                group = new();
+                faceGroups[colorKey] = group;
+            }
+            group.Add((a, b, c));
         }
 
         int groupIdx = 0;

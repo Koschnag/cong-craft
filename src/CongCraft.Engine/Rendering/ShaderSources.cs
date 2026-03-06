@@ -329,21 +329,20 @@ void main()
 
     // --- Material texture sampling via triplanar in object space ---
     float texScale = 2.5;
-    vec3 localNorm = normalize(Normal);
-    vec3 metalSample = triplanarSample(uMetalTex, LocalPos, localNorm, texScale);
-    vec3 leatherSample = triplanarSample(uLeatherTex, LocalPos, localNorm, texScale * 1.1);
-    vec3 skinSample = triplanarSample(uSkinTex, LocalPos, localNorm, texScale * 1.3);
-    vec3 woodSample = triplanarSample(uWoodTex, LocalPos, localNorm, texScale * 0.7);
-    vec3 fabricSample = triplanarSample(uFabricTex, LocalPos, localNorm, texScale * 1.4);
+    vec3 metalSample = triplanarSample(uMetalTex, LocalPos, norm, texScale);
+    vec3 leatherSample = triplanarSample(uLeatherTex, LocalPos, norm, texScale * 1.1);
+    vec3 skinSample = triplanarSample(uSkinTex, LocalPos, norm, texScale * 1.3);
+    vec3 woodSample = triplanarSample(uWoodTex, LocalPos, norm, texScale * 0.7);
+    vec3 fabricSample = triplanarSample(uFabricTex, LocalPos, norm, texScale * 1.4);
 
     // Multi-scale detail layers for close-up richness (Two Worlds style micro-detail)
     float detailScale = texScale * 3.5;
     float microScale = texScale * 7.0;
-    vec3 metalDetail = triplanarSample(uMetalTex, LocalPos, localNorm, detailScale);
-    vec3 leatherDetail = triplanarSample(uLeatherTex, LocalPos, localNorm, detailScale);
-    vec3 skinDetail = triplanarSample(uSkinTex, LocalPos, localNorm, detailScale);
-    vec3 woodDetail = triplanarSample(uWoodTex, LocalPos, localNorm, detailScale * 0.8);
-    vec3 microNoise = triplanarSample(uFabricTex, LocalPos, localNorm, microScale);
+    vec3 metalDetail = triplanarSample(uMetalTex, LocalPos, norm, detailScale);
+    vec3 leatherDetail = triplanarSample(uLeatherTex, LocalPos, norm, detailScale);
+    vec3 skinDetail = triplanarSample(uSkinTex, LocalPos, norm, detailScale);
+    vec3 woodDetail = triplanarSample(uWoodTex, LocalPos, norm, detailScale * 0.8);
+    vec3 microNoise = triplanarSample(uFabricTex, LocalPos, norm, microScale);
     float camDist = length(FragPos - uCameraPos);
     float detailMix = smoothstep(2.0, 25.0, camDist);
     metalSample = mix(metalSample * (0.50 + metalDetail.r * 1.0), metalSample, detailMix);
@@ -354,7 +353,6 @@ void main()
     // Classify material from vertex color hue/brightness
     float warmth = VertexColor.r - VertexColor.b;
     float greenness = VertexColor.g - (VertexColor.r + VertexColor.b) * 0.5;
-    float coldness = VertexColor.b - VertexColor.r;
 
     // Material classification with separation
     float metalWeight = smoothstep(0.36, 0.55, luminance) * smoothstep(-0.02, 0.08, -warmth) * 1.2;
@@ -892,12 +890,11 @@ void main()
 
     // --- Material texture sampling via triplanar in object space ---
     float texScale = 2.5;
-    vec3 localNorm = normalize(Normal);
-    vec3 metalSample = triplanarSample(uMetalTex, LocalPos, localNorm, texScale);
-    vec3 leatherSample = triplanarSample(uLeatherTex, LocalPos, localNorm, texScale * 1.1);
-    vec3 skinSample = triplanarSample(uSkinTex, LocalPos, localNorm, texScale * 1.3);
-    vec3 woodSample = triplanarSample(uWoodTex, LocalPos, localNorm, texScale * 0.7);
-    vec3 fabricSample = triplanarSample(uFabricTex, LocalPos, localNorm, texScale * 1.4);
+    vec3 metalSample = triplanarSample(uMetalTex, LocalPos, norm, texScale);
+    vec3 leatherSample = triplanarSample(uLeatherTex, LocalPos, norm, texScale * 1.1);
+    vec3 skinSample = triplanarSample(uSkinTex, LocalPos, norm, texScale * 1.3);
+    vec3 woodSample = triplanarSample(uWoodTex, LocalPos, norm, texScale * 0.7);
+    vec3 fabricSample = triplanarSample(uFabricTex, LocalPos, norm, texScale * 1.4);
 
     float warmth = VertexColor.r - VertexColor.b;
     float greenness = VertexColor.g - (VertexColor.r + VertexColor.b) * 0.5;

@@ -607,9 +607,10 @@ public static class ProceduralMusic
             for (int fi = 0; fi < 3; fi++)
             {
                 float freq = f[fi] * pitch;
-                float bw = freq * 0.12f; // bandwidth
                 float amp = 1.0f / (1f + fi * 0.5f);
-                voiced += MathF.Sin(t * freq * MathF.Tau) * amp * glottal;
+                // Bandwidth-modulated formant: narrower bandwidth = sharper resonance
+                float bwFactor = 1.0f + MathF.Sin(t * freq * 0.12f * MathF.Tau) * 0.15f;
+                voiced += MathF.Sin(t * freq * MathF.Tau) * amp * glottal * bwFactor;
             }
 
             // Consonant-like noise bursts at syllable boundaries

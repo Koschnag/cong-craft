@@ -42,6 +42,9 @@ public static class ObjLoader
 
         float curR = defaultR, curG = defaultG, curB = defaultB;
 
+        // Reusable buffer to avoid per-face allocation
+        var faceVerts = new List<uint>(8);
+
         var lines = objText.Split('\n', StringSplitOptions.TrimEntries);
 
         foreach (var line in lines)
@@ -95,17 +98,20 @@ public static class ObjLoader
                 if (parts.Length < 4) continue;
 
                 // Triangulate face (fan from first vertex for quads/polygons)
-                var faceVerts = new List<uint>();
+                faceVerts.Clear();
+                string colorSuffix = string.Concat("|", curR.ToString("F3"), curG.ToString("F3"), curB.ToString("F3"));
                 for (int i = 1; i < parts.Length; i++)
                 {
-                    string key = parts[i] + "|" + curR.ToString("F3") + curG.ToString("F3") + curB.ToString("F3");
+                    string key = string.Concat(parts[i], colorSuffix);
                     if (!vertexMap.TryGetValue(key, out uint idx))
                     {
                         idx = (uint)(verts.Count / 9);
                         vertexMap[key] = idx;
 
                         ParseFaceVertex(parts[i], positions, normals, out var pos, out var nrm);
-                        verts.AddRange(new[] { pos[0], pos[1], pos[2], nrm[0], nrm[1], nrm[2], curR, curG, curB });
+                        verts.Add(pos[0]); verts.Add(pos[1]); verts.Add(pos[2]);
+                        verts.Add(nrm[0]); verts.Add(nrm[1]); verts.Add(nrm[2]);
+                        verts.Add(curR); verts.Add(curG); verts.Add(curB);
                     }
                     faceVerts.Add(idx);
                 }
@@ -168,13 +174,10 @@ public static class ObjLoader
             float ny = az * bx - ax * bz;
             float nz = ax * by - ay * bx;
 
-            foreach (uint idx in new[] { i0, i1, i2 })
-            {
-                int no = (int)idx * 3;
-                normalAccum[no] += nx;
-                normalAccum[no + 1] += ny;
-                normalAccum[no + 2] += nz;
-            }
+            int no0 = (int)i0 * 3, no1 = (int)i1 * 3, no2 = (int)i2 * 3;
+            normalAccum[no0] += nx; normalAccum[no0 + 1] += ny; normalAccum[no0 + 2] += nz;
+            normalAccum[no1] += nx; normalAccum[no1 + 1] += ny; normalAccum[no1 + 2] += nz;
+            normalAccum[no2] += nx; normalAccum[no2 + 1] += ny; normalAccum[no2 + 2] += nz;
         }
 
         // Normalize and write back into vertex data
