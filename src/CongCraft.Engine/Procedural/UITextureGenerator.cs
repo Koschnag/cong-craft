@@ -4,15 +4,15 @@ using Silk.NET.OpenGL;
 namespace CongCraft.Engine.Procedural;
 
 /// <summary>
-/// Generates procedural textures for UI elements: parchment, gold, leather, ornamental borders.
-/// All textures are warm medieval palette — no external files needed.
-/// Inspired by illuminated manuscript aesthetics.
+/// Generates procedural textures for UI elements.
+/// SpellForce 1-style UI — carved dark stone panels with warm amber-gold ornaments.
+/// Secondary vibes: Gothic 2/3, Risen. Dark stone background, gold trim, warm cream text.
 /// </summary>
 public static class UITextureGenerator
 {
     /// <summary>
-    /// Warm parchment/vellum background texture for UI panels.
-    /// Cream/tan base with subtle fiber patterns and age spots.
+    /// Dark carved stone panel texture for Gothic-style UI backgrounds.
+    /// Deep gray-brown with chisel marks, surface variation and subtle vignette.
     /// </summary>
     public static byte[] GenerateParchment(int size = 128, int seed = 1337)
     {
@@ -22,29 +22,36 @@ public static class UITextureGenerator
         noise.SetFractalOctaves(5);
         noise.SetFrequency(0.03f);
 
-        var noise2 = new FastNoiseLite(seed + 100);
-        noise2.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-        noise2.SetFrequency(0.08f);
+        var crackNoise = new FastNoiseLite(seed + 100);
+        crackNoise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
+        crackNoise.SetFrequency(0.05f);
+
+        var chisNoise = new FastNoiseLite(seed + 200);
+        chisNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+        chisNoise.SetFrequency(0.18f);
 
         var pixels = new byte[size * size * 4];
         for (int y = 0; y < size; y++)
         for (int x = 0; x < size; x++)
         {
             float n1 = noise.GetNoise(x, y) * 0.5f + 0.5f;
-            float n2 = noise2.GetNoise(x, y) * 0.5f + 0.5f;
+            float n2 = crackNoise.GetNoise(x, y) * 0.5f + 0.5f;
+            float n3 = chisNoise.GetNoise(x, y) * 0.5f + 0.5f;
 
-            // Parchment base: warm cream/tan
-            float r = 0.82f + n1 * 0.12f - n2 * 0.05f;
-            float g = 0.72f + n1 * 0.10f - n2 * 0.04f;
-            float b = 0.55f + n1 * 0.08f - n2 * 0.03f;
+            // Dark stone base: brownish-gray with warm undertone (R > G > B)
+            float base_ = 0.15f + n1 * 0.10f + n3 * 0.04f;
+            float crack = MathF.Pow(n2, 3f) * 0.06f; // crack highlight
+            float r = base_ + crack + 0.025f; // slight warm tint
+            float g = base_ + crack;
+            float b = base_ + crack * 0.5f - 0.01f;
 
-            // Edge darkening (vignette)
+            // Vignette — panels feel grounded at edges
             float dx = (x / (float)size - 0.5f) * 2f;
             float dy = (y / (float)size - 0.5f) * 2f;
-            float vignette = 1f - (dx * dx + dy * dy) * 0.15f;
-            r *= vignette;
-            g *= vignette;
-            b *= vignette;
+            float vignette = 1f - (dx * dx + dy * dy) * 0.25f;
+            r = Math.Clamp(r * vignette, 0f, 1f);
+            g = Math.Clamp(g * vignette, 0f, 1f);
+            b = Math.Clamp(b * vignette, 0f, 1f);
 
             int i = (y * size + x) * 4;
             pixels[i + 0] = ToByte(r);
@@ -56,8 +63,8 @@ public static class UITextureGenerator
     }
 
     /// <summary>
-    /// Gold leaf texture for ornamental borders and decorations.
-    /// Metallic sheen with hammered surface variation.
+    /// Tarnished iron/dark copper border texture.
+    /// Replaces bright gold with a weathered medieval metal look.
     /// </summary>
     public static byte[] GenerateGoldLeaf(int size = 64, int seed = 2000)
     {
@@ -65,26 +72,28 @@ public static class UITextureGenerator
         noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
         noise.SetFrequency(0.06f);
 
-        var noise2 = new FastNoiseLite(seed + 50);
-        noise2.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-        noise2.SetFrequency(0.12f);
+        var rustNoise = new FastNoiseLite(seed + 50);
+        rustNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+        rustNoise.SetFrequency(0.15f);
 
         var pixels = new byte[size * size * 4];
         for (int y = 0; y < size; y++)
         for (int x = 0; x < size; x++)
         {
             float n1 = noise.GetNoise(x, y) * 0.5f + 0.5f;
-            float n2 = noise2.GetNoise(x, y) * 0.5f + 0.5f;
+            float n2 = rustNoise.GetNoise(x, y) * 0.5f + 0.5f;
 
-            // Gold base with metallic variation
-            float r = 0.85f + n1 * 0.15f;
-            float g = 0.68f + n1 * 0.12f + n2 * 0.05f;
-            float b = 0.20f + n1 * 0.10f;
+            // Tarnished iron: dark steel with rust-orange highlights
+            float rust = MathF.Pow(n2, 2.5f);
+            float r = 0.32f + rust * 0.18f + n1 * 0.08f;
+            float g = 0.28f + rust * 0.06f + n1 * 0.05f;
+            float b = 0.24f + n1 * 0.04f;
 
-            // Specular highlights
-            float highlight = MathF.Pow(n2, 3f) * 0.3f;
+            // Scratched metal sheen
+            float highlight = MathF.Pow(n1, 4f) * 0.15f;
             r = MathF.Min(1f, r + highlight);
-            g = MathF.Min(1f, g + highlight * 0.8f);
+            g = MathF.Min(1f, g + highlight * 0.7f);
+            b = MathF.Min(1f, b + highlight * 0.5f);
 
             int i = (y * size + x) * 4;
             pixels[i + 0] = ToByte(r);
@@ -96,7 +105,7 @@ public static class UITextureGenerator
     }
 
     /// <summary>
-    /// Dark leather texture for button backgrounds.
+    /// Dark worn leather texture.
     /// </summary>
     public static byte[] GenerateLeather(int size = 64, int seed = 3000)
     {
@@ -117,7 +126,7 @@ public static class UITextureGenerator
             float n1 = noise.GetNoise(x, y) * 0.5f + 0.5f;
             float n2 = noise2.GetNoise(x, y) * 0.5f + 0.5f;
 
-            // Dark brown leather
+            // Dark brown leather (R > G > B)
             float r = 0.30f + n1 * 0.12f + n2 * 0.05f;
             float g = 0.20f + n1 * 0.08f + n2 * 0.04f;
             float b = 0.10f + n1 * 0.05f + n2 * 0.02f;
@@ -132,7 +141,7 @@ public static class UITextureGenerator
     }
 
     /// <summary>
-    /// Wood grain texture for frames.
+    /// Dark wood texture.
     /// </summary>
     public static byte[] GenerateWoodGrain(int size = 128, int seed = 4000)
     {
@@ -145,12 +154,11 @@ public static class UITextureGenerator
         for (int x = 0; x < size; x++)
         {
             float n = noise.GetNoise(x, y * 4);
-            // Ring pattern
             float ring = MathF.Sin((n * 10f + y * 0.1f) * MathF.PI) * 0.5f + 0.5f;
 
-            float r = 0.40f + ring * 0.15f;
-            float g = 0.28f + ring * 0.10f;
-            float b = 0.15f + ring * 0.05f;
+            float r = 0.25f + ring * 0.10f;
+            float g = 0.18f + ring * 0.07f;
+            float b = 0.10f + ring * 0.03f;
 
             int i = (y * size + x) * 4;
             pixels[i + 0] = ToByte(r);
@@ -162,8 +170,8 @@ public static class UITextureGenerator
     }
 
     /// <summary>
-    /// Ornamental vine/floral border pattern for illuminated manuscript style HUD.
-    /// Generates a 1D border texture: a horizontal strip with vine patterns.
+    /// Carved rune border — dark stone with glowing etched symbols.
+    /// Replaces the illuminated-manuscript vine border.
     /// </summary>
     public static byte[] GenerateVineBorder(int width = 256, int height = 32, int seed = 5000)
     {
@@ -175,47 +183,52 @@ public static class UITextureGenerator
             float tx = (float)x / width;
             float ty = (float)y / height;
 
-            // Vine wave pattern
-            float vine = MathF.Sin(tx * MathF.PI * 8f + MathF.Sin(tx * MathF.PI * 3f) * 1.5f) * 0.3f + 0.5f;
-            float dist = MathF.Abs(ty - vine);
+            // Horizontal divider line
+            float centerDist = MathF.Abs(ty - 0.5f);
+            float line = MathF.Exp(-centerDist * centerDist * 120f);
 
-            // Vine stem
-            float stem = MathF.Exp(-dist * dist * 80f);
+            // Rune glyphs: evenly spaced rectangular cutouts
+            float runePhase = (tx * 8f) % 1f;
+            float runeGlyph = 0f;
+            // Vertical bar
+            if (runePhase > 0.2f && runePhase < 0.35f && ty > 0.2f && ty < 0.8f)
+                runeGlyph = 0.8f;
+            // Diagonal slash
+            float diag = MathF.Abs((runePhase - 0.55f) * 3f - (ty - 0.5f));
+            if (runePhase > 0.45f && runePhase < 0.7f && diag < 0.1f)
+                runeGlyph = MathF.Max(runeGlyph, MathF.Exp(-diag * diag * 200f) * 0.7f);
+            // Horizontal crossbar
+            float crossDist = MathF.Abs(ty - 0.5f);
+            if (runePhase > 0.45f && runePhase < 0.7f && crossDist < 0.08f)
+                runeGlyph = MathF.Max(runeGlyph, 0.65f);
 
-            // Leaf/flourish shapes at regular intervals
-            float leafPhase = tx * MathF.PI * 4f;
-            float leaf = MathF.Max(0f,
-                MathF.Cos(leafPhase) * MathF.Exp(-MathF.Pow(MathF.Abs(ty - vine + MathF.Sin(leafPhase) * 0.15f), 2f) * 40f));
-
-            // Small berries/dots
-            float berry = 0f;
-            for (int bi = 0; bi < 6; bi++)
+            // Small dots between glyphs
+            float dotPhase = (tx * 8f + 0.5f) % 1f;
+            float dot = 0f;
+            if (dotPhase > 0.4f && dotPhase < 0.6f)
             {
-                float bx = (bi + 0.5f) / 6f;
-                float by = MathF.Sin(bx * MathF.PI * 8f + MathF.Sin(bx * MathF.PI * 3f) * 1.5f) * 0.3f + 0.5f;
-                by += (bi % 2 == 0 ? 0.12f : -0.12f);
-                float bdist = MathF.Sqrt((tx - bx) * (tx - bx) * 16f + (ty - by) * (ty - by));
-                berry = MathF.Max(berry, MathF.Exp(-bdist * bdist * 200f));
+                float ddist = MathF.Sqrt((dotPhase - 0.5f) * (dotPhase - 0.5f) * 40f + (ty - 0.5f) * (ty - 0.5f) * 40f);
+                dot = MathF.Exp(-ddist * ddist * 60f) * 0.5f;
             }
 
-            float total = MathF.Min(1f, stem * 0.8f + leaf * 0.6f + berry * 0.9f);
+            float total = MathF.Min(1f, line * 0.6f + runeGlyph + dot);
 
-            // Gold color for ornaments
-            float r = total * 0.90f;
-            float g = total * 0.72f;
-            float b = total * 0.25f;
+            // SpellForce warm amber-gold color for runes
+            float r = total * 0.82f;
+            float g = total * 0.58f;
+            float b = total * 0.14f;
 
             int i = (y * width + x) * 4;
             pixels[i + 0] = ToByte(r);
             pixels[i + 1] = ToByte(g);
             pixels[i + 2] = ToByte(b);
-            pixels[i + 3] = ToByte(total);
+            pixels[i + 3] = ToByte(total * 0.85f);
         }
         return pixels;
     }
 
     /// <summary>
-    /// Ornate corner decoration for UI panels. Quadrant pattern: place at corners with rotation.
+    /// Carved stone corner ornament — spiral with chisel marks.
     /// </summary>
     public static byte[] GenerateCornerOrnament(int size = 64)
     {
@@ -227,16 +240,15 @@ public static class UITextureGenerator
             float tx = (float)x / size;
             float ty = (float)y / size;
 
-            // Spiral/flourish from corner
             float angle = MathF.Atan2(ty, tx);
             float radius = MathF.Sqrt(tx * tx + ty * ty);
 
-            // Spiral arm
+            // Carved spiral groove
             float spiral = MathF.Sin(angle * 3f + radius * 8f) * 0.5f + 0.5f;
             float mask = MathF.Exp(-radius * 2.5f);
             float flourish = spiral * mask;
 
-            // Circular dots along the spiral
+            // Iron dots
             float dots = 0f;
             for (int di = 1; di <= 4; di++)
             {
@@ -248,10 +260,10 @@ public static class UITextureGenerator
 
             float total = MathF.Min(1f, flourish * 0.7f + dots * 0.8f);
 
-            // Gold
-            float r = total * 0.90f;
-            float g = total * 0.72f;
-            float b = total * 0.25f;
+            // SpellForce amber-gold corner ornament
+            float r = total * 0.80f;
+            float g = total * 0.55f;
+            float b = total * 0.12f;
 
             int i = (y * size + x) * 4;
             pixels[i + 0] = ToByte(r);
@@ -263,19 +275,24 @@ public static class UITextureGenerator
     }
 
     /// <summary>
-    /// Simple dark atmospheric background for menu - night sky with stars.
+    /// Gothic ruins menu background — crumbling castle arch with torch-fire glow,
+    /// dark forest silhouette, blood-orange ember horizon.
     /// </summary>
     public static byte[] GenerateMenuBackground(int width = 512, int height = 256, int seed = 6000)
     {
-        var noise = new FastNoiseLite(seed);
-        noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-        noise.SetFractalType(FastNoiseLite.FractalType.FBm);
-        noise.SetFractalOctaves(4);
-        noise.SetFrequency(0.008f);
+        var cloudNoise = new FastNoiseLite(seed);
+        cloudNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+        cloudNoise.SetFractalType(FastNoiseLite.FractalType.FBm);
+        cloudNoise.SetFractalOctaves(4);
+        cloudNoise.SetFrequency(0.008f);
 
         var starNoise = new FastNoiseLite(seed + 999);
         starNoise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
         starNoise.SetFrequency(0.15f);
+
+        var treeSilNoise = new FastNoiseLite(seed + 111);
+        treeSilNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+        treeSilNoise.SetFrequency(0.04f);
 
         var pixels = new byte[width * height * 4];
         for (int y = 0; y < height; y++)
@@ -284,48 +301,73 @@ public static class UITextureGenerator
             float tx = (float)x / width;
             float ty = (float)y / height;
 
-            // Night sky gradient (darker at top)
-            float skyR = 0.04f + ty * 0.06f;
-            float skyG = 0.04f + ty * 0.04f;
-            float skyB = 0.08f + ty * 0.08f;
+            // Deep night sky: near-black blue-purple
+            float skyR = 0.02f + ty * 0.04f;
+            float skyG = 0.01f + ty * 0.02f;
+            float skyB = 0.04f + ty * 0.06f;
 
-            // Clouds/mist
-            float cloud = noise.GetNoise(x, y) * 0.5f + 0.5f;
-            cloud = MathF.Pow(cloud, 2f) * 0.15f;
-            skyR += cloud * 0.5f;
-            skyG += cloud * 0.3f;
-            skyB += cloud * 0.6f;
+            // Dim cloud wisps (dark, ominous)
+            float cloud = cloudNoise.GetNoise(x, y) * 0.5f + 0.5f;
+            cloud = MathF.Pow(cloud, 2.5f) * 0.08f;
+            skyR += cloud * 0.3f;
+            skyG += cloud * 0.1f;
+            skyB += cloud * 0.4f;
 
-            // Landscape silhouette at bottom
-            float mountainNoise = noise.GetNoise(x * 2, 0) * 0.5f + 0.5f;
-            float mountainLine = 0.15f + mountainNoise * 0.15f;
-            if (ty < mountainLine)
+            // Tree/forest silhouette at bottom (jagged, dense)
+            float treeHeight = 0.22f + treeSilNoise.GetNoise(x * 1.5f, 0) * 0.07f;
+            treeHeight += MathF.Abs(treeSilNoise.GetNoise(x * 4f, 10)) * 0.06f;
+
+            // Castle/ruin arch silhouette (centered)
+            float cx2 = tx - 0.5f;
+            float archLeft = 0.3f + MathF.Pow(MathF.Max(0f, MathF.Abs(cx2) - 0.15f), 2f) * 2f;
+            float archRight = archLeft;
+            bool inArch = MathF.Abs(cx2) < 0.13f && ty < 0.55f && ty > 0.12f;
+            bool inTower = (MathF.Abs(cx2 - 0.15f) < 0.05f || MathF.Abs(cx2 + 0.15f) < 0.05f)
+                           && ty < 0.65f;
+            bool onWall = MathF.Abs(cx2) < 0.22f && ty < 0.28f;
+
+            // Silhouette mask
+            float silhouetteHeight = treeHeight;
+            if (inTower) silhouetteHeight = MathF.Max(silhouetteHeight, 0.65f);
+            if (onWall) silhouetteHeight = MathF.Max(silhouetteHeight, 0.28f);
+
+            if (ty < silhouetteHeight)
             {
-                // Dark mountain
-                float depth = (mountainLine - ty) * 4f;
-                skyR = MathF.Max(0, skyR - depth * 0.1f);
-                skyG = MathF.Max(0, skyG - depth * 0.1f);
-                skyB = MathF.Max(0, skyB - depth * 0.08f);
+                // Very dark silhouette
+                float depth = (silhouetteHeight - ty) * 3f;
+                skyR = MathF.Max(0.01f, skyR * 0.2f - depth * 0.02f);
+                skyG = MathF.Max(0.01f, skyG * 0.15f - depth * 0.02f);
+                skyB = MathF.Max(0.02f, skyB * 0.25f - depth * 0.015f);
             }
 
-            // Stars (only above mountains)
-            if (ty > mountainLine + 0.05f)
+            // Stars (above silhouette)
+            if (ty > silhouetteHeight + 0.04f)
             {
                 float star = starNoise.GetNoise(x, y) * 0.5f + 0.5f;
-                if (star > 0.92f)
+                if (star > 0.93f)
                 {
-                    float brightness = (star - 0.92f) * 12f;
-                    skyR = MathF.Min(1f, skyR + brightness * 0.9f);
-                    skyG = MathF.Min(1f, skyG + brightness * 0.85f);
-                    skyB = MathF.Min(1f, skyB + brightness * 0.7f);
+                    float brightness = (star - 0.93f) * 14f;
+                    skyR = MathF.Min(1f, skyR + brightness * 0.8f);
+                    skyG = MathF.Min(1f, skyG + brightness * 0.75f);
+                    skyB = MathF.Min(1f, skyB + brightness * 0.9f);
                 }
             }
 
-            // Warm glow on horizon
-            float horizonGlow = MathF.Exp(-MathF.Pow((ty - mountainLine) * 6f, 2f)) * 0.2f;
-            skyR += horizonGlow * 0.8f;
-            skyG += horizonGlow * 0.4f;
-            skyB += horizonGlow * 0.2f;
+            // Torch fire glow at horizon center (blood-orange)
+            float fireGlow = MathF.Exp(-MathF.Pow((tx - 0.5f) * 4f, 2f)) *
+                             MathF.Exp(-MathF.Pow((ty - treeHeight) * 8f, 2f));
+            skyR = MathF.Min(1f, skyR + fireGlow * 0.55f);
+            skyG = MathF.Min(1f, skyG + fireGlow * 0.18f);
+            skyB = MathF.Min(1f, skyB + fireGlow * 0.05f);
+
+            // Arch gateway glow (subtle inner light through the gate)
+            if (inArch)
+            {
+                float archGlow = MathF.Exp(-MathF.Pow((ty - 0.35f) * 4f, 2f));
+                skyR = MathF.Min(1f, skyR + archGlow * 0.12f);
+                skyG = MathF.Min(1f, skyG + archGlow * 0.06f);
+                skyB = MathF.Min(1f, skyB + archGlow * 0.02f);
+            }
 
             int i = (y * width + x) * 4;
             pixels[i + 0] = ToByte(skyR);

@@ -163,29 +163,44 @@ void main()
     // Steep slopes get stone
     baseColor = mix(baseColor, stoneSample, smoothstep(0.35, 0.65, slope));
 
-    // Directional lighting (Blinn-Phong)
-    vec3 lightDir = normalize(-uSunDirection);
-    float diff = max(dot(norm, lightDir), 0.0);
+    // Detail texture overlay (high-frequency noise for close-up detail)
+    float detailScale = 0.8;
+    vec3 detailSample = texture(uDirtTex, FragPos.xz * detailScale).rgb;
+    float detailBlend = smoothstep(0.0, 30.0, length(FragPos.xz - uCameraPos.xz));
+    baseColor = mix(baseColor * (0.7 + detailSample.r * 0.6), baseColor, detailBlend);
 
-    // Specular (subtle for terrain)
+    // Half-Lambert diffuse for softer terrain shading (Gothic 3 style)
+    vec3 lightDir = normalize(-uSunDirection);
+    float NdotL = dot(norm, lightDir);
+    float diff = NdotL * 0.5 + 0.5;
+    diff = diff * diff;
+
+    // Specular for wet stone/snow (higher on steep/high areas)
     vec3 viewDir = normalize(uCameraPos - FragPos);
     vec3 halfDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(norm, halfDir), 0.0), 32.0);
-    vec3 specular = spec * uSunColor * 0.15 * uSunIntensity;
+    float specRoughness = mix(64.0, 16.0, slope); // Steep = rougher
+    float spec = pow(max(dot(norm, halfDir), 0.0), specRoughness);
+    float specIntensity = mix(0.08, 0.25, smoothstep(10.0, 22.0, Height)); // Snow = shinier
+    vec3 specular = spec * uSunColor * specIntensity * uSunIntensity;
 
     // Hemisphere ambient (sky above, ground below)
     float hemiBlend = dot(norm, vec3(0.0, 1.0, 0.0)) * 0.5 + 0.5;
-    vec3 ambient = mix(uAmbientColor * 0.5, uAmbientColor * 1.2, hemiBlend);
+    vec3 ambient = mix(uAmbientColor * 0.45, uAmbientColor * 1.15, hemiBlend);
+
+    // Fake ambient occlusion from terrain crevices
+    float terrainAO = smoothstep(-0.2, 0.5, norm.y) * 0.25 + 0.75;
+    ambient *= terrainAO;
 
     // Shadow
     float shadow = ShadowCalculation(FragPosLightSpace, norm, lightDir);
     vec3 diffuse = diff * uSunColor * uSunIntensity * (1.0 - shadow * 0.7);
     vec3 lighting = (ambient + diffuse) * baseColor + specular * (1.0 - shadow);
 
-    // Atmospheric fog (height-adjusted)
+    // Atmospheric fog (height-adjusted, denser in valleys)
     float dist = length(FragPos - uCameraPos);
+    float valleyFog = max(0.0, 1.0 - FragPos.y * 0.08); // Fog pools in valleys
     float heightFactor = max(0.0, 1.0 - (FragPos.y - uCameraPos.y) * 0.02);
-    float fog = 1.0 - exp(-dist * uFogDensity * (1.0 + heightFactor * 0.5));
+    float fog = 1.0 - exp(-dist * uFogDensity * (1.0 + heightFactor * 0.5 + valleyFog * 0.3));
     lighting = mix(lighting, uFogColor, clamp(fog, 0.0, 1.0));
 
     FragColor = vec4(lighting, 1.0);
@@ -269,31 +284,51 @@ void main()
     vec3 lightDir = normalize(-uSunDirection);
     vec3 viewDir = normalize(uCameraPos - FragPos);
 
-    // Diffuse
-    float diff = max(dot(norm, lightDir), 0.0);
+    // Material properties from vertex color brightness
+    float luminance = dot(VertexColor, vec3(0.299, 0.587, 0.114));
+    float metallic = smoothstep(0.35, 0.55, luminance) * 0.6; // Brighter = more metallic
+    float roughness = mix(0.3, 0.8, 1.0 - metallic); // Metal = smoother
 
-    // Blinn-Phong specular
+    // Diffuse with half-Lambert for softer shading (Gothic/Two Worlds style)
+    float NdotL = dot(norm, lightDir);
+    float diff = NdotL * 0.5 + 0.5;
+    diff = diff * diff; // Softer falloff
+
+    // Blinn-Phong specular with material-dependent shininess
     vec3 halfDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(norm, halfDir), 0.0), 48.0);
-    vec3 specular = spec * uSunColor * 0.25 * uSunIntensity;
+    float shininess = mix(24.0, 96.0, 1.0 - roughness);
+    float spec = pow(max(dot(norm, halfDir), 0.0), shininess);
+    float specIntensity = mix(0.15, 0.45, metallic);
+    vec3 specColor = mix(vec3(1.0), VertexColor, metallic); // Metal tints specular
+    vec3 specular = spec * specColor * specIntensity * uSunIntensity;
 
-    // Hemisphere ambient
+    // Hemisphere ambient with fake AO from normal direction
     float hemiBlend = dot(norm, vec3(0.0, 1.0, 0.0)) * 0.5 + 0.5;
-    vec3 ambient = mix(uAmbientColor * 0.6, uAmbientColor * 1.3, hemiBlend);
+    vec3 ambient = mix(uAmbientColor * 0.5, uAmbientColor * 1.2, hemiBlend);
+
+    // Fake cavity AO: darken areas where normals point down or inward
+    float cavityAO = smoothstep(-0.3, 0.4, norm.y) * 0.3 + 0.7;
+    ambient *= cavityAO;
 
     // Shadow
     float shadow = ShadowCalculation(FragPosLightSpace, norm, lightDir);
     vec3 diffuse = diff * uSunColor * uSunIntensity * (1.0 - shadow * 0.7);
     vec3 lighting = (ambient + diffuse) * VertexColor + specular * (1.0 - shadow);
 
-    // Rim lighting
+    // Rim lighting (subsurface scattering approximation for skin/leather)
     float rim = 1.0 - max(dot(viewDir, norm), 0.0);
-    rim = smoothstep(0.5, 1.0, rim);
-    lighting += rim * uSunColor * 0.08 * uSunIntensity;
+    rim = smoothstep(0.4, 1.0, rim);
+    vec3 rimColor = mix(uSunColor * 0.08, VertexColor * 0.12, 1.0 - metallic);
+    lighting += rim * rimColor * uSunIntensity;
 
-    // Fog
+    // Fresnel-enhanced edge highlighting
+    float fresnel = pow(1.0 - max(dot(viewDir, norm), 0.0), 3.0);
+    lighting += fresnel * uSunColor * 0.04 * metallic * uSunIntensity;
+
+    // Fog with height-based density
     float dist = length(FragPos - uCameraPos);
-    float fog = 1.0 - exp(-dist * uFogDensity);
+    float heightFog = max(0.0, 1.0 - (FragPos.y - uCameraPos.y) * 0.015);
+    float fog = 1.0 - exp(-dist * uFogDensity * (1.0 + heightFog * 0.4));
     lighting = mix(lighting, uFogColor, clamp(fog, 0.0, 1.0));
 
     FragColor = vec4(lighting, 1.0);
@@ -588,7 +623,19 @@ out vec4 FragColor;
 void main()
 {
     float alpha = texture(uTexture, TexCoord).a;
-    FragColor = vec4(uColor.rgb, uColor.a * alpha);
+
+    // Drop shadow for readability (sample offset by 1 texel)
+    vec2 texSize = vec2(textureSize(uTexture, 0));
+    vec2 shadowOffset = vec2(1.0, 1.0) / texSize;
+    float shadowAlpha = texture(uTexture, TexCoord + shadowOffset).a;
+    shadowAlpha = max(shadowAlpha, texture(uTexture, TexCoord + vec2(shadowOffset.x, 0.0)).a);
+    shadowAlpha = max(shadowAlpha, texture(uTexture, TexCoord + vec2(0.0, shadowOffset.y)).a);
+    vec3 shadowColor = vec3(0.0);
+    float shadowStrength = shadowAlpha * uColor.a * 0.5 * (1.0 - alpha);
+
+    vec3 finalColor = mix(shadowColor, uColor.rgb, step(0.01, alpha));
+    float finalAlpha = max(uColor.a * alpha, shadowStrength);
+    FragColor = vec4(finalColor, finalAlpha);
 }
 ";
 
@@ -697,13 +744,29 @@ void main()
     vec3 lightDir = normalize(-uSunDirection);
     vec3 viewDir = normalize(uCameraPos - FragPos);
 
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 halfDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(norm, halfDir), 0.0), 48.0);
-    vec3 specular = spec * uSunColor * 0.2 * uSunIntensity;
+    // Material properties
+    float luminance = dot(VertexColor, vec3(0.299, 0.587, 0.114));
+    float metallic = smoothstep(0.35, 0.55, luminance) * 0.6;
+    float roughness = mix(0.3, 0.8, 1.0 - metallic);
 
+    // Half-Lambert diffuse
+    float NdotL = dot(norm, lightDir);
+    float diff = NdotL * 0.5 + 0.5;
+    diff = diff * diff;
+
+    // Material-dependent specular
+    vec3 halfDir = normalize(lightDir + viewDir);
+    float shininess = mix(24.0, 96.0, 1.0 - roughness);
+    float spec = pow(max(dot(norm, halfDir), 0.0), shininess);
+    float specIntensity = mix(0.15, 0.45, metallic);
+    vec3 specColor = mix(vec3(1.0), VertexColor, metallic);
+    vec3 specular = spec * specColor * specIntensity * uSunIntensity;
+
+    // Hemisphere ambient with fake cavity AO
     float hemiBlend = dot(norm, vec3(0.0, 1.0, 0.0)) * 0.5 + 0.5;
-    vec3 ambient = mix(uAmbientColor * 0.6, uAmbientColor * 1.3, hemiBlend);
+    vec3 ambient = mix(uAmbientColor * 0.5, uAmbientColor * 1.2, hemiBlend);
+    float cavityAO = smoothstep(-0.3, 0.4, norm.y) * 0.3 + 0.7;
+    ambient *= cavityAO;
 
     float shadow = ShadowCalculation(FragPosLightSpace, norm, lightDir);
     vec3 diffuse = diff * uSunColor * uSunIntensity * (1.0 - shadow * 0.7);
@@ -719,17 +782,21 @@ void main()
         vec3 pLightDir = normalize(toLight);
         float pointDiff = max(dot(norm, pLightDir), 0.0);
         vec3 pHalfDir = normalize(pLightDir + viewDir);
-        float pSpec = pow(max(dot(norm, pHalfDir), 0.0), 32.0);
-        lighting += (pointDiff * VertexColor + pSpec * uPointLightColor[i] * 0.3)
+        float pSpec = pow(max(dot(norm, pHalfDir), 0.0), shininess * 0.75);
+        lighting += (pointDiff * VertexColor + pSpec * specColor * 0.3)
                   * uPointLightColor[i] * uPointLightIntensity[i] * attenuation;
     }
 
+    // Rim lighting
     float rim = 1.0 - max(dot(viewDir, norm), 0.0);
-    rim = smoothstep(0.5, 1.0, rim);
-    lighting += rim * uSunColor * 0.06 * uSunIntensity;
+    rim = smoothstep(0.4, 1.0, rim);
+    vec3 rimColor = mix(uSunColor * 0.08, VertexColor * 0.12, 1.0 - metallic);
+    lighting += rim * rimColor * uSunIntensity;
 
+    // Fog with height
     float fogDist = length(FragPos - uCameraPos);
-    float fog = 1.0 - exp(-fogDist * uFogDensity);
+    float heightFog = max(0.0, 1.0 - (FragPos.y - uCameraPos.y) * 0.015);
+    float fog = 1.0 - exp(-fogDist * uFogDensity * (1.0 + heightFog * 0.4));
     lighting = mix(lighting, uFogColor, clamp(fog, 0.0, 1.0));
 
     FragColor = vec4(lighting, 1.0);
@@ -810,13 +877,20 @@ void main()
     vec3 bloomColor = texture(uBloom, TexCoord).rgb;
     hdrColor += bloomColor * uBloomIntensity;
 
+    // Apply exposure
+    hdrColor *= uExposure;
+
     // ACES-like tonemapping
     vec3 mapped = (hdrColor * (2.51 * hdrColor + 0.03)) / (hdrColor * (2.43 * hdrColor + 0.59) + 0.14);
     mapped = pow(mapped, vec3(1.0 / 2.2));
 
-    // Subtle vignette
+    // Slight desaturation (~10%) for SpellForce/Gothic muted palette
+    float luma = dot(mapped, vec3(0.299, 0.587, 0.114));
+    mapped = mix(vec3(luma), mapped, 0.90);
+
+    // Stronger vignette for dark-fantasy framing
     vec2 uv = TexCoord * 2.0 - 1.0;
-    float vignette = 1.0 - dot(uv * 0.4, uv * 0.4);
+    float vignette = 1.0 - dot(uv * 0.55, uv * 0.55);
     mapped *= smoothstep(0.0, 1.0, vignette);
 
     FragColor = vec4(mapped, 1.0);

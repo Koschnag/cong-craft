@@ -10,8 +10,12 @@ namespace CongCraft.Engine.UI;
 /// </summary>
 public sealed class BitmapFont : IDisposable
 {
-    public const int GlyphWidth = 8;
-    public const int GlyphHeight = 8;
+    public const int GlyphWidth = 16;
+    public const int GlyphHeight = 16;
+    /// <summary>Logical glyph advance width for text layout (keeps backward compat with 8px spacing).</summary>
+    public const int LogicalWidth = 8;
+    /// <summary>Logical glyph advance height for text layout.</summary>
+    public const int LogicalHeight = 8;
     public const int FirstChar = 32;
     public const int LastChar = 126;
     public const int CharCount = LastChar - FirstChar + 1;
@@ -55,6 +59,7 @@ public sealed class BitmapFont : IDisposable
     {
         var pixels = new byte[AtlasWidth * AtlasHeight * 4];
 
+        // First generate high-res glyphs from 8x8 bitmaps, then apply anti-aliasing
         for (int i = 0; i < CharCount; i++)
         {
             char c = (char)(FirstChar + i);
@@ -62,11 +67,17 @@ public sealed class BitmapFont : IDisposable
             int col = i % AtlasCols;
             int row = i / AtlasCols;
 
+            // Scale factor: 16/8 = 2x upscale
+            const int srcW = 8, srcH = 8;
+
+            // First pass: render upscaled glyph
             for (int gy = 0; gy < GlyphHeight; gy++)
             {
                 for (int gx = 0; gx < GlyphWidth; gx++)
                 {
-                    int bit = gy * GlyphWidth + gx;
+                    int srcX = gx * srcW / GlyphWidth;
+                    int srcY = gy * srcH / GlyphHeight;
+                    int bit = srcY * srcW + srcX;
                     bool set = ((glyph >> (63 - bit)) & 1) == 1;
 
                     int px = col * GlyphWidth + gx;
@@ -80,7 +91,41 @@ public sealed class BitmapFont : IDisposable
                         pixels[idx + 2] = 255;
                         pixels[idx + 3] = 255;
                     }
-                    // else remains 0,0,0,0 (transparent)
+                }
+            }
+
+            // Second pass: add anti-aliased edges by sampling neighbors
+            for (int gy = 0; gy < GlyphHeight; gy++)
+            {
+                for (int gx = 0; gx < GlyphWidth; gx++)
+                {
+                    int px = col * GlyphWidth + gx;
+                    int py = row * GlyphHeight + gy;
+                    int idx = (py * AtlasWidth + px) * 4;
+
+                    if (pixels[idx + 3] != 0) continue; // Already filled
+
+                    // Count filled neighbors (including diagonals)
+                    int neighbors = 0;
+                    for (int dy = -1; dy <= 1; dy++)
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        if (dx == 0 && dy == 0) continue;
+                        int nx = px + dx, ny = py + dy;
+                        if (nx < 0 || ny < 0 || nx >= AtlasWidth || ny >= AtlasHeight) continue;
+                        int nIdx = (ny * AtlasWidth + nx) * 4;
+                        if (pixels[nIdx + 3] == 255) neighbors++;
+                    }
+
+                    // Add soft edge pixels where there are filled neighbors
+                    if (neighbors >= 2)
+                    {
+                        byte alpha = (byte)(neighbors * 22); // Soft falloff
+                        pixels[idx + 0] = 255;
+                        pixels[idx + 1] = 255;
+                        pixels[idx + 2] = 255;
+                        pixels[idx + 3] = alpha;
+                    }
                 }
             }
         }
@@ -100,8 +145,8 @@ public sealed class BitmapFont : IDisposable
                 PixelFormat.Rgba, PixelType.UnsignedByte, p);
         }
 
-        _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)GLEnum.Nearest);
-        _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)GLEnum.Nearest);
+        _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)GLEnum.Linear);
+        _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)GLEnum.Linear);
         _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)GLEnum.ClampToEdge);
         _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)GLEnum.ClampToEdge);
 

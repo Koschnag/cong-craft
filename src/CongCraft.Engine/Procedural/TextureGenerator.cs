@@ -19,12 +19,17 @@ public static class TextureGenerator
         var detail = new CongCraft.Engine.Terrain.FastNoiseLite(seed + 100);
         detail.SetNoiseType(CongCraft.Engine.Terrain.FastNoiseLite.NoiseType.OpenSimplex2);
         detail.SetFractalType(CongCraft.Engine.Terrain.FastNoiseLite.FractalType.FBm);
-        detail.SetFractalOctaves(4);
+        detail.SetFractalOctaves(5);
         detail.SetFrequency(0.12f);
 
         var blade = new CongCraft.Engine.Terrain.FastNoiseLite(seed + 200);
         blade.SetNoiseType(CongCraft.Engine.Terrain.FastNoiseLite.NoiseType.Cellular);
-        blade.SetFrequency(0.08f);
+        blade.SetFrequency(0.10f);
+
+        // Fine grain for close-up detail (Gothic 3/Two Worlds style)
+        var fineGrain = new CongCraft.Engine.Terrain.FastNoiseLite(seed + 600);
+        fineGrain.SetNoiseType(CongCraft.Engine.Terrain.FastNoiseLite.NoiseType.OpenSimplex2);
+        fineGrain.SetFrequency(0.25f);
 
         var pixels = new byte[size * size * 4];
         for (int y = 0; y < size; y++)
@@ -33,12 +38,15 @@ public static class TextureGenerator
             float n = noise.GetNoise(x, y) * 0.5f + 0.5f;
             float d = detail.GetNoise(x, y) * 0.5f + 0.5f;
             float bl = blade.GetNoise(x, y) * 0.5f + 0.5f;
-            float combined = n * 0.5f + d * 0.3f + bl * 0.2f;
+            float fg = fineGrain.GetNoise(x, y) * 0.5f + 0.5f;
+            float combined = n * 0.35f + d * 0.30f + bl * 0.20f + fg * 0.15f;
 
+            // Richer, more varied greens with earthy undertones
             int i = (y * size + x) * 4;
-            pixels[i + 0] = (byte)(25 + combined * 55);
-            pixels[i + 1] = (byte)(55 + combined * 120);
-            pixels[i + 2] = (byte)(12 + combined * 25);
+            float warmth = n * 0.15f; // Slight warm patches
+            pixels[i + 0] = (byte)Math.Clamp(30 + combined * 50 + warmth * 40, 0, 255);
+            pixels[i + 1] = (byte)Math.Clamp(50 + combined * 115, 0, 255);
+            pixels[i + 2] = (byte)Math.Clamp(10 + combined * 22, 0, 255);
             pixels[i + 3] = 255;
         }
         return pixels;
@@ -57,8 +65,13 @@ public static class TextureGenerator
         var roughness = new CongCraft.Engine.Terrain.FastNoiseLite(seed + 300);
         roughness.SetNoiseType(CongCraft.Engine.Terrain.FastNoiseLite.NoiseType.OpenSimplex2);
         roughness.SetFractalType(CongCraft.Engine.Terrain.FastNoiseLite.FractalType.FBm);
-        roughness.SetFractalOctaves(5);
+        roughness.SetFractalOctaves(6);
         roughness.SetFrequency(0.08f);
+
+        // Vein/mineral detail layer
+        var veins = new CongCraft.Engine.Terrain.FastNoiseLite(seed + 700);
+        veins.SetNoiseType(CongCraft.Engine.Terrain.FastNoiseLite.NoiseType.OpenSimplex2);
+        veins.SetFrequency(0.15f);
 
         var pixels = new byte[size * size * 4];
         for (int y = 0; y < size; y++)
@@ -67,13 +80,18 @@ public static class TextureGenerator
             float n = noise.GetNoise(x, y) * 0.5f + 0.5f;
             float cr = crack.GetNoise(x, y) * 0.5f + 0.5f;
             float rough = roughness.GetNoise(x, y) * 0.5f + 0.5f;
-            float combined = n * 0.4f + cr * 0.35f + rough * 0.25f;
+            float vn = veins.GetNoise(x, y) * 0.5f + 0.5f;
+            float combined = n * 0.35f + cr * 0.30f + rough * 0.25f + vn * 0.10f;
 
+            // Warmer stone with slight color variation (like Gothic 3 mountain stone)
             int i = (y * size + x) * 4;
-            byte baseVal = (byte)(85 + combined * 95);
-            pixels[i + 0] = baseVal;
-            pixels[i + 1] = (byte)(baseVal - 3);
-            pixels[i + 2] = (byte)(baseVal - 8);
+            float warmShift = vn * 8f;
+            byte rVal = (byte)Math.Clamp(88 + combined * 92 + warmShift, 0, 255);
+            byte gVal = (byte)Math.Clamp(84 + combined * 88, 0, 255);
+            byte bVal = (byte)Math.Clamp(78 + combined * 82, 0, 255);
+            pixels[i + 0] = rVal;
+            pixels[i + 1] = gVal;
+            pixels[i + 2] = bVal;
             pixels[i + 3] = 255;
         }
         return pixels;
@@ -142,7 +160,7 @@ public static class TextureGenerator
         if (maxAniso > 1f)
         {
             gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMaxAnisotropy,
-                MathF.Min(maxAniso, 8f));
+                MathF.Min(maxAniso, 16f));
         }
 
         return texture;

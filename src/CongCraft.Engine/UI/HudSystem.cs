@@ -41,12 +41,13 @@ public sealed class HudSystem : ISystem
     private UITextureAtlas _textures = null!;
 
     // Illuminated manuscript color palette
-    private static readonly Vector4 GoldColor = new(0.85f, 0.68f, 0.22f, 0.95f);
-    private static readonly Vector4 DarkGold = new(0.60f, 0.45f, 0.15f, 0.90f);
-    private static readonly Vector4 ParchmentTint = new(0.92f, 0.85f, 0.70f, 0.92f);
+    // SpellForce 1-style color palette: warm amber/gold on dark carved stone
+    private static readonly Vector4 GoldColor = new(0.88f, 0.65f, 0.18f, 0.95f);
+    private static readonly Vector4 DarkGold = new(0.58f, 0.40f, 0.10f, 0.90f);
+    private static readonly Vector4 ParchmentTint = new(0.30f, 0.26f, 0.22f, 0.92f);
     private static readonly Vector4 DeepRed = new(0.60f, 0.12f, 0.10f, 0.90f);
     private static readonly Vector4 DeepBlue = new(0.15f, 0.22f, 0.55f, 0.85f);
-    private static readonly Vector4 CreamText = new(0.95f, 0.90f, 0.75f, 1.0f);
+    private static readonly Vector4 CreamText = new(0.93f, 0.88f, 0.72f, 1.0f);
     private static readonly Vector4 DarkInk = new(0.15f, 0.10f, 0.08f, 0.95f);
 
     public void Initialize(ServiceLocator services)
@@ -998,6 +999,8 @@ public sealed class HudSystem : ISystem
 
     private void DrawRect(HudElement element)
     {
+        // Ensure HUD shader is active (text/texture rendering may have switched programs)
+        _hudShader.Use();
         _hudShader.SetUniform("uRect", new Vector4(
             element.Position.X, element.Position.Y,
             element.Size.X, element.Size.Y));

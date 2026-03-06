@@ -42,12 +42,12 @@ public sealed class MenuSystem : ISystem
     private readonly MenuParticle[] _embers = new MenuParticle[40];
     private readonly Random _rng = new(42);
 
-    // Color palette (matching HudSystem)
-    private static readonly Vector4 GoldColor = new(0.85f, 0.68f, 0.22f, 0.95f);
-    private static readonly Vector4 DarkGold = new(0.60f, 0.45f, 0.15f, 0.90f);
-    private static readonly Vector4 ParchmentTint = new(0.92f, 0.85f, 0.70f, 0.92f);
-    private static readonly Vector4 CreamText = new(0.95f, 0.90f, 0.75f, 1.0f);
-    private static readonly Vector4 DimText = new(0.65f, 0.58f, 0.45f, 0.8f);
+    // SpellForce 1-style color palette: warm amber/gold on dark carved stone
+    private static readonly Vector4 GoldColor = new(0.88f, 0.65f, 0.18f, 0.95f);   // Warm amber-gold
+    private static readonly Vector4 DarkGold = new(0.58f, 0.40f, 0.10f, 0.90f);    // Deeper amber-bronze
+    private static readonly Vector4 ParchmentTint = new(0.92f, 0.85f, 0.70f, 0.92f); // kept for compat
+    private static readonly Vector4 CreamText = new(0.93f, 0.88f, 0.72f, 1.0f);    // Warm parchment-cream
+    private static readonly Vector4 DimText = new(0.55f, 0.48f, 0.34f, 0.8f);      // Warm stone-grey
 
     private struct MenuParticle
     {
@@ -279,9 +279,9 @@ public sealed class MenuSystem : ISystem
         float frameX = (w - frameW) / 2f;
         float frameY = (h - frameH) / 2f;
 
-        // Frame parchment background
+        // Frame dark stone background
         DrawTexturedRect(frameX, frameY, frameW, frameH, _textures.Parchment,
-            new Vector4(0.75f, 0.68f, 0.55f, 0.90f), ortho);
+            new Vector4(0.30f, 0.26f, 0.22f, 0.92f), ortho);
 
         // Dark inner area
         _hudShader.Use();
@@ -338,11 +338,11 @@ public sealed class MenuSystem : ISystem
 
             if (selected)
             {
-                // Selection background
+                // Selection background (dark iron-red)
                 _hudShader.Use();
                 _hudShader.SetUniform("uProjection", ortho);
                 DrawRect(new HudElement(new Vector2(frameX + 30, iy - 5), new Vector2(frameW - 60, 32),
-                    new Vector4(0.45f, 0.35f, 0.15f, 0.35f)));
+                    new Vector4(0.42f, 0.30f, 0.08f, 0.38f)));
 
                 // Selection border
                 DrawRect(new HudElement(new Vector2(frameX + 30, iy + 25), new Vector2(frameW - 60, 2), GoldColor));
@@ -364,7 +364,7 @@ public sealed class MenuSystem : ISystem
         string hint = "Arrow Keys + Enter  or  Mouse Click";
         float hintW = TextRenderer.MeasureWidth(hint, 1.5f);
         _textRenderer.DrawText(hint, (w - hintW) / 2f, frameY + 25, 1.5f,
-            new Vector4(0.5f, 0.45f, 0.35f, 0.5f), ortho);
+            new Vector4(0.40f, 0.35f, 0.28f, 0.5f), ortho);
     }
 
     private void RenderPauseMenu(int w, int h, Matrix4x4 ortho)
@@ -384,9 +384,9 @@ public sealed class MenuSystem : ISystem
         float panelX = (w - panelW) / 2f;
         float panelY = (h - panelH) / 2f;
 
-        // Parchment background
+        // Dark stone panel background
         DrawTexturedRect(panelX, panelY, panelW, panelH, _textures.Parchment,
-            new Vector4(0.70f, 0.63f, 0.50f, 0.92f), ortho);
+            new Vector4(0.28f, 0.24f, 0.20f, 0.93f), ortho);
 
         // Dark inner
         _hudShader.Use();
@@ -427,7 +427,7 @@ public sealed class MenuSystem : ISystem
                 _hudShader.Use();
                 _hudShader.SetUniform("uProjection", ortho);
                 DrawRect(new HudElement(new Vector2(panelX + 25, iy - 4), new Vector2(panelW - 50, 28),
-                    new Vector4(0.45f, 0.35f, 0.15f, 0.30f)));
+                    new Vector4(0.42f, 0.30f, 0.08f, 0.36f)));
                 DrawRect(new HudElement(new Vector2(panelX + 25, iy + 22), new Vector2(panelW - 50, 2), GoldColor));
                 DrawRect(new HudElement(new Vector2(panelX + 25, iy - 4), new Vector2(panelW - 50, 2), GoldColor));
 
@@ -445,7 +445,7 @@ public sealed class MenuSystem : ISystem
         string hint = "Esc to Resume";
         float hintW = TextRenderer.MeasureWidth(hint, 1.5f);
         _textRenderer.DrawText(hint, (w - hintW) / 2f, panelY + 22, 1.5f,
-            new Vector4(0.5f, 0.45f, 0.35f, 0.4f), ortho);
+            new Vector4(0.38f, 0.32f, 0.26f, 0.4f), ortho);
     }
 
     private void RenderEmbers(int w, int h, Matrix4x4 ortho)

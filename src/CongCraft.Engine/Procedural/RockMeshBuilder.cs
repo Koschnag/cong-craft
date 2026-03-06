@@ -69,9 +69,23 @@ public static class RockMeshBuilder
             float py = ny * deform * 0.6f; // flatten vertically
             float pz = nz * deform;
 
-            // Gray-brown rock color with variation
+            // Gray-brown rock color with variation and moss patches
             float colorVar = (float)rng.NextDouble() * 0.1f;
-            float r = 0.4f + colorVar, g = 0.38f + colorVar, b = 0.35f + colorVar;
+            float r, g, b;
+            // Moss on upward-facing surfaces (top of rock)
+            if (ny > 0.3f && rng.NextDouble() > 0.4f)
+            {
+                // Green moss/lichen patches
+                r = 0.15f + colorVar * 0.5f;
+                g = 0.25f + colorVar;
+                b = 0.10f + colorVar * 0.3f;
+            }
+            else
+            {
+                r = 0.40f + colorVar;
+                g = 0.38f + colorVar;
+                b = 0.35f + colorVar;
+            }
 
             verts.AddRange(new[] { px, py, pz, nx, ny, nz, r, g, b });
         }

@@ -1,4 +1,5 @@
 using System.Numerics;
+using CongCraft.Engine.Audio;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
@@ -20,6 +21,7 @@ public sealed class PlayerMovementSystem : ISystem
     private Camera _camera = null!;
     private TerrainGenerator _terrainGen = null!;
     private float _mouseSensitivity = 0.15f;
+    private float _footstepTimer;
 
     public void Initialize(ServiceLocator services)
     {
@@ -92,6 +94,17 @@ public sealed class PlayerMovementSystem : ISystem
                 newPos.Y = terrainHeight + 0.9f; // Player capsule half-height
 
                 transform.Position = newPos;
+
+                // Footstep SFX
+                float stepInterval = player.IsRunning ? 0.28f : 0.42f;
+                _footstepTimer -= dt;
+                if (_footstepTimer <= 0)
+                {
+                    _footstepTimer = stepInterval;
+                    // Stone footsteps on high terrain, grass otherwise
+                    var sfx = terrainHeight > 12f ? SfxType.FootstepStone : SfxType.FootstepGrass;
+                    AudioSystem.Instance?.PlaySfx(sfx);
+                }
 
                 // Rotate player to face movement direction
                 float targetYaw = MathF.Atan2(moveDir.X, moveDir.Z);

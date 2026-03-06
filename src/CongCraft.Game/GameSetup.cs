@@ -140,12 +140,12 @@ internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
         _world.AddComponent(player, new ManaComponent());
         _world.AddComponent(player, new SpellState());
 
-        // Player capsule mesh
-        var capsule = PrimitiveMeshBuilder.CreateCapsule(_gl, 0.3f, 1.8f, 16, 0.6f, 0.5f, 0.4f);
+        // Player warrior mesh (SpellForce-style humanoid with armor)
+        var playerMesh = PlayerMeshBuilder.Create(_gl);
         var shader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _world.AddComponent(player, new MeshRendererComponent
         {
-            Mesh = capsule,
+            Mesh = playerMesh,
             Shader = shader
         });
     }

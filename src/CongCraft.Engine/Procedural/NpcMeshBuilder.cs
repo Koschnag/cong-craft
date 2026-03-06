@@ -10,7 +10,7 @@ namespace CongCraft.Engine.Procedural;
 /// </summary>
 public static class NpcMeshBuilder
 {
-    private const int Segments = 12;
+    private const int Segments = 16;
 
     public static MeshData GenerateBlacksmith()
     {
@@ -18,22 +18,45 @@ public static class NpcMeshBuilder
         var inds = new List<uint>();
 
         // Torso (stocky capsule, brown leather apron)
-        AddCapsule(verts, inds, 0, 0.75f, 0, 0.26f, 0.72f, Segments, 0.45f, 0.3f, 0.15f);
+        AddCapsule(verts, inds, 0, 0.75f, 0, 0.26f, 0.72f, Segments, 0.45f, 0.30f, 0.15f);
         // Head (sphere, skin tone)
         AddSphere(verts, inds, 0, 1.32f, 0, 0.14f, Segments, 0.68f, 0.52f, 0.42f);
-        // Left arm (muscular)
-        AddCapsule(verts, inds, -0.36f, 0.75f, 0, 0.08f, 0.58f, 8, 0.52f, 0.38f, 0.22f);
+        // Beard (dark, bushy)
+        AddSphere(verts, inds, 0, 1.22f, 0.08f, 0.09f, 10, 0.30f, 0.20f, 0.12f);
+        AddSphere(verts, inds, 0, 1.18f, 0.06f, 0.07f, 8, 0.28f, 0.18f, 0.10f);
+        // Bald head (slightly wider skull)
+        AddSphere(verts, inds, 0, 1.38f, -0.02f, 0.12f, 10, 0.66f, 0.50f, 0.40f);
+        // Neck (thick)
+        AddCylinder(verts, inds, 0, 1.14f, 0, 0.08f, 0.08f, 10, 0.65f, 0.50f, 0.40f);
+        // Left arm (muscular, thick)
+        AddCapsule(verts, inds, -0.36f, 0.75f, 0, 0.09f, 0.58f, 12, 0.62f, 0.48f, 0.38f);
         // Right arm
-        AddCapsule(verts, inds, 0.36f, 0.75f, 0, 0.08f, 0.58f, 8, 0.52f, 0.38f, 0.22f);
+        AddCapsule(verts, inds, 0.36f, 0.75f, 0, 0.09f, 0.58f, 12, 0.62f, 0.48f, 0.38f);
+        // Forearm bracers (leather work gloves)
+        AddCapsule(verts, inds, -0.38f, 0.38f, 0, 0.065f, 0.20f, 8, 0.40f, 0.28f, 0.14f);
+        AddCapsule(verts, inds, 0.38f, 0.38f, 0, 0.065f, 0.20f, 8, 0.40f, 0.28f, 0.14f);
+        // Hands (big, strong)
+        AddSphere(verts, inds, -0.38f, 0.28f, 0, 0.05f, 8, 0.64f, 0.50f, 0.40f);
+        AddSphere(verts, inds, 0.38f, 0.28f, 0, 0.05f, 8, 0.64f, 0.50f, 0.40f);
         // Left leg
-        AddCapsule(verts, inds, -0.12f, 0.2f, 0, 0.08f, 0.42f, 8, 0.38f, 0.28f, 0.18f);
+        AddCapsule(verts, inds, -0.12f, 0.2f, 0, 0.085f, 0.42f, 12, 0.38f, 0.28f, 0.18f);
         // Right leg
-        AddCapsule(verts, inds, 0.12f, 0.2f, 0, 0.08f, 0.42f, 8, 0.38f, 0.28f, 0.18f);
-        // Apron (cylinder around waist)
-        AddCylinder(verts, inds, 0, 0.45f, 0, 0.28f, 0.25f, Segments, 0.35f, 0.22f, 0.1f);
-        // Boots
-        AddSphere(verts, inds, -0.12f, 0.02f, 0.02f, 0.09f, 8, 0.3f, 0.2f, 0.1f);
-        AddSphere(verts, inds, 0.12f, 0.02f, 0.02f, 0.09f, 8, 0.3f, 0.2f, 0.1f);
+        AddCapsule(verts, inds, 0.12f, 0.2f, 0, 0.085f, 0.42f, 12, 0.38f, 0.28f, 0.18f);
+        // Apron (cylinder around waist, sooty leather)
+        AddCylinder(verts, inds, 0, 0.45f, 0.02f, 0.28f, 0.30f, Segments, 0.32f, 0.20f, 0.09f);
+        // Apron strap
+        AddCylinder(verts, inds, 0, 0.75f, 0.10f, 0.025f, 0.30f, 6, 0.30f, 0.18f, 0.08f);
+        // Belt with tools
+        AddCylinder(verts, inds, 0, 0.46f, 0, 0.27f, 0.04f, Segments, 0.35f, 0.22f, 0.10f);
+        // Hammer at belt (handle)
+        AddCylinder(verts, inds, -0.24f, 0.38f, 0.10f, 0.015f, 0.25f, 6, 0.48f, 0.36f, 0.20f);
+        // Hammer head (metal)
+        AddSphere(verts, inds, -0.24f, 0.64f, 0.10f, 0.04f, 8, 0.50f, 0.48f, 0.45f);
+        // Boots (heavy work boots)
+        AddCapsule(verts, inds, -0.12f, -0.02f, 0, 0.075f, 0.10f, 10, 0.28f, 0.18f, 0.09f);
+        AddCapsule(verts, inds, 0.12f, -0.02f, 0, 0.075f, 0.10f, 10, 0.28f, 0.18f, 0.09f);
+        AddSphere(verts, inds, -0.12f, -0.06f, 0.03f, 0.08f, 8, 0.26f, 0.17f, 0.08f);
+        AddSphere(verts, inds, 0.12f, -0.06f, 0.03f, 0.08f, 8, 0.26f, 0.17f, 0.08f);
 
         return new MeshData(verts.ToArray(), inds.ToArray());
     }
@@ -43,20 +66,46 @@ public static class NpcMeshBuilder
         var verts = new List<float>();
         var inds = new List<uint>();
 
-        // Body (slender capsule, purple robes)
+        // Body (slender capsule, deep purple robes)
         AddCapsule(verts, inds, 0, 0.7f, 0, 0.22f, 0.72f, Segments, 0.38f, 0.22f, 0.48f);
-        // Head (sphere, gray hair)
-        AddSphere(verts, inds, 0, 1.28f, 0, 0.13f, Segments, 0.62f, 0.58f, 0.54f);
-        // Left arm (wide sleeves)
-        AddCapsule(verts, inds, -0.34f, 0.7f, 0, 0.09f, 0.56f, 8, 0.42f, 0.28f, 0.52f);
+        // Head (sphere, aged skin)
+        AddSphere(verts, inds, 0, 1.28f, 0, 0.13f, Segments, 0.65f, 0.58f, 0.52f);
+        // Long white beard
+        AddCapsule(verts, inds, 0, 1.08f, 0.06f, 0.06f, 0.28f, 10, 0.82f, 0.80f, 0.76f);
+        AddSphere(verts, inds, 0, 0.92f, 0.08f, 0.05f, 8, 0.80f, 0.78f, 0.74f);
+        // White hair (back of head)
+        AddSphere(verts, inds, 0, 1.32f, -0.06f, 0.12f, 10, 0.80f, 0.78f, 0.74f);
+        // Bushy eyebrows
+        AddCylinder(verts, inds, -0.05f, 1.33f, 0.11f, 0.025f, 0.01f, 6, 0.78f, 0.76f, 0.72f);
+        AddCylinder(verts, inds, 0.05f, 1.33f, 0.11f, 0.025f, 0.01f, 6, 0.78f, 0.76f, 0.72f);
+        // Left arm (wide sleeves, flowing)
+        AddCapsule(verts, inds, -0.34f, 0.7f, 0, 0.10f, 0.56f, 12, 0.42f, 0.28f, 0.52f);
         // Right arm
-        AddCapsule(verts, inds, 0.34f, 0.7f, 0, 0.09f, 0.56f, 8, 0.42f, 0.28f, 0.52f);
-        // Robe skirt (wider cylinder)
-        AddCylinder(verts, inds, 0, 0.1f, 0, 0.26f, 0.38f, Segments, 0.32f, 0.2f, 0.42f);
-        // Staff (thin tall cylinder)
-        AddCylinder(verts, inds, 0.42f, 0.1f, 0, 0.025f, 1.5f, 6, 0.52f, 0.42f, 0.28f);
-        // Staff orb
-        AddSphere(verts, inds, 0.42f, 1.62f, 0, 0.06f, 8, 0.6f, 0.5f, 0.8f);
+        AddCapsule(verts, inds, 0.34f, 0.7f, 0, 0.10f, 0.56f, 12, 0.42f, 0.28f, 0.52f);
+        // Sleeve cuffs (gold trim)
+        AddCylinder(verts, inds, -0.34f, 0.44f, 0, 0.08f, 0.02f, 8, 0.72f, 0.55f, 0.15f);
+        AddCylinder(verts, inds, 0.34f, 0.44f, 0, 0.08f, 0.02f, 8, 0.72f, 0.55f, 0.15f);
+        // Robe skirt (wider, flowing)
+        AddCylinder(verts, inds, 0, 0.08f, 0, 0.28f, 0.42f, Segments, 0.32f, 0.20f, 0.42f);
+        // Robe hem (gold trim)
+        AddCylinder(verts, inds, 0, 0.06f, 0, 0.29f, 0.02f, Segments, 0.68f, 0.52f, 0.14f);
+        // Robe collar
+        AddCylinder(verts, inds, 0, 1.10f, 0, 0.12f, 0.05f, 10, 0.35f, 0.20f, 0.45f);
+        // Belt sash
+        AddCylinder(verts, inds, 0, 0.50f, 0, 0.23f, 0.04f, Segments, 0.65f, 0.50f, 0.12f);
+        // Pendant/amulet
+        AddSphere(verts, inds, 0, 0.92f, 0.14f, 0.025f, 8, 0.70f, 0.55f, 0.15f);
+        // Staff (gnarled wooden)
+        AddCylinder(verts, inds, 0.42f, 0.06f, 0, 0.025f, 1.55f, 8, 0.48f, 0.38f, 0.24f);
+        // Staff knot (wood grain detail)
+        AddSphere(verts, inds, 0.42f, 0.80f, 0, 0.032f, 6, 0.44f, 0.34f, 0.20f);
+        // Staff crystal/orb (glowing purple)
+        AddSphere(verts, inds, 0.42f, 1.64f, 0, 0.065f, 10, 0.55f, 0.35f, 0.80f);
+        // Crystal glow ring
+        AddCylinder(verts, inds, 0.42f, 1.60f, 0, 0.035f, 0.01f, 8, 0.60f, 0.40f, 0.85f);
+        // Staff top fork (two prongs holding crystal)
+        AddCylinder(verts, inds, 0.40f, 1.52f, 0, 0.012f, 0.12f, 6, 0.45f, 0.35f, 0.22f);
+        AddCylinder(verts, inds, 0.44f, 1.52f, 0, 0.012f, 0.12f, 6, 0.45f, 0.35f, 0.22f);
 
         return new MeshData(verts.ToArray(), inds.ToArray());
     }
@@ -66,27 +115,48 @@ public static class NpcMeshBuilder
         var verts = new List<float>();
         var inds = new List<uint>();
 
-        // Body (rounder capsule, green tunic)
+        // Body (rounder capsule, rich green tunic)
         AddCapsule(verts, inds, 0, 0.75f, 0, 0.26f, 0.68f, Segments, 0.28f, 0.48f, 0.22f);
         // Head (sphere, skin)
-        AddSphere(verts, inds, 0, 1.3f, 0, 0.13f, Segments, 0.62f, 0.52f, 0.42f);
-        // Hat (cone)
-        AddCone(verts, inds, 0, 1.42f, 0, 0.14f, 0.18f, 8, 0.52f, 0.38f, 0.18f);
-        // Hat brim (flat cylinder)
-        AddCylinder(verts, inds, 0, 1.4f, 0, 0.18f, 0.03f, 10, 0.5f, 0.36f, 0.16f);
-        // Left arm
-        AddCapsule(verts, inds, -0.36f, 0.75f, 0, 0.06f, 0.54f, 8, 0.32f, 0.52f, 0.28f);
+        AddSphere(verts, inds, 0, 1.30f, 0, 0.13f, Segments, 0.66f, 0.54f, 0.44f);
+        // Mustache
+        AddCylinder(verts, inds, 0, 1.24f, 0.12f, 0.05f, 0.01f, 8, 0.32f, 0.22f, 0.14f);
+        // Brown hair
+        AddSphere(verts, inds, 0, 1.35f, -0.03f, 0.12f, 10, 0.36f, 0.24f, 0.14f);
+        // Neck
+        AddCylinder(verts, inds, 0, 1.14f, 0, 0.06f, 0.06f, 10, 0.64f, 0.52f, 0.42f);
+        // Hat (cone, merchant cap)
+        AddCone(verts, inds, 0, 1.42f, 0, 0.14f, 0.20f, 10, 0.52f, 0.38f, 0.18f);
+        // Hat brim (flat cylinder, wider)
+        AddCylinder(verts, inds, 0, 1.40f, 0, 0.19f, 0.025f, 12, 0.50f, 0.36f, 0.16f);
+        // Hat feather (small accent)
+        AddCylinder(verts, inds, 0.10f, 1.52f, -0.05f, 0.008f, 0.12f, 6, 0.80f, 0.20f, 0.15f);
+        // Left arm (green sleeve)
+        AddCapsule(verts, inds, -0.36f, 0.75f, 0, 0.065f, 0.54f, 12, 0.30f, 0.50f, 0.26f);
         // Right arm
-        AddCapsule(verts, inds, 0.36f, 0.75f, 0, 0.06f, 0.54f, 8, 0.32f, 0.52f, 0.28f);
-        // Left leg
-        AddCapsule(verts, inds, -0.11f, 0.2f, 0, 0.07f, 0.42f, 8, 0.32f, 0.22f, 0.14f);
+        AddCapsule(verts, inds, 0.36f, 0.75f, 0, 0.065f, 0.54f, 12, 0.30f, 0.50f, 0.26f);
+        // Hands
+        AddSphere(verts, inds, -0.36f, 0.25f, 0, 0.04f, 8, 0.64f, 0.52f, 0.42f);
+        AddSphere(verts, inds, 0.36f, 0.25f, 0, 0.04f, 8, 0.64f, 0.52f, 0.42f);
+        // Left leg (brown pants)
+        AddCapsule(verts, inds, -0.11f, 0.2f, 0, 0.072f, 0.42f, 12, 0.32f, 0.22f, 0.14f);
         // Right leg
-        AddCapsule(verts, inds, 0.11f, 0.2f, 0, 0.07f, 0.42f, 8, 0.32f, 0.22f, 0.14f);
-        // Boots
-        AddSphere(verts, inds, -0.11f, 0.02f, 0.02f, 0.08f, 8, 0.28f, 0.18f, 0.1f);
-        AddSphere(verts, inds, 0.11f, 0.02f, 0.02f, 0.08f, 8, 0.28f, 0.18f, 0.1f);
-        // Belt pouch (sphere)
-        AddSphere(verts, inds, 0.2f, 0.5f, 0.12f, 0.06f, 6, 0.45f, 0.3f, 0.12f);
+        AddCapsule(verts, inds, 0.11f, 0.2f, 0, 0.072f, 0.42f, 12, 0.32f, 0.22f, 0.14f);
+        // Belt (gold-trimmed)
+        AddCylinder(verts, inds, 0, 0.48f, 0, 0.27f, 0.035f, Segments, 0.62f, 0.48f, 0.14f);
+        // Belt pouch (large, leather)
+        AddSphere(verts, inds, 0.20f, 0.46f, 0.12f, 0.06f, 8, 0.42f, 0.28f, 0.12f);
+        // Second pouch (left side)
+        AddSphere(verts, inds, -0.18f, 0.45f, 0.10f, 0.045f, 8, 0.40f, 0.26f, 0.10f);
+        // Gold coin purse
+        AddSphere(verts, inds, 0.12f, 0.44f, 0.14f, 0.03f, 6, 0.80f, 0.65f, 0.15f);
+        // Boots (fine leather)
+        AddCapsule(verts, inds, -0.11f, -0.02f, 0, 0.068f, 0.10f, 10, 0.30f, 0.20f, 0.10f);
+        AddCapsule(verts, inds, 0.11f, -0.02f, 0, 0.068f, 0.10f, 10, 0.30f, 0.20f, 0.10f);
+        AddSphere(verts, inds, -0.11f, -0.06f, 0.03f, 0.07f, 8, 0.28f, 0.18f, 0.09f);
+        AddSphere(verts, inds, 0.11f, -0.06f, 0.03f, 0.07f, 8, 0.28f, 0.18f, 0.09f);
+        // Collar detail
+        AddCylinder(verts, inds, 0, 1.08f, 0, 0.10f, 0.04f, 10, 0.25f, 0.42f, 0.20f);
 
         return new MeshData(verts.ToArray(), inds.ToArray());
     }

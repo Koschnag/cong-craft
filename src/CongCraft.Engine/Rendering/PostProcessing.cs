@@ -24,9 +24,9 @@ public sealed class PostProcessing : IDisposable
 
     private int _width, _height;
 
-    public float BloomThreshold { get; set; } = 0.8f;
-    public float BloomIntensity { get; set; } = 0.3f;
-    public float Exposure { get; set; } = 1.0f;
+    public float BloomThreshold { get; set; } = 0.72f;  // Lower = more objects glow (torches, magic)
+    public float BloomIntensity { get; set; } = 0.50f;  // Stronger glow for SpellForce atmosphere
+    public float Exposure { get; set; } = 0.85f;        // Darker overall — Gothic/SpellForce moodiness
 
     public PostProcessing(GL gl, int width, int height)
     {

@@ -25,6 +25,13 @@ public sealed class VegetationPlacer : ISystem
     private Shader _basicShader = null!;
     private Mesh _treeMesh = null!;
     private Mesh _rockMesh = null!;
+    private Mesh _ruinPillarMesh = null!;
+    private Mesh _ruinBrokenPillarMesh = null!;
+    private Mesh _ruinWallMesh = null!;
+    private Mesh _ruinArchMesh = null!;
+    private Mesh _scrubMesh = null!;
+    private Mesh _berryBushMesh = null!;
+    private Mesh _grassTuftMesh = null!;
     private bool _placed;
 
     public void Initialize(ServiceLocator services)
@@ -37,6 +44,18 @@ public sealed class VegetationPlacer : ISystem
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _treeMesh = TreeMeshBuilder.Create(_gl);
         _rockMesh = RockMeshBuilder.Create(_gl);
+        _ruinPillarMesh = RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.Pillar, 11);
+        _ruinBrokenPillarMesh = RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.BrokenPillar, 22);
+        _ruinWallMesh = RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.WallSegment, 33);
+        _ruinArchMesh = RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.ArchFragment, 44);
+
+        // Ground cover vegetation
+        var scrubData = BushMeshBuilder.GenerateScrub(101);
+        _scrubMesh = new Mesh(_gl, scrubData.Vertices, scrubData.Indices, VertexLayout.PositionNormalColor);
+        var berryData = BushMeshBuilder.GenerateBerry(202);
+        _berryBushMesh = new Mesh(_gl, berryData.Vertices, berryData.Indices, VertexLayout.PositionNormalColor);
+        var grassData = BushMeshBuilder.GenerateGrassTuft(303);
+        _grassTuftMesh = new Mesh(_gl, grassData.Vertices, grassData.Indices, VertexLayout.PositionNormalColor);
     }
 
     public void Update(GameTime time)
@@ -106,6 +125,99 @@ public sealed class VegetationPlacer : ISystem
                 _world.AddComponent(entity, new VegetationTag());
             }
         }
+
+        // Place scrub bushes (ground cover between trees)
+        for (int i = 0; i < 120; i++)
+        {
+            float x = (float)(rng.NextDouble() * areaSize - halfArea);
+            float z = (float)(rng.NextDouble() * areaSize - halfArea);
+            float height = _terrainGen.GetHeightAt(x, z);
+            float noise = placementNoise.GetNoise(x, z);
+
+            if (height > 1.8f && height < 14f && noise > -0.3f)
+            {
+                var entity = _world.CreateEntity();
+                var mesh = rng.NextDouble() > 0.3 ? _scrubMesh : _berryBushMesh;
+                _world.AddComponent(entity, new TransformComponent
+                {
+                    Position = new Vector3(x, height, z),
+                    Scale = Vector3.One * (0.6f + (float)rng.NextDouble() * 0.5f),
+                    Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY,
+                        (float)(rng.NextDouble() * MathF.Tau))
+                });
+                _world.AddComponent(entity, new MeshRendererComponent
+                {
+                    Mesh = mesh,
+                    Shader = _basicShader
+                });
+                _world.AddComponent(entity, new VegetationTag());
+            }
+        }
+
+        // Place grass tufts (dense ground cover)
+        for (int i = 0; i < 200; i++)
+        {
+            float x = (float)(rng.NextDouble() * areaSize - halfArea);
+            float z = (float)(rng.NextDouble() * areaSize - halfArea);
+            float height = _terrainGen.GetHeightAt(x, z);
+
+            if (height > 1.5f && height < 10f)
+            {
+                var entity = _world.CreateEntity();
+                _world.AddComponent(entity, new TransformComponent
+                {
+                    Position = new Vector3(x, height, z),
+                    Scale = Vector3.One * (0.5f + (float)rng.NextDouble() * 0.6f),
+                    Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY,
+                        (float)(rng.NextDouble() * MathF.Tau))
+                });
+                _world.AddComponent(entity, new MeshRendererComponent
+                {
+                    Mesh = _grassTuftMesh,
+                    Shader = _basicShader
+                });
+                _world.AddComponent(entity, new VegetationTag());
+            }
+        }
+
+        // Place ruins (~28 ruin pieces scattered across the world)
+        var ruinMeshes = new[] { _ruinPillarMesh, _ruinBrokenPillarMesh, _ruinWallMesh, _ruinArchMesh };
+        var ruinNoise = new FastNoiseLite(7777);
+        ruinNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+        ruinNoise.SetFrequency(0.015f);
+
+        int ruinsPlaced = 0;
+        int attempts = 0;
+        while (ruinsPlaced < 28 && attempts < 500)
+        {
+            attempts++;
+            float x = (float)(rng.NextDouble() * areaSize - halfArea);
+            float z = (float)(rng.NextDouble() * areaSize - halfArea);
+            float height = _terrainGen.GetHeightAt(x, z);
+
+            // Place ruins on flat-ish terrain above water, away from steep slopes
+            if (height < 2.5f || height > 12f) continue;
+            float nv = ruinNoise.GetNoise(x, z);
+            if (nv < -0.2f) continue; // Cluster ruins in noisier regions
+
+            var mesh = ruinMeshes[rng.Next(ruinMeshes.Length)];
+            var entity = _world.CreateEntity();
+            var transform = new TransformComponent
+            {
+                Position = new Vector3(x, height, z),
+                Scale = Vector3.One * (0.9f + (float)rng.NextDouble() * 0.5f),
+                Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY,
+                    (float)(rng.NextDouble() * MathF.Tau))
+            };
+            _world.AddComponent(entity, transform);
+            _world.AddComponent(entity, new MeshRendererComponent
+            {
+                Mesh = mesh,
+                Shader = _basicShader
+            });
+            _world.AddComponent(entity, new VegetationTag());
+            ruinsPlaced++;
+        }
     }
 
     public void Render(GameTime time)
@@ -130,6 +242,13 @@ public sealed class VegetationPlacer : ISystem
         _basicShader.Dispose();
         _treeMesh.Dispose();
         _rockMesh.Dispose();
+        _ruinPillarMesh.Dispose();
+        _ruinBrokenPillarMesh.Dispose();
+        _ruinWallMesh.Dispose();
+        _ruinArchMesh.Dispose();
+        _scrubMesh.Dispose();
+        _berryBushMesh.Dispose();
+        _grassTuftMesh.Dispose();
     }
 }
 

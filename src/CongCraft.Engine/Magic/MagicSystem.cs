@@ -1,4 +1,5 @@
 using System.Numerics;
+using CongCraft.Engine.Audio;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
@@ -98,6 +99,7 @@ public sealed class MagicSystem : ISystem
         // Start cooldown
         state.Cooldowns[index] = spell.Cooldown;
         state.SelectedSpell = index;
+        AudioSystem.Instance?.PlaySfx(SfxType.SpellCast);
 
         // Apply spell effect
         switch (spell.Type)

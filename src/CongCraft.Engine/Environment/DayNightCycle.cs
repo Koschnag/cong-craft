@@ -16,19 +16,19 @@ public sealed class DayNightCycle : ISystem
     /// <summary>Hours per real-time minute. Default 4 = 6 minutes per full day.</summary>
     public float CycleSpeed { get; set; } = 4f;
 
-    public float TimeOfDay { get; set; } = 10f; // Start mid-morning
+    public float TimeOfDay { get; set; } = 17.5f; // Start at dusk — dramatic first impression
 
     private LightingData _lighting = null!;
 
     // Sky color presets
     private static readonly Vector3 NightZenith = new(0.01f, 0.01f, 0.05f);
     private static readonly Vector3 NightHorizon = new(0.03f, 0.03f, 0.08f);
-    private static readonly Vector3 DawnZenith = new(0.15f, 0.12f, 0.25f);
-    private static readonly Vector3 DawnHorizon = new(0.6f, 0.3f, 0.15f);
-    private static readonly Vector3 DayZenith = new(0.2f, 0.35f, 0.65f);
-    private static readonly Vector3 DayHorizon = new(0.55f, 0.6f, 0.7f);
-    private static readonly Vector3 DuskZenith = new(0.15f, 0.08f, 0.2f);
-    private static readonly Vector3 DuskHorizon = new(0.6f, 0.2f, 0.1f);
+    private static readonly Vector3 DawnZenith = new(0.18f, 0.10f, 0.28f);   // Deep violet dawn
+    private static readonly Vector3 DawnHorizon = new(0.70f, 0.32f, 0.12f);  // Vivid blood-orange
+    private static readonly Vector3 DayZenith = new(0.18f, 0.30f, 0.58f);    // Slightly muted blue sky
+    private static readonly Vector3 DayHorizon = new(0.48f, 0.52f, 0.62f);   // Slightly muted horizon
+    private static readonly Vector3 DuskZenith = new(0.10f, 0.05f, 0.22f);   // Deep purple dusk
+    private static readonly Vector3 DuskHorizon = new(0.68f, 0.22f, 0.06f);  // Blood-orange sunset
 
     public Vector3 ZenithColor { get; private set; } = DayZenith;
     public Vector3 HorizonColor { get; private set; } = DayHorizon;
@@ -93,9 +93,9 @@ public sealed class DayNightCycle : ISystem
         }
         else if (t < 17f) // Day
         {
-            _lighting.SunIntensity = 1f;
-            _lighting.SunColor = new Vector3(1f, 0.95f, 0.8f);
-            _lighting.AmbientColor = new Vector3(0.15f, 0.15f, 0.2f);
+            _lighting.SunIntensity = 0.92f; // Slightly muted — not overly bright
+            _lighting.SunColor = new Vector3(1f, 0.93f, 0.78f);
+            _lighting.AmbientColor = new Vector3(0.12f, 0.13f, 0.18f);
             ZenithColor = DayZenith;
             HorizonColor = DayHorizon;
             _lighting.FogColor = new Vector3(0.5f, 0.5f, 0.55f);
@@ -103,12 +103,12 @@ public sealed class DayNightCycle : ISystem
         else if (t < 19f) // Dusk
         {
             float f = (t - 17f) / 2f;
-            _lighting.SunIntensity = Lerp(1f, 0.4f, f);
-            _lighting.SunColor = Vector3.Lerp(new Vector3(1f, 0.95f, 0.8f), new Vector3(1f, 0.4f, 0.15f), f);
-            _lighting.AmbientColor = Vector3.Lerp(new Vector3(0.15f, 0.15f, 0.2f), new Vector3(0.1f, 0.05f, 0.08f), f);
+            _lighting.SunIntensity = Lerp(0.95f, 0.25f, f);  // Faster falloff
+            _lighting.SunColor = Vector3.Lerp(new Vector3(1f, 0.80f, 0.55f), new Vector3(0.9f, 0.30f, 0.08f), f); // Deeper red
+            _lighting.AmbientColor = Vector3.Lerp(new Vector3(0.12f, 0.12f, 0.18f), new Vector3(0.07f, 0.04f, 0.09f), f);
             ZenithColor = Vector3.Lerp(DayZenith, DuskZenith, f);
             HorizonColor = Vector3.Lerp(DayHorizon, DuskHorizon, f);
-            _lighting.FogColor = Vector3.Lerp(new Vector3(0.5f, 0.5f, 0.55f), new Vector3(0.3f, 0.15f, 0.1f), f);
+            _lighting.FogColor = Vector3.Lerp(new Vector3(0.45f, 0.42f, 0.48f), new Vector3(0.32f, 0.12f, 0.08f), f);
         }
         else // Night transition
         {

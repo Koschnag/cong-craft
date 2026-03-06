@@ -25,6 +25,7 @@ public sealed class InventorySystem : ISystem
     private GL _gl = null!;
     private TerrainGenerator _terrainGen = null!;
     private Mesh _lootMesh = null!;
+    private readonly Dictionary<ItemType, Mesh> _lootMeshes = new();
     private Shader _basicShader = null!;
     private Random _rng = new(99999);
 
@@ -92,6 +93,12 @@ public sealed class InventorySystem : ISystem
         _terrainGen = services.Get<TerrainGenerator>();
         _lootMesh = PrimitiveMeshBuilder.CreateCube(_gl, 0.3f, 0.9f, 0.8f, 0.2f);
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
+
+        // Pre-create type-specific loot meshes for visual variety
+        _lootMeshes[ItemType.Weapon] = LootMeshBuilder.Create(_gl, ItemType.Weapon, 0.7f, 0.7f, 0.75f);
+        _lootMeshes[ItemType.Armor] = LootMeshBuilder.Create(_gl, ItemType.Armor, 0.5f, 0.45f, 0.4f);
+        _lootMeshes[ItemType.Consumable] = LootMeshBuilder.Create(_gl, ItemType.Consumable, 0.8f, 0.2f, 0.2f);
+        _lootMeshes[ItemType.Material] = LootMeshBuilder.Create(_gl, ItemType.Material, 0.6f, 0.5f, 0.3f);
     }
 
     public void Update(GameTime time)
@@ -206,9 +213,11 @@ public sealed class InventorySystem : ISystem
             Quantity = quantity,
             SpawnY = spawnY
         });
+        // Use item-type-specific mesh for visual variety
+        var mesh = _lootMeshes.GetValueOrDefault(item.Type, _lootMesh);
         _world.AddComponent(lootEntity, new MeshRendererComponent
         {
-            Mesh = _lootMesh,
+            Mesh = mesh,
             Shader = _basicShader
         });
     }
@@ -308,6 +317,8 @@ public sealed class InventorySystem : ISystem
     public void Dispose()
     {
         _lootMesh.Dispose();
+        foreach (var mesh in _lootMeshes.Values)
+            mesh.Dispose();
         _basicShader.Dispose();
     }
 }
