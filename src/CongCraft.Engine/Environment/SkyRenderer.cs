@@ -12,7 +12,7 @@ namespace CongCraft.Engine.Environment;
 /// </summary>
 public sealed class SkyRenderer : ISystem
 {
-    public int Priority => 95;
+    public int Priority => 35;
 
     private GL _gl = null!;
     private Shader _skyShader = null!;
