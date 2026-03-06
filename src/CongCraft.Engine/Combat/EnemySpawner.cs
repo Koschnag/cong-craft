@@ -2,6 +2,7 @@ using System.Numerics;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
+using CongCraft.Engine.Level;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
 using CongCraft.Engine.Terrain;
@@ -11,8 +12,8 @@ using Shader = CongCraft.Engine.Rendering.Shader;
 namespace CongCraft.Engine.Combat;
 
 /// <summary>
-/// Spawns enemies on the terrain with variety and respawning.
-/// Different enemy types have distinct stats and behaviors.
+/// Spawns enemies at fixed positions defined by the level data.
+/// Each enemy zone has a specific type, count, and patrol area.
 /// </summary>
 public sealed class EnemySpawner : ISystem
 {
@@ -20,9 +21,12 @@ public sealed class EnemySpawner : ISystem
 
     private GL _gl = null!;
     private World _world = null!;
-    private TerrainGenerator _terrainGen = null!;
+    private LevelTerrainGenerator _levelGen = null!;
+    private LevelData? _levelData;
     private Mesh _enemyMesh = null!;
     private Mesh _skeletonMesh = null!;
+    private Mesh _wolfMesh = null!;
+    private Mesh _trollMesh = null!;
     private Mesh _swordMesh = null!;
     private Shader _basicShader = null!;
     private MaterialTextures? _materialTextures;
@@ -36,9 +40,12 @@ public sealed class EnemySpawner : ISystem
     {
         _gl = services.Get<GL>();
         _world = services.Get<World>();
-        _terrainGen = services.Get<TerrainGenerator>();
-        _enemyMesh = EnemyMeshBuilder.Create(_gl);
-        _skeletonMesh = EnemyMeshBuilder.CreateSkeleton(_gl);
+        _levelGen = services.Get<LevelTerrainGenerator>();
+        services.TryGet(out _levelData);
+        _enemyMesh = HighResEnemyMeshBuilder.Create(_gl);
+        _skeletonMesh = HighResEnemyMeshBuilder.CreateSkeleton(_gl);
+        _wolfMesh = HighResEnemyMeshBuilder.CreateWolf(_gl);
+        _trollMesh = HighResEnemyMeshBuilder.CreateTroll(_gl);
         _swordMesh = SwordMeshBuilder.Create(_gl);
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _materialTextures = services.Get<MaterialTextures>();
@@ -83,31 +90,40 @@ public sealed class EnemySpawner : ISystem
 
     private void InitialSpawn()
     {
-        var rng = new Random(54321);
-
-        // Wolf packs — fast, weak, near start
-        SpawnGroup(rng, 30f, 30f, 3, EnemyType.Wolf);
-        SpawnGroup(rng, -20f, -50f, 2, EnemyType.Wolf);
-
-        // Bandits — balanced, mid-range
-        SpawnGroup(rng, -40f, 20f, 2, EnemyType.Bandit);
-        SpawnGroup(rng, 50f, -30f, 3, EnemyType.Bandit);
-
-        // Skeletons — heavy hitters, further out
-        SpawnGroup(rng, 60f, 60f, 2, EnemyType.Skeleton);
-        SpawnGroup(rng, -60f, -40f, 2, EnemyType.Skeleton);
-
-        // Troll — mini-boss, one dangerous encounter
-        SpawnGroup(rng, 80f, 0f, 1, EnemyType.Troll);
+        if (_levelData?.EnemyZones != null)
+        {
+            // Use fixed level data enemy zones
+            foreach (var zone in _levelData.EnemyZones)
+            {
+                var type = ParseEnemyType(zone.EnemyType);
+                SpawnGroup(zone.CenterX, zone.CenterZ, zone.Radius, zone.Count, type);
+            }
+        }
+        else
+        {
+            // Fallback: default spawn locations
+            SpawnGroup(30f, 30f, 10f, 3, EnemyType.Wolf);
+            SpawnGroup(-20f, -50f, 10f, 2, EnemyType.Wolf);
+            SpawnGroup(-40f, 20f, 10f, 2, EnemyType.Bandit);
+            SpawnGroup(50f, -30f, 10f, 3, EnemyType.Bandit);
+            SpawnGroup(60f, 60f, 10f, 2, EnemyType.Skeleton);
+            SpawnGroup(-60f, -40f, 10f, 2, EnemyType.Skeleton);
+            SpawnGroup(80f, 0f, 5f, 1, EnemyType.Troll);
+        }
     }
 
-    private void SpawnGroup(Random rng, float centerX, float centerZ, int count, EnemyType type)
+    private void SpawnGroup(float centerX, float centerZ, float radius, int count, EnemyType type)
     {
+        // Deterministic placement using golden angle spiral
+        float goldenAngle = MathF.PI * (3f - MathF.Sqrt(5f));
         for (int i = 0; i < count; i++)
         {
-            float x = centerX + (float)(rng.NextDouble() * 10 - 5);
-            float z = centerZ + (float)(rng.NextDouble() * 10 - 5);
-            float height = _terrainGen.GetHeightAt(x, z);
+            float t = count > 1 ? (float)i / (count - 1) : 0f;
+            float r = radius * 0.3f + radius * 0.7f * MathF.Sqrt(t);
+            float angle = i * goldenAngle;
+            float x = centerX + r * MathF.Cos(angle);
+            float z = centerZ + r * MathF.Sin(angle);
+            float height = _levelGen.GetHeightAt(x, z);
 
             if (height < 2f) continue;
 
@@ -157,18 +173,22 @@ public sealed class EnemySpawner : ISystem
             AttackDamage = damage,
             AttackRange = range
         });
+        var mesh = type switch
+        {
+            EnemyType.Skeleton => _skeletonMesh,
+            EnemyType.Wolf => _wolfMesh,
+            EnemyType.Troll => _trollMesh,
+            _ => _enemyMesh
+        };
         _world.AddComponent(entity, new MeshRendererComponent
         {
-            Mesh = type == EnemyType.Skeleton ? _skeletonMesh : _enemyMesh,
+            Mesh = mesh,
             Shader = _basicShader
         });
 
         return entity;
     }
 
-    /// <summary>
-    /// Returns stats tuple for each enemy type.
-    /// </summary>
     internal static (float hp, float damage, float range, float moveSpeed, float chaseSpeed,
         float detectRange, float attackCooldown, float patrolRadius) GetEnemyStats(EnemyType type)
     {
@@ -182,12 +202,23 @@ public sealed class EnemySpawner : ISystem
         };
     }
 
+    private static EnemyType ParseEnemyType(string s) => s.ToLowerInvariant() switch
+    {
+        "wolf" => EnemyType.Wolf,
+        "bandit" => EnemyType.Bandit,
+        "skeleton" => EnemyType.Skeleton,
+        "troll" => EnemyType.Troll,
+        _ => EnemyType.Bandit
+    };
+
     public void Render(GameTime time) { }
 
     public void Dispose()
     {
         _enemyMesh.Dispose();
         _skeletonMesh.Dispose();
+        _wolfMesh.Dispose();
+        _trollMesh.Dispose();
         _swordMesh.Dispose();
         _basicShader.Dispose();
     }

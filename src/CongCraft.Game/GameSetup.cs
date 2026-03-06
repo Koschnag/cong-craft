@@ -3,6 +3,7 @@ using CongCraft.Engine.Audio;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.Environment;
 using CongCraft.Engine.Input;
+using CongCraft.Engine.Level;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
 using CongCraft.Engine.Terrain;
@@ -26,6 +27,7 @@ namespace CongCraft.Game;
 
 /// <summary>
 /// Configures all game systems, creates the player entity, and launches the engine.
+/// Level 1: "Ashvale" — fixed, hand-designed terrain with placed objects.
 /// </summary>
 public static class GameSetup
 {
@@ -33,10 +35,18 @@ public static class GameSetup
     {
         var engine = new GameEngine();
 
+        // === Load Level 1 data ===
+        var levelData = LevelOneData.Create();
+        var levelTerrainGen = new LevelTerrainGenerator(levelData);
+        engine.Services.Register(levelData);
+        engine.Services.Register(levelTerrainGen);
+
+        // Legacy TerrainGenerator wrapper for systems that still reference it
+        var terrainGen = new TerrainGenerator();
+        engine.Services.Register(terrainGen);
+
         // Create day/night cycle first (other systems reference it)
         var dayNight = new DayNightCycle();
-
-        // Register services that systems need during Initialize
         engine.Services.Register(dayNight);
 
         // Register systems in logical order (execution order is by Priority)
@@ -73,44 +83,46 @@ public static class GameSetup
         engine.RegisterSystem(new AudioSystem());
 
         // Create player entity after engine loads (deferred via callback)
-        SetupPlayerEntity(engine);
+        SetupPlayerEntity(engine, levelData);
 
-        engine.Run("CongCraft - Medieval RPG", 1920, 1080);
+        engine.Run("CongCraft - Ashvale", 1920, 1080);
     }
 
-    private static void SetupPlayerEntity(GameEngine engine)
+    private static void SetupPlayerEntity(GameEngine engine, LevelData levelData)
     {
-        // Register a terrain generator service for player movement ground clamping
-        var terrainGen = new TerrainGenerator();
-        engine.Services.Register(terrainGen);
-
         // Player entity will be created on first frame via a setup system
-        var setupSystem = new PlayerSetupSystem();
+        var setupSystem = new PlayerSetupSystem(levelData.PlayerSpawn);
         engine.RegisterSystem(setupSystem);
     }
 }
 
 /// <summary>
 /// One-shot system that creates the player entity on first frame.
-/// Needs GL context to create the capsule mesh.
+/// Uses level data for spawn position.
 /// </summary>
 internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
 {
     public int Priority => 5; // Before player movement
 
+    private readonly Vector3 _spawnPos;
     private Engine.ECS.World _world = null!;
     private Silk.NET.OpenGL.GL _gl = null!;
+
+    public PlayerSetupSystem(Vector3 spawnPos)
+    {
+        _spawnPos = spawnPos;
+    }
 
     public void Initialize(ServiceLocator services)
     {
         _gl = services.Get<Silk.NET.OpenGL.GL>();
         _world = services.Get<Engine.ECS.World>();
 
-        // Create player
+        // Create player at level spawn point
         var player = _world.CreateEntity();
         _world.AddComponent(player, new TransformComponent
         {
-            Position = new Vector3(0, 10, 0),
+            Position = _spawnPos,
             Scale = Vector3.One
         });
         _world.AddComponent(player, new PlayerComponent());
@@ -126,12 +138,23 @@ internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
             DodgeDuration = 0.3f
         });
 
-        // Inventory and equipment
+        // Inventory and equipment — give the player standard starting gear
         var inventory = new InventoryComponent();
-        var startSword = ItemDatabase.Get("rusty_sword");
-        if (startSword != null) inventory.TryAdd(startSword);
-        var startPotion = ItemDatabase.Get("health_potion");
-        if (startPotion != null) inventory.TryAdd(startPotion, 2);
+        foreach (var (itemId, qty) in new[]
+        {
+            ("rusty_sword", 1),
+            ("leather_helm", 1),
+            ("leather_chest", 1),
+            ("iron_greaves", 1),
+            ("health_potion", 3),
+            ("mana_potion", 2),
+            ("herb", 5),
+            ("gold_coin", 25),
+        })
+        {
+            var item = ItemDatabase.Get(itemId);
+            if (item != null) inventory.TryAdd(item, qty);
+        }
         _world.AddComponent(player, inventory);
         _world.AddComponent(player, new EquipmentComponent());
         _world.AddComponent(player, new QuestJournal());
@@ -140,8 +163,8 @@ internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
         _world.AddComponent(player, new ManaComponent());
         _world.AddComponent(player, new SpellState());
 
-        // Player warrior mesh (SpellForce-style humanoid with armor)
-        var playerMesh = PlayerMeshBuilder.Create(_gl);
+        // Player warrior mesh (high-res detailed humanoid with plate armor)
+        var playerMesh = HighResPlayerMeshBuilder.Create(_gl);
         var shader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _world.AddComponent(player, new MeshRendererComponent
         {
