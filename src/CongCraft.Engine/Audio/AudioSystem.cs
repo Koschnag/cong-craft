@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.InteropServices;
 using CongCraft.Engine.Combat;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
@@ -51,21 +52,10 @@ public sealed class AudioSystem : ISystem
 
         try
         {
-            _alc = ALContext.GetApi();
-            _al = AL.GetApi();
-            DevLog.Info("OpenAL API acquired");
-
-            unsafe
+            if (!TryInitOpenAL())
             {
-                _device = _alc.OpenDevice(null);
-                if (_device == null)
-                {
-                    DevLog.Warn("OpenAL: Failed to open audio device — audio disabled");
-                    return;
-                }
-
-                _context = _alc.CreateContext(_device, null);
-                _alc.MakeContextCurrent(_context);
+                DevLog.Warn("OpenAL: Could not initialize audio — audio disabled");
+                return;
             }
 
             DevLog.Info("OpenAL device and context created");
@@ -74,6 +64,8 @@ public sealed class AudioSystem : ISystem
             LoadTrack(ProceduralMusic.GenerateMenuTheme(40), out _menuBuffer, out _menuSource);
             LoadTrack(ProceduralMusic.GenerateExplorationTheme(45), out _explorationBuffer, out _explorationSource);
             LoadTrack(ProceduralMusic.GenerateCombatTheme(30), out _combatBuffer, out _combatSource);
+
+            CheckAlError("after loading music tracks");
 
             // Generate SFX
             LoadSfxType(SfxType.Click, ProceduralMusic.GenerateClickSfx());
@@ -93,16 +85,20 @@ public sealed class AudioSystem : ISystem
             // Ambient wind loop
             LoadTrack(ProceduralMusic.GenerateAmbientWind(20), out _ambientWindBuffer, out _ambientWindSource);
 
+            CheckAlError("after loading SFX");
+
             // Create SFX source pool
             for (int i = 0; i < _sfxSources.Length; i++)
-                _sfxSources[i] = _al.GenSource();
+                _sfxSources[i] = _al!.GenSource();
 
             DevLog.Info("Audio tracks and SFX loaded");
 
             // Start with menu music
-            _al.SetSourceProperty(_menuSource, SourceFloat.Gain, MusicVolume);
+            _al!.SetSourceProperty(_menuSource, SourceFloat.Gain, MusicVolume);
             _al.SourcePlay(_menuSource);
             _currentPlaying = GameMode.MainMenu;
+
+            CheckAlError("after starting menu music");
 
             _initialized = true;
             DevLog.Info("AudioSystem initialized successfully");
@@ -112,6 +108,84 @@ public sealed class AudioSystem : ISystem
             DevLog.Warn($"AudioSystem init failed: {ex.Message} — audio disabled");
             _initialized = false;
         }
+    }
+
+    /// <summary>
+    /// Try multiple approaches to open OpenAL device — macOS M1 may need
+    /// specific device enumeration rather than null (default) device.
+    /// </summary>
+    private unsafe bool TryInitOpenAL()
+    {
+        _alc = ALContext.GetApi();
+        _al = AL.GetApi();
+        DevLog.Info($"OpenAL API acquired (OS: {RuntimeInformation.RuntimeIdentifier}, Arch: {RuntimeInformation.OSArchitecture})");
+
+        // Try default device first
+        _device = _alc.OpenDevice(null);
+
+        // On macOS, null device can fail — try the default device specifier
+        if (_device == null)
+        {
+            DevLog.Warn("OpenAL: Default device (null) failed, trying named device...");
+            try
+            {
+                // Query the default device name and try opening it explicitly
+                var defaultName = _alc.GetContextProperty(null, GetContextString.DeviceSpecifier);
+                if (!string.IsNullOrEmpty(defaultName))
+                {
+                    DevLog.Info($"OpenAL: Trying device '{defaultName}'");
+                    _device = _alc.OpenDevice(defaultName);
+                }
+            }
+            catch (Exception ex)
+            {
+                DevLog.Warn($"OpenAL: Named device query failed: {ex.Message}");
+            }
+        }
+
+        if (_device == null)
+        {
+            DevLog.Warn("OpenAL: No audio device available — audio disabled");
+            return false;
+        }
+
+        var deviceName = _alc.GetContextProperty(_device, GetContextString.DeviceSpecifier);
+        DevLog.Info($"OpenAL: Opened device '{deviceName}'");
+
+        _context = _alc.CreateContext(_device, null);
+        if (_context == null)
+        {
+            DevLog.Warn("OpenAL: Failed to create audio context — audio disabled");
+            _alc.CloseDevice(_device);
+            _device = null;
+            return false;
+        }
+
+        if (!_alc.MakeContextCurrent(_context))
+        {
+            DevLog.Warn("OpenAL: Failed to make context current — audio disabled");
+            _alc.DestroyContext(_context);
+            _alc.CloseDevice(_device);
+            _device = null;
+            _context = null;
+            return false;
+        }
+
+        // Log OpenAL info for debugging
+        var vendor = _al.GetStateProperty(StateString.Vendor);
+        var renderer = _al.GetStateProperty(StateString.Renderer);
+        var version = _al.GetStateProperty(StateString.Version);
+        DevLog.Info($"OpenAL: {vendor} / {renderer} / {version}");
+
+        return true;
+    }
+
+    private void CheckAlError(string context)
+    {
+        if (_al == null) return;
+        var err = _al.GetError();
+        if (err != AudioError.NoError)
+            DevLog.Warn($"OpenAL error {context}: {err}");
     }
 
     private unsafe void LoadTrack(short[] data, out uint buffer, out uint source)
