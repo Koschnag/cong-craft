@@ -9,7 +9,7 @@ namespace CongCraft.Engine.Procedural;
 /// </summary>
 public static class EnemyMeshBuilder
 {
-    private const int Segments = 12;
+    private const int Segments = 16;
 
     public static MeshData GenerateData()
     {
@@ -22,35 +22,63 @@ public static class EnemyMeshBuilder
         // Head (sphere, skin with dark helmet tint)
         AddSphere(verts, inds, 0, 1.28f, 0, 0.13f, Segments, 0.55f, 0.42f, 0.38f);
 
-        // Helmet crest (thin tapered cylinder on top)
-        AddCylinder(verts, inds, 0, 1.38f, 0, 0.03f, 0.18f, 8, 0.6f, 0.15f, 0.1f);
+        // Helmet (sphere overlay, darker steel)
+        AddSphere(verts, inds, 0, 1.34f, -0.02f, 0.14f, 12, 0.30f, 0.27f, 0.25f);
 
-        // Shoulder pads (spheres)
-        AddSphere(verts, inds, -0.3f, 1.0f, 0, 0.1f, 8, 0.32f, 0.28f, 0.26f);
-        AddSphere(verts, inds, 0.3f, 1.0f, 0, 0.1f, 8, 0.32f, 0.28f, 0.26f);
+        // Helmet crest (thin tapered cylinder on top)
+        AddCylinder(verts, inds, 0, 1.38f, 0, 0.03f, 0.18f, 10, 0.6f, 0.15f, 0.1f);
+
+        // Helmet visor slit (dark)
+        AddCylinder(verts, inds, 0, 1.30f, 0.13f, 0.06f, 0.015f, 8, 0.08f, 0.06f, 0.06f);
+
+        // Neck guard
+        AddCylinder(verts, inds, 0, 1.16f, 0, 0.10f, 0.06f, 12, 0.26f, 0.23f, 0.22f);
+
+        // Shoulder pads (spheres, larger for Gothic style)
+        AddSphere(verts, inds, -0.3f, 1.0f, 0, 0.12f, 12, 0.32f, 0.28f, 0.26f);
+        AddSphere(verts, inds, 0.3f, 1.0f, 0, 0.12f, 12, 0.32f, 0.28f, 0.26f);
+
+        // Shoulder spikes
+        AddCylinder(verts, inds, -0.34f, 1.06f, 0, 0.02f, 0.10f, 8, 0.35f, 0.30f, 0.28f);
+        AddCylinder(verts, inds, 0.34f, 1.06f, 0, 0.02f, 0.10f, 8, 0.35f, 0.30f, 0.28f);
 
         // Left arm (capsule)
-        AddCapsule(verts, inds, -0.32f, 0.7f, 0, 0.06f, 0.55f, 8, 0.30f, 0.26f, 0.24f);
+        AddCapsule(verts, inds, -0.32f, 0.7f, 0, 0.065f, 0.55f, 12, 0.30f, 0.26f, 0.24f);
 
         // Right arm (capsule, sword arm)
-        AddCapsule(verts, inds, 0.32f, 0.7f, 0, 0.06f, 0.55f, 8, 0.30f, 0.26f, 0.24f);
+        AddCapsule(verts, inds, 0.32f, 0.7f, 0, 0.065f, 0.55f, 12, 0.30f, 0.26f, 0.24f);
+
+        // Elbow guards
+        AddSphere(verts, inds, -0.33f, 0.50f, 0.02f, 0.04f, 8, 0.28f, 0.24f, 0.22f);
+        AddSphere(verts, inds, 0.33f, 0.50f, 0.02f, 0.04f, 8, 0.28f, 0.24f, 0.22f);
 
         // Gauntlets (slightly thicker wrist spheres)
-        AddSphere(verts, inds, -0.32f, 0.42f, 0, 0.07f, 8, 0.25f, 0.22f, 0.2f);
-        AddSphere(verts, inds, 0.32f, 0.42f, 0, 0.07f, 8, 0.25f, 0.22f, 0.2f);
+        AddSphere(verts, inds, -0.32f, 0.42f, 0, 0.07f, 10, 0.25f, 0.22f, 0.2f);
+        AddSphere(verts, inds, 0.32f, 0.42f, 0, 0.07f, 10, 0.25f, 0.22f, 0.2f);
 
         // Left leg (capsule)
-        AddCapsule(verts, inds, -0.1f, 0.22f, 0, 0.07f, 0.44f, 8, 0.22f, 0.2f, 0.18f);
+        AddCapsule(verts, inds, -0.1f, 0.22f, 0, 0.07f, 0.44f, 12, 0.22f, 0.2f, 0.18f);
 
         // Right leg (capsule)
-        AddCapsule(verts, inds, 0.1f, 0.22f, 0, 0.07f, 0.44f, 8, 0.22f, 0.2f, 0.18f);
+        AddCapsule(verts, inds, 0.1f, 0.22f, 0, 0.07f, 0.44f, 12, 0.22f, 0.2f, 0.18f);
 
-        // Boots (spheres at feet)
-        AddSphere(verts, inds, -0.1f, 0.02f, 0.02f, 0.08f, 8, 0.2f, 0.18f, 0.16f);
-        AddSphere(verts, inds, 0.1f, 0.02f, 0.02f, 0.08f, 8, 0.2f, 0.18f, 0.16f);
+        // Knee guards (metal plates)
+        AddSphere(verts, inds, -0.1f, 0.05f, 0.04f, 0.045f, 8, 0.26f, 0.23f, 0.21f);
+        AddSphere(verts, inds, 0.1f, 0.05f, 0.04f, 0.045f, 8, 0.26f, 0.23f, 0.21f);
+
+        // Boots (heavy armored)
+        AddCapsule(verts, inds, -0.1f, -0.04f, 0, 0.065f, 0.14f, 10, 0.2f, 0.18f, 0.16f);
+        AddCapsule(verts, inds, 0.1f, -0.04f, 0, 0.065f, 0.14f, 10, 0.2f, 0.18f, 0.16f);
+
+        // Boot soles
+        AddSphere(verts, inds, -0.1f, -0.10f, 0.02f, 0.07f, 8, 0.18f, 0.16f, 0.14f);
+        AddSphere(verts, inds, 0.1f, -0.10f, 0.02f, 0.07f, 8, 0.18f, 0.16f, 0.14f);
 
         // Belt (ring around waist)
         AddCylinder(verts, inds, 0, 0.48f, 0, 0.24f, 0.04f, Segments, 0.45f, 0.3f, 0.15f);
+
+        // Belt buckle (metal)
+        AddSphere(verts, inds, 0, 0.49f, 0.24f, 0.02f, 8, 0.52f, 0.45f, 0.38f);
 
         return new MeshData(verts.ToArray(), inds.ToArray());
     }
@@ -90,8 +118,8 @@ public static class EnemyMeshBuilder
         AddSphere(verts, inds, 0, 1.30f, 0, 0.14f, Segments, br, bg, bb);
 
         // Eye sockets (dark small spheres embedded in skull)
-        AddSphere(verts, inds, -0.055f, 1.32f, 0.10f, 0.032f, 6, dr, dg, db);
-        AddSphere(verts, inds,  0.055f, 1.32f, 0.10f, 0.032f, 6, dr, dg, db);
+        AddSphere(verts, inds, -0.055f, 1.32f, 0.10f, 0.032f, 8, dr, dg, db);
+        AddSphere(verts, inds,  0.055f, 1.32f, 0.10f, 0.032f, 8, dr, dg, db);
 
         // Jaw (small flat cylinder under skull)
         AddCylinder(verts, inds, 0, 1.16f, 0.05f, 0.07f, 0.04f, 8, br * 0.95f, bg * 0.93f, bb * 0.88f);

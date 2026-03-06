@@ -10,7 +10,7 @@ namespace CongCraft.Engine.Procedural;
 /// </summary>
 public static class PlayerMeshBuilder
 {
-    private const int Segments = 12;
+    private const int Segments = 16;
 
     public static MeshData GenerateData()
     {
@@ -23,7 +23,7 @@ public static class PlayerMeshBuilder
         AddCapsule(verts, inds, 0, 0.75f, 0, 0.20f, 0.65f, Segments, 0.42f, 0.30f, 0.18f);
 
         // Chest plate overlay (slightly brighter, thinner)
-        AddCapsule(verts, inds, 0, 0.82f, 0.02f, 0.21f, 0.40f, 8, 0.48f, 0.35f, 0.20f);
+        AddCapsule(verts, inds, 0, 0.82f, 0.02f, 0.21f, 0.40f, 12, 0.48f, 0.35f, 0.20f);
 
         // ─── Head ───
 
@@ -31,31 +31,47 @@ public static class PlayerMeshBuilder
         AddSphere(verts, inds, 0, 1.32f, 0, 0.12f, Segments, 0.72f, 0.58f, 0.48f);
 
         // Hair (dark brown, slightly larger than head at back)
-        AddSphere(verts, inds, 0, 1.36f, -0.04f, 0.11f, 8, 0.22f, 0.14f, 0.08f);
+        AddSphere(verts, inds, 0, 1.36f, -0.04f, 0.11f, 12, 0.22f, 0.14f, 0.08f);
+
+        // Nose bridge (small detail)
+        AddSphere(verts, inds, 0, 1.30f, 0.11f, 0.02f, 8, 0.70f, 0.56f, 0.46f);
+
+        // Ears
+        AddSphere(verts, inds, -0.11f, 1.32f, 0, 0.025f, 8, 0.70f, 0.56f, 0.46f);
+        AddSphere(verts, inds, 0.11f, 1.32f, 0, 0.025f, 8, 0.70f, 0.56f, 0.46f);
+
+        // Neck
+        AddCylinder(verts, inds, 0, 1.16f, 0, 0.06f, 0.08f, 12, 0.68f, 0.55f, 0.44f);
 
         // ─── Shoulders ───
 
         // Shoulder guards (leather pauldrons)
-        AddSphere(verts, inds, -0.28f, 1.05f, 0, 0.10f, 8, 0.38f, 0.28f, 0.16f);
-        AddSphere(verts, inds, 0.28f, 1.05f, 0, 0.10f, 8, 0.38f, 0.28f, 0.16f);
+        AddSphere(verts, inds, -0.28f, 1.05f, 0, 0.10f, 12, 0.38f, 0.28f, 0.16f);
+        AddSphere(verts, inds, 0.28f, 1.05f, 0, 0.10f, 12, 0.38f, 0.28f, 0.16f);
 
-        // Metal studs on shoulders
-        AddSphere(verts, inds, -0.28f, 1.10f, 0.05f, 0.03f, 6, 0.60f, 0.55f, 0.50f);
-        AddSphere(verts, inds, 0.28f, 1.10f, 0.05f, 0.03f, 6, 0.60f, 0.55f, 0.50f);
+        // Metal studs on shoulders (3 per side)
+        AddSphere(verts, inds, -0.28f, 1.10f, 0.05f, 0.03f, 8, 0.60f, 0.55f, 0.50f);
+        AddSphere(verts, inds, 0.28f, 1.10f, 0.05f, 0.03f, 8, 0.60f, 0.55f, 0.50f);
+        AddSphere(verts, inds, -0.24f, 1.08f, 0.08f, 0.02f, 8, 0.55f, 0.50f, 0.45f);
+        AddSphere(verts, inds, 0.24f, 1.08f, 0.08f, 0.02f, 8, 0.55f, 0.50f, 0.45f);
 
         // ─── Arms ───
 
         // Upper arms (skin + leather wraps)
-        AddCapsule(verts, inds, -0.30f, 0.75f, 0, 0.06f, 0.48f, 8, 0.65f, 0.52f, 0.42f);
-        AddCapsule(verts, inds, 0.30f, 0.75f, 0, 0.06f, 0.48f, 8, 0.65f, 0.52f, 0.42f);
+        AddCapsule(verts, inds, -0.30f, 0.75f, 0, 0.06f, 0.48f, 12, 0.65f, 0.52f, 0.42f);
+        AddCapsule(verts, inds, 0.30f, 0.75f, 0, 0.06f, 0.48f, 12, 0.65f, 0.52f, 0.42f);
+
+        // Elbow guards
+        AddSphere(verts, inds, -0.31f, 0.52f, 0.03f, 0.035f, 8, 0.45f, 0.38f, 0.30f);
+        AddSphere(verts, inds, 0.31f, 0.52f, 0.03f, 0.035f, 8, 0.45f, 0.38f, 0.30f);
 
         // Forearm bracers (leather with metal trim)
-        AddCapsule(verts, inds, -0.32f, 0.35f, 0.02f, 0.055f, 0.26f, 8, 0.36f, 0.26f, 0.15f);
-        AddCapsule(verts, inds, 0.32f, 0.35f, 0.02f, 0.055f, 0.26f, 8, 0.36f, 0.26f, 0.15f);
+        AddCapsule(verts, inds, -0.32f, 0.35f, 0.02f, 0.055f, 0.26f, 12, 0.36f, 0.26f, 0.15f);
+        AddCapsule(verts, inds, 0.32f, 0.35f, 0.02f, 0.055f, 0.26f, 12, 0.36f, 0.26f, 0.15f);
 
         // Hands (skin)
-        AddSphere(verts, inds, -0.33f, 0.20f, 0.02f, 0.04f, 6, 0.70f, 0.56f, 0.46f);
-        AddSphere(verts, inds, 0.33f, 0.20f, 0.02f, 0.04f, 6, 0.70f, 0.56f, 0.46f);
+        AddSphere(verts, inds, -0.33f, 0.20f, 0.02f, 0.04f, 8, 0.70f, 0.56f, 0.46f);
+        AddSphere(verts, inds, 0.33f, 0.20f, 0.02f, 0.04f, 8, 0.70f, 0.56f, 0.46f);
 
         // ─── Belt & Waist ───
 
@@ -63,38 +79,59 @@ public static class PlayerMeshBuilder
         AddCylinder(verts, inds, 0, 0.48f, 0, 0.22f, 0.06f, Segments, 0.28f, 0.18f, 0.10f);
 
         // Belt buckle (gold accent)
-        AddSphere(verts, inds, 0, 0.48f, 0.22f, 0.025f, 6, 0.82f, 0.62f, 0.15f);
+        AddSphere(verts, inds, 0, 0.48f, 0.22f, 0.025f, 8, 0.82f, 0.62f, 0.15f);
 
-        // Belt pouch
-        AddSphere(verts, inds, 0.18f, 0.46f, 0.10f, 0.04f, 6, 0.32f, 0.22f, 0.12f);
+        // Belt pouch (left side)
+        AddSphere(verts, inds, 0.18f, 0.46f, 0.10f, 0.04f, 8, 0.32f, 0.22f, 0.12f);
+
+        // Belt pouch strap
+        AddCylinder(verts, inds, 0.18f, 0.46f, 0.08f, 0.015f, 0.06f, 8, 0.26f, 0.18f, 0.10f);
+
+        // Dagger scabbard (right hip)
+        AddCapsule(verts, inds, -0.20f, 0.36f, 0.08f, 0.02f, 0.18f, 8, 0.22f, 0.16f, 0.10f);
 
         // ─── Legs ───
 
         // Thighs (cloth/leather pants)
-        AddCapsule(verts, inds, -0.10f, 0.28f, 0, 0.075f, 0.36f, 8, 0.32f, 0.24f, 0.15f);
-        AddCapsule(verts, inds, 0.10f, 0.28f, 0, 0.075f, 0.36f, 8, 0.32f, 0.24f, 0.15f);
+        AddCapsule(verts, inds, -0.10f, 0.28f, 0, 0.075f, 0.36f, 12, 0.32f, 0.24f, 0.15f);
+        AddCapsule(verts, inds, 0.10f, 0.28f, 0, 0.075f, 0.36f, 12, 0.32f, 0.24f, 0.15f);
 
         // Knee guards (metal)
-        AddSphere(verts, inds, -0.10f, 0.10f, 0.04f, 0.05f, 6, 0.50f, 0.45f, 0.40f);
-        AddSphere(verts, inds, 0.10f, 0.10f, 0.04f, 0.05f, 6, 0.50f, 0.45f, 0.40f);
+        AddSphere(verts, inds, -0.10f, 0.10f, 0.04f, 0.05f, 8, 0.50f, 0.45f, 0.40f);
+        AddSphere(verts, inds, 0.10f, 0.10f, 0.04f, 0.05f, 8, 0.50f, 0.45f, 0.40f);
 
-        // Shins
-        AddCapsule(verts, inds, -0.10f, -0.05f, 0, 0.058f, 0.30f, 8, 0.30f, 0.22f, 0.14f);
-        AddCapsule(verts, inds, 0.10f, -0.05f, 0, 0.058f, 0.30f, 8, 0.30f, 0.22f, 0.14f);
+        // Shins with greaves
+        AddCapsule(verts, inds, -0.10f, -0.05f, 0, 0.058f, 0.30f, 12, 0.30f, 0.22f, 0.14f);
+        AddCapsule(verts, inds, 0.10f, -0.05f, 0, 0.058f, 0.30f, 12, 0.30f, 0.22f, 0.14f);
+
+        // Shin guard plates (metal overlay)
+        AddCapsule(verts, inds, -0.10f, -0.02f, 0.04f, 0.03f, 0.20f, 8, 0.48f, 0.42f, 0.38f);
+        AddCapsule(verts, inds, 0.10f, -0.02f, 0.04f, 0.03f, 0.20f, 8, 0.48f, 0.42f, 0.38f);
 
         // ─── Boots ───
 
-        // Boots (heavy leather, darker)
-        AddSphere(verts, inds, -0.10f, -0.20f, 0.03f, 0.07f, 8, 0.25f, 0.17f, 0.10f);
-        AddSphere(verts, inds, 0.10f, -0.20f, 0.03f, 0.07f, 8, 0.25f, 0.17f, 0.10f);
+        // Boot shafts (heavy leather)
+        AddCapsule(verts, inds, -0.10f, -0.18f, 0, 0.065f, 0.10f, 12, 0.25f, 0.17f, 0.10f);
+        AddCapsule(verts, inds, 0.10f, -0.18f, 0, 0.065f, 0.10f, 12, 0.25f, 0.17f, 0.10f);
+
+        // Boot soles (slightly extended forward)
+        AddSphere(verts, inds, -0.10f, -0.24f, 0.03f, 0.07f, 10, 0.20f, 0.14f, 0.08f);
+        AddSphere(verts, inds, 0.10f, -0.24f, 0.03f, 0.07f, 10, 0.20f, 0.14f, 0.08f);
+
+        // Boot heel detail
+        AddSphere(verts, inds, -0.10f, -0.24f, -0.03f, 0.04f, 8, 0.22f, 0.15f, 0.09f);
+        AddSphere(verts, inds, 0.10f, -0.24f, -0.03f, 0.04f, 8, 0.22f, 0.15f, 0.09f);
 
         // ─── Cloak (short cape, back only) ───
 
         // Cloak body (dark green/brown, draping from shoulders)
-        AddCylinder(verts, inds, 0, 0.72f, -0.15f, 0.22f, 0.55f, 8, 0.18f, 0.22f, 0.12f);
+        AddCylinder(verts, inds, 0, 0.72f, -0.15f, 0.22f, 0.55f, 12, 0.18f, 0.22f, 0.12f);
 
         // Cloak bottom fringe (slightly wider)
-        AddCylinder(verts, inds, 0, 0.44f, -0.16f, 0.24f, 0.08f, 8, 0.16f, 0.20f, 0.11f);
+        AddCylinder(verts, inds, 0, 0.44f, -0.16f, 0.24f, 0.08f, 12, 0.16f, 0.20f, 0.11f);
+
+        // Cloak clasp at neck (gold)
+        AddSphere(verts, inds, 0, 1.12f, -0.12f, 0.025f, 8, 0.78f, 0.58f, 0.12f);
 
         return new MeshData(verts.ToArray(), inds.ToArray());
     }
