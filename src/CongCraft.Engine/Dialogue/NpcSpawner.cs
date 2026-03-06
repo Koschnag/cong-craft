@@ -50,7 +50,7 @@ public sealed class NpcSpawner : ISystem
         if (height < 2f) height = 2f; // Ensure above water
 
         if (!_npcMeshes.ContainsKey(npcType))
-            _npcMeshes[npcType] = NpcMeshBuilder.Create(_gl, npcType);
+            _npcMeshes[npcType] = HighResNpcMeshBuilder.Create(_gl, npcType);
 
         var entity = _world.CreateEntity();
         _world.AddComponent(entity, new TransformComponent

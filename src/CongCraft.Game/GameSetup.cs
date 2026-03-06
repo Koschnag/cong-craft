@@ -140,8 +140,8 @@ internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
         _world.AddComponent(player, new ManaComponent());
         _world.AddComponent(player, new SpellState());
 
-        // Player warrior mesh (SpellForce-style humanoid with armor)
-        var playerMesh = PlayerMeshBuilder.Create(_gl);
+        // Player warrior mesh (high-res detailed humanoid with plate armor)
+        var playerMesh = HighResPlayerMeshBuilder.Create(_gl);
         var shader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _world.AddComponent(player, new MeshRendererComponent
         {

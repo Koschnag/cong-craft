@@ -23,6 +23,8 @@ public sealed class EnemySpawner : ISystem
     private TerrainGenerator _terrainGen = null!;
     private Mesh _enemyMesh = null!;
     private Mesh _skeletonMesh = null!;
+    private Mesh _wolfMesh = null!;
+    private Mesh _trollMesh = null!;
     private Mesh _swordMesh = null!;
     private Shader _basicShader = null!;
     private MaterialTextures? _materialTextures;
@@ -37,8 +39,10 @@ public sealed class EnemySpawner : ISystem
         _gl = services.Get<GL>();
         _world = services.Get<World>();
         _terrainGen = services.Get<TerrainGenerator>();
-        _enemyMesh = EnemyMeshBuilder.Create(_gl);
-        _skeletonMesh = EnemyMeshBuilder.CreateSkeleton(_gl);
+        _enemyMesh = HighResEnemyMeshBuilder.Create(_gl);
+        _skeletonMesh = HighResEnemyMeshBuilder.CreateSkeleton(_gl);
+        _wolfMesh = HighResEnemyMeshBuilder.CreateWolf(_gl);
+        _trollMesh = HighResEnemyMeshBuilder.CreateTroll(_gl);
         _swordMesh = SwordMeshBuilder.Create(_gl);
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _materialTextures = services.Get<MaterialTextures>();
@@ -157,9 +161,16 @@ public sealed class EnemySpawner : ISystem
             AttackDamage = damage,
             AttackRange = range
         });
+        var mesh = type switch
+        {
+            EnemyType.Skeleton => _skeletonMesh,
+            EnemyType.Wolf => _wolfMesh,
+            EnemyType.Troll => _trollMesh,
+            _ => _enemyMesh
+        };
         _world.AddComponent(entity, new MeshRendererComponent
         {
-            Mesh = type == EnemyType.Skeleton ? _skeletonMesh : _enemyMesh,
+            Mesh = mesh,
             Shader = _basicShader
         });
 
@@ -188,6 +199,8 @@ public sealed class EnemySpawner : ISystem
     {
         _enemyMesh.Dispose();
         _skeletonMesh.Dispose();
+        _wolfMesh.Dispose();
+        _trollMesh.Dispose();
         _swordMesh.Dispose();
         _basicShader.Dispose();
     }
