@@ -969,14 +969,14 @@ void main()
 #version 330 core
 in vec2 TexCoord;
 uniform sampler2D uImage;
-uniform bool uHorizontal;
+uniform int uHorizontal;
 out vec4 FragColor;
 void main()
 {
     float weights[5] = float[](0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
     vec2 texOffset = 1.0 / textureSize(uImage, 0);
     vec3 result = texture(uImage, TexCoord).rgb * weights[0];
-    if (uHorizontal)
+    if (uHorizontal != 0)
     {
         for (int i = 1; i < 5; ++i)
         {

@@ -1,3 +1,4 @@
+using CongCraft.Engine.Core;
 using Silk.NET.OpenGL;
 
 namespace CongCraft.Engine.Rendering;
@@ -72,15 +73,16 @@ public sealed class PostProcessing : IDisposable
         _gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment,
             RenderbufferTarget.Renderbuffer, _sceneDepthRbo);
 
+        CheckFramebufferComplete("Scene");
         _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 
         // Bloom FBOs (half res)
         int bw = _width / 2, bh = _height / 2;
-        CreateBloomFbo(out _bloomFbo1, out _bloomTex1, bw, bh);
-        CreateBloomFbo(out _bloomFbo2, out _bloomTex2, bw, bh);
+        CreateBloomFbo(out _bloomFbo1, out _bloomTex1, bw, bh, "Bloom1");
+        CreateBloomFbo(out _bloomFbo2, out _bloomTex2, bw, bh, "Bloom2");
     }
 
-    private void CreateBloomFbo(out uint fbo, out uint tex, int w, int h)
+    private void CreateBloomFbo(out uint fbo, out uint tex, int w, int h, string name)
     {
         fbo = _gl.GenFramebuffer();
         _gl.BindFramebuffer(FramebufferTarget.Framebuffer, fbo);
@@ -98,7 +100,15 @@ public sealed class PostProcessing : IDisposable
         _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)GLEnum.ClampToEdge);
         _gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0,
             TextureTarget.Texture2D, tex, 0);
+        CheckFramebufferComplete(name);
         _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+    }
+
+    private void CheckFramebufferComplete(string name)
+    {
+        var status = _gl.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
+        if (status != GLEnum.FramebufferComplete)
+            DevLog.Warn($"PostProcessing: {name} FBO incomplete — status {status}");
     }
 
     /// <summary>

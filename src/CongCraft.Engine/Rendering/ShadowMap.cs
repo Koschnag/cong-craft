@@ -1,4 +1,5 @@
 using System.Numerics;
+using CongCraft.Engine.Core;
 using Silk.NET.OpenGL;
 
 namespace CongCraft.Engine.Rendering;
@@ -54,6 +55,9 @@ public sealed class ShadowMap : IDisposable
             TextureTarget.Texture2D, _depthTexture, 0);
         _gl.DrawBuffer(DrawBufferMode.None);
         _gl.ReadBuffer(ReadBufferMode.None);
+        var status = _gl.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
+        if (status != GLEnum.FramebufferComplete)
+            DevLog.Warn($"ShadowMap: FBO incomplete — status {status}");
         _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
     }
 
