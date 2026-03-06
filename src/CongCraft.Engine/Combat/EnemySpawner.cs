@@ -28,7 +28,6 @@ public sealed class EnemySpawner : ISystem
     private Mesh _skeletonMesh = null!;
     private Mesh _wolfMesh = null!;
     private Mesh _trollMesh = null!;
-    private Mesh _swordMesh = null!;
     private Shader _basicShader = null!;
     private MaterialTextures? _materialTextures;
     private bool _initialSpawnDone;
@@ -54,8 +53,6 @@ public sealed class EnemySpawner : ISystem
             ?? HighResEnemyMeshBuilder.CreateWolf(_gl);
         _trollMesh = _assets?.LoadOrGenerate("enemy_troll", HighResEnemyMeshBuilder.GenerateTrollData)
             ?? HighResEnemyMeshBuilder.CreateTroll(_gl);
-        _swordMesh = _assets?.LoadOrGenerate("weapon_sword", SwordMeshBuilder.GenerateData)
-            ?? SwordMeshBuilder.Create(_gl);
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _materialTextures = services.Get<MaterialTextures>();
     }
@@ -228,7 +225,6 @@ public sealed class EnemySpawner : ISystem
         _skeletonMesh.Dispose();
         _wolfMesh.Dispose();
         _trollMesh.Dispose();
-        _swordMesh.Dispose();
         _basicShader.Dispose();
     }
 

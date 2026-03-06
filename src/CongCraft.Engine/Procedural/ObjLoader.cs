@@ -142,6 +142,8 @@ public static class ObjLoader
         int vi = int.Parse(parts[0], CultureInfo.InvariantCulture);
         // OBJ indices are 1-based, negative means relative
         vi = vi > 0 ? vi - 1 : positions.Count + vi;
+        if (vi < 0 || vi >= positions.Count)
+            throw new FormatException($"OBJ position index out of range: {int.Parse(parts[0], CultureInfo.InvariantCulture)}");
         pos = positions[vi];
 
         nrm = new float[] { 0, 1, 0 }; // default up
