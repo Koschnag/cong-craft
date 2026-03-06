@@ -137,10 +137,11 @@ public sealed class BitmapFont : IDisposable
     {
         uint tex = _gl.GenTexture();
         _gl.BindTexture(TextureTarget.Texture2D, tex);
+        _gl.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
 
         fixed (byte* p = pixels)
         {
-            _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba,
+            _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba8,
                 (uint)AtlasWidth, (uint)AtlasHeight, 0,
                 PixelFormat.Rgba, PixelType.UnsignedByte, p);
         }
@@ -149,6 +150,7 @@ public sealed class BitmapFont : IDisposable
         _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)GLEnum.Linear);
         _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)GLEnum.ClampToEdge);
         _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)GLEnum.ClampToEdge);
+        _gl.BindTexture(TextureTarget.Texture2D, 0);
 
         return tex;
     }

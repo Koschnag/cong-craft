@@ -46,15 +46,17 @@ public sealed class UITextureAtlas : IDisposable
     {
         uint tex = gl.GenTexture();
         gl.BindTexture(TextureTarget.Texture2D, tex);
+        gl.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
         fixed (byte* p = pixels)
         {
-            gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba,
+            gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba8,
                 (uint)w, (uint)h, 0, PixelFormat.Rgba, PixelType.UnsignedByte, p);
         }
         gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)GLEnum.Linear);
         gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)GLEnum.Linear);
         gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)GLEnum.ClampToEdge);
         gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)GLEnum.ClampToEdge);
+        gl.BindTexture(TextureTarget.Texture2D, 0);
         return tex;
     }
 

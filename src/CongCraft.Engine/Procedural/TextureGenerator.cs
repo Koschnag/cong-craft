@@ -456,21 +456,25 @@ public static class TextureGenerator
         uint texture = gl.GenTexture();
         gl.BindTexture(TextureTarget.Texture2D, texture);
 
-        fixed (byte* p = pixels)
-        {
-            gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba,
-                (uint)width, (uint)height, 0,
-                PixelFormat.Rgba, PixelType.UnsignedByte, p);
-        }
+        // Set pixel alignment before upload (required for macOS compatibility)
+        gl.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
 
-        // Generate mipmaps for quality at distance
-        gl.GenerateMipmap(TextureTarget.Texture2D);
-
-        // Trilinear filtering with anisotropic
+        // Set filtering params before mipmap generation for correct allocation
         gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)GLEnum.LinearMipmapLinear);
         gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)GLEnum.Linear);
         gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)GLEnum.Repeat);
         gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)GLEnum.Repeat);
+
+        fixed (byte* p = pixels)
+        {
+            // Use Rgba8 (explicitly sized) — macOS Core Profile requires sized internal formats
+            gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba8,
+                (uint)width, (uint)height, 0,
+                PixelFormat.Rgba, PixelType.UnsignedByte, p);
+        }
+
+        // Generate mipmaps after upload and filter setup
+        gl.GenerateMipmap(TextureTarget.Texture2D);
 
         // Anisotropic filtering (best quality for terrain viewed at angles)
         gl.GetFloat(GLEnum.MaxTextureMaxAnisotropy, out float maxAniso);
@@ -479,6 +483,8 @@ public static class TextureGenerator
             gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMaxAnisotropy,
                 MathF.Min(maxAniso, 16f));
         }
+
+        gl.BindTexture(TextureTarget.Texture2D, 0);
 
         return texture;
     }

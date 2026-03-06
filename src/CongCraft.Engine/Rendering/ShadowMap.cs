@@ -33,7 +33,7 @@ public sealed class ShadowMap : IDisposable
         _gl.BindTexture(TextureTarget.Texture2D, _depthTexture);
         unsafe
         {
-            _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.DepthComponent,
+            _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.DepthComponent24,
                 Resolution, Resolution, 0, PixelFormat.DepthComponent, PixelType.Float, null);
         }
         _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)GLEnum.Linear);
