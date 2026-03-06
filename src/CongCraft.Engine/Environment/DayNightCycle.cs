@@ -16,7 +16,7 @@ public sealed class DayNightCycle : ISystem
     /// <summary>Hours per real-time minute. Default 4 = 6 minutes per full day.</summary>
     public float CycleSpeed { get; set; } = 4f;
 
-    public float TimeOfDay { get; set; } = 17.5f; // Start at dusk — dramatic first impression
+    public float TimeOfDay { get; set; } = 10.0f; // Start at mid-morning — textures clearly visible
 
     private LightingData _lighting = null!;
 
