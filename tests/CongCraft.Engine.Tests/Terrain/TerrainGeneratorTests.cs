@@ -91,4 +91,40 @@ public class TerrainGeneratorTests
         // Different positions should generally produce different heights
         Assert.NotEqual(h1, h2);
     }
+
+    [Fact]
+    public void HeightsWithinAmplitudeRange()
+    {
+        // Default amplitude is 20, FBM noise can slightly exceed [-1,1]
+        var gen = new TerrainGenerator(seed: 12345);
+        var data = gen.GenerateChunk(0, 0, resolution: 32);
+        foreach (float h in data.Heights)
+        {
+            Assert.InRange(h, -25f, 25f);
+        }
+    }
+
+    [Fact]
+    public void SpawnArea_HeightDistribution()
+    {
+        // Diagnostic test: print height distribution at spawn to verify shader thresholds
+        var gen = new TerrainGenerator(seed: 12345);
+        var data = gen.GenerateChunk(0, 0, resolution: 32);
+        float min = data.Heights.Min();
+        float max = data.Heights.Max();
+        float avg = data.Heights.Average();
+
+        // The terrain should have actual height variation (not flat)
+        Assert.True(max - min > 5f, $"Terrain too flat: min={min:F1} max={max:F1}");
+
+        // Log distribution for debugging
+        int grassCount = data.Heights.Count(h => h >= -2f && h <= 10f);
+        int total = data.Heights.Length;
+        float grassRatio = (float)grassCount / total;
+
+        // Assert terrain has at least some grass — if not, thresholds need adjusting
+        Assert.True(grassRatio > 0.05f,
+            $"Only {grassRatio:P0} of spawn chunk (min={min:F1} max={max:F1} avg={avg:F1}) " +
+            $"is grass (-2..10) — shader height thresholds may not match terrain amplitude");
+    }
 }
