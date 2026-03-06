@@ -2,6 +2,7 @@ using System.Numerics;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
+using CongCraft.Engine.Level;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
 using Silk.NET.OpenGL;
@@ -11,7 +12,8 @@ namespace CongCraft.Engine.Terrain;
 
 /// <summary>
 /// Manages terrain chunk loading around the player position.
-/// Now with triplanar texturing and shadow support.
+/// Uses LevelTerrainGenerator for fixed, designed terrain instead of procedural noise.
+/// Triplanar texturing, shadow support, and zone-based material blending.
 /// </summary>
 public sealed class TerrainSystem : ISystem, IShadowCaster
 {
@@ -19,7 +21,7 @@ public sealed class TerrainSystem : ISystem, IShadowCaster
 
     private GL _gl = null!;
     private World _world = null!;
-    private TerrainGenerator _generator = null!;
+    private LevelTerrainGenerator _levelGen = null!;
     private Shader _terrainShader = null!;
     private Camera _camera = null!;
     private LightingData _lighting = null!;
@@ -30,7 +32,7 @@ public sealed class TerrainSystem : ISystem, IShadowCaster
     private readonly int _viewDistance;
     private readonly Dictionary<(int, int), Entity> _loadedChunks = new();
 
-    public TerrainGenerator Generator => _generator;
+    public LevelTerrainGenerator LevelGenerator => _levelGen;
 
     public TerrainSystem(int viewDistance = 2)
     {
@@ -43,7 +45,7 @@ public sealed class TerrainSystem : ISystem, IShadowCaster
         _world = services.Get<World>();
         _camera = services.Get<Camera>();
         _lighting = services.Get<LightingData>();
-        _generator = new TerrainGenerator();
+        _levelGen = services.Get<LevelTerrainGenerator>();
 
         _terrainShader = new Shader(_gl, ShaderSources.TerrainVertex, ShaderSources.TerrainFragment);
         _shadowMap = services.Get<ShadowMap>();
@@ -152,7 +154,7 @@ public sealed class TerrainSystem : ISystem, IShadowCaster
 
     private void CreateChunk(int chunkX, int chunkZ)
     {
-        var heightmap = _generator.GenerateChunk(chunkX, chunkZ);
+        var heightmap = _levelGen.GenerateChunk(chunkX, chunkZ);
         var vertices = heightmap.BuildVertices();
         var indices = heightmap.BuildIndices();
         var mesh = new Mesh(_gl, vertices, indices, VertexLayout.PositionNormalTexCoord);

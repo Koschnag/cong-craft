@@ -2,6 +2,7 @@ using System.Numerics;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
+using CongCraft.Engine.Level;
 using CongCraft.Engine.Procedural;
 using CongCraft.Engine.Rendering;
 using CongCraft.Engine.Terrain;
@@ -11,7 +12,8 @@ using Shader = CongCraft.Engine.Rendering.Shader;
 namespace CongCraft.Engine.Environment;
 
 /// <summary>
-/// Places trees and rocks on the terrain using noise-based distribution.
+/// Places trees, rocks, bushes, and ruins at fixed positions from the level data.
+/// No random placement — every object is intentionally positioned.
 /// </summary>
 public sealed class VegetationPlacer : ISystem
 {
@@ -21,7 +23,8 @@ public sealed class VegetationPlacer : ISystem
     private World _world = null!;
     private Camera _camera = null!;
     private LightingData _lighting = null!;
-    private TerrainGenerator _terrainGen = null!;
+    private LevelTerrainGenerator _levelGen = null!;
+    private LevelData? _levelData;
     private Shader _basicShader = null!;
     private ShadowMap? _shadowMap;
     private MaterialTextures? _materialTextures;
@@ -42,7 +45,8 @@ public sealed class VegetationPlacer : ISystem
         _world = services.Get<World>();
         _camera = services.Get<Camera>();
         _lighting = services.Get<LightingData>();
-        _terrainGen = services.Get<TerrainGenerator>();
+        _levelGen = services.Get<LevelTerrainGenerator>();
+        services.TryGet(out _levelData);
         _basicShader = new Shader(_gl, ShaderSources.BasicVertex, ShaderSources.BasicFragment);
         _shadowMap = services.Get<ShadowMap>();
         _materialTextures = services.Get<MaterialTextures>();
@@ -53,7 +57,6 @@ public sealed class VegetationPlacer : ISystem
         _ruinWallMesh = RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.WallSegment, 33);
         _ruinArchMesh = RuinMeshBuilder.Create(_gl, RuinMeshBuilder.RuinType.ArchFragment, 44);
 
-        // Ground cover vegetation
         var scrubData = BushMeshBuilder.GenerateScrub(101);
         _scrubMesh = new Mesh(_gl, scrubData.Vertices, scrubData.Indices, VertexLayout.PositionNormalColor);
         var berryData = BushMeshBuilder.GenerateBerry(202);
@@ -67,160 +70,95 @@ public sealed class VegetationPlacer : ISystem
         if (_placed) return;
         _placed = true;
 
-        // Use a separate noise for placement
-        var placementNoise = new FastNoiseLite(9999);
-        placementNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-        placementNoise.SetFrequency(0.02f);
+        if (_levelData != null)
+            PlaceFromLevelData();
+        else
+            PlaceFallback();
+    }
 
+    private void PlaceFromLevelData()
+    {
+        foreach (var tree in _levelData!.Trees)
+        {
+            float height = _levelGen.GetHeightAt(tree.X, tree.Z);
+            if (height < _levelData.WaterLevel) continue;
+            PlaceObject(tree.X, height, tree.Z, tree.Scale, tree.RotationY, _treeMesh);
+        }
+
+        foreach (var rock in _levelData.Rocks)
+        {
+            float height = _levelGen.GetHeightAt(rock.X, rock.Z);
+            if (height < _levelData.WaterLevel - 0.5f) continue;
+            PlaceObject(rock.X, height, rock.Z, rock.Scale, rock.RotationY, _rockMesh);
+        }
+
+        foreach (var bush in _levelData.Bushes)
+        {
+            float height = _levelGen.GetHeightAt(bush.X, bush.Z);
+            if (height < _levelData.WaterLevel) continue;
+            var mesh = bush.Variant switch
+            {
+                "berry" => _berryBushMesh,
+                "grass" => _grassTuftMesh,
+                _ => _scrubMesh
+            };
+            PlaceObject(bush.X, height, bush.Z, bush.Scale, bush.RotationY, mesh);
+        }
+
+        foreach (var ruin in _levelData.Ruins)
+        {
+            float height = _levelGen.GetHeightAt(ruin.X, ruin.Z);
+            if (height < _levelData.WaterLevel) continue;
+            var mesh = ruin.Type switch
+            {
+                "pillar" => _ruinPillarMesh,
+                "broken_pillar" => _ruinBrokenPillarMesh,
+                "wall" => _ruinWallMesh,
+                "arch" => _ruinArchMesh,
+                _ => _ruinPillarMesh
+            };
+            PlaceObject(ruin.X, height, ruin.Z, ruin.Scale, ruin.RotationY, mesh);
+        }
+    }
+
+    private void PlaceObject(float x, float height, float z, float scale, float rotY, Mesh mesh)
+    {
+        var entity = _world.CreateEntity();
+        _world.AddComponent(entity, new TransformComponent
+        {
+            Position = new Vector3(x, height, z),
+            Scale = Vector3.One * scale,
+            Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY, rotY)
+        });
+        _world.AddComponent(entity, new MeshRendererComponent
+        {
+            Mesh = mesh,
+            Shader = _basicShader
+        });
+        _world.AddComponent(entity, new VegetationTag());
+    }
+
+    private void PlaceFallback()
+    {
         var rng = new Random(42);
-        float areaSize = 200f;
-        float halfArea = areaSize / 2f;
+        float areaSize = 200f, halfArea = areaSize / 2f;
 
-        // Place trees
         for (int i = 0; i < 150; i++)
         {
             float x = (float)(rng.NextDouble() * areaSize - halfArea);
             float z = (float)(rng.NextDouble() * areaSize - halfArea);
-            float height = _terrainGen.GetHeightAt(x, z);
-            float noise = placementNoise.GetNoise(x, z);
-
-            // Only place on suitable terrain (above water, not too steep/high)
-            if (height > 2f && height < 15f && noise > 0.0f)
-            {
-                var entity = _world.CreateEntity();
-                var transform = new TransformComponent
-                {
-                    Position = new Vector3(x, height, z),
-                    Scale = Vector3.One * (0.8f + (float)rng.NextDouble() * 0.6f)
-                };
-                _world.AddComponent(entity, transform);
-                _world.AddComponent(entity, new MeshRendererComponent
-                {
-                    Mesh = _treeMesh,
-                    Shader = _basicShader
-                });
-                _world.AddComponent(entity, new VegetationTag());
-            }
+            float height = _levelGen.GetHeightAt(x, z);
+            if (height > 2f && height < 15f)
+                PlaceObject(x, height, z, 0.8f + (float)rng.NextDouble() * 0.6f, (float)rng.NextDouble() * MathF.Tau, _treeMesh);
         }
 
-        // Place rocks
         for (int i = 0; i < 80; i++)
         {
             float x = (float)(rng.NextDouble() * areaSize - halfArea);
             float z = (float)(rng.NextDouble() * areaSize - halfArea);
-            float height = _terrainGen.GetHeightAt(x, z);
-
+            float height = _levelGen.GetHeightAt(x, z);
             if (height > 1.5f)
-            {
-                var entity = _world.CreateEntity();
-                var transform = new TransformComponent
-                {
-                    Position = new Vector3(x, height, z),
-                    Scale = Vector3.One * (0.5f + (float)rng.NextDouble() * 1f),
-                    Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY,
-                        (float)(rng.NextDouble() * MathF.Tau))
-                };
-                _world.AddComponent(entity, transform);
-                _world.AddComponent(entity, new MeshRendererComponent
-                {
-                    Mesh = _rockMesh,
-                    Shader = _basicShader
-                });
-                _world.AddComponent(entity, new VegetationTag());
-            }
-        }
-
-        // Place scrub bushes (ground cover between trees)
-        for (int i = 0; i < 120; i++)
-        {
-            float x = (float)(rng.NextDouble() * areaSize - halfArea);
-            float z = (float)(rng.NextDouble() * areaSize - halfArea);
-            float height = _terrainGen.GetHeightAt(x, z);
-            float noise = placementNoise.GetNoise(x, z);
-
-            if (height > 1.8f && height < 14f && noise > -0.3f)
-            {
-                var entity = _world.CreateEntity();
-                var mesh = rng.NextDouble() > 0.3 ? _scrubMesh : _berryBushMesh;
-                _world.AddComponent(entity, new TransformComponent
-                {
-                    Position = new Vector3(x, height, z),
-                    Scale = Vector3.One * (0.6f + (float)rng.NextDouble() * 0.5f),
-                    Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY,
-                        (float)(rng.NextDouble() * MathF.Tau))
-                });
-                _world.AddComponent(entity, new MeshRendererComponent
-                {
-                    Mesh = mesh,
-                    Shader = _basicShader
-                });
-                _world.AddComponent(entity, new VegetationTag());
-            }
-        }
-
-        // Place grass tufts (dense ground cover)
-        for (int i = 0; i < 200; i++)
-        {
-            float x = (float)(rng.NextDouble() * areaSize - halfArea);
-            float z = (float)(rng.NextDouble() * areaSize - halfArea);
-            float height = _terrainGen.GetHeightAt(x, z);
-
-            if (height > 1.5f && height < 10f)
-            {
-                var entity = _world.CreateEntity();
-                _world.AddComponent(entity, new TransformComponent
-                {
-                    Position = new Vector3(x, height, z),
-                    Scale = Vector3.One * (0.5f + (float)rng.NextDouble() * 0.6f),
-                    Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY,
-                        (float)(rng.NextDouble() * MathF.Tau))
-                });
-                _world.AddComponent(entity, new MeshRendererComponent
-                {
-                    Mesh = _grassTuftMesh,
-                    Shader = _basicShader
-                });
-                _world.AddComponent(entity, new VegetationTag());
-            }
-        }
-
-        // Place ruins (~28 ruin pieces scattered across the world)
-        var ruinMeshes = new[] { _ruinPillarMesh, _ruinBrokenPillarMesh, _ruinWallMesh, _ruinArchMesh };
-        var ruinNoise = new FastNoiseLite(7777);
-        ruinNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
-        ruinNoise.SetFrequency(0.015f);
-
-        int ruinsPlaced = 0;
-        int attempts = 0;
-        while (ruinsPlaced < 28 && attempts < 500)
-        {
-            attempts++;
-            float x = (float)(rng.NextDouble() * areaSize - halfArea);
-            float z = (float)(rng.NextDouble() * areaSize - halfArea);
-            float height = _terrainGen.GetHeightAt(x, z);
-
-            // Place ruins on flat-ish terrain above water, away from steep slopes
-            if (height < 2.5f || height > 12f) continue;
-            float nv = ruinNoise.GetNoise(x, z);
-            if (nv < -0.2f) continue; // Cluster ruins in noisier regions
-
-            var mesh = ruinMeshes[rng.Next(ruinMeshes.Length)];
-            var entity = _world.CreateEntity();
-            var transform = new TransformComponent
-            {
-                Position = new Vector3(x, height, z),
-                Scale = Vector3.One * (0.9f + (float)rng.NextDouble() * 0.5f),
-                Rotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY,
-                    (float)(rng.NextDouble() * MathF.Tau))
-            };
-            _world.AddComponent(entity, transform);
-            _world.AddComponent(entity, new MeshRendererComponent
-            {
-                Mesh = mesh,
-                Shader = _basicShader
-            });
-            _world.AddComponent(entity, new VegetationTag());
-            ruinsPlaced++;
+                PlaceObject(x, height, z, 0.5f + (float)rng.NextDouble() * 1f, (float)rng.NextDouble() * MathF.Tau, _rockMesh);
         }
     }
 
