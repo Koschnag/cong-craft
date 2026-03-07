@@ -1,0 +1,1 @@
+Stylized pine tree for dark fantasy medieval environment, grounded shape, readable canopy, moody, suitable for fog and bloom, muted greens and earthy bark.

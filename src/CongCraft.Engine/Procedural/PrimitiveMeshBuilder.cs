@@ -183,6 +183,104 @@ public static class PrimitiveMeshBuilder
     }
 
     /// <summary>
+    /// Returns capsule vertex/index data without uploading to GPU.
+    /// </summary>
+    public static MeshData CreateCapsuleData(float radius, float height, int segments,
+        float r, float g, float b)
+    {
+        var verts = new List<float>();
+        var inds = new List<uint>();
+        float bodyH = height - 2 * radius;
+        int rings = 8;
+        int totalRings = rings * 2 + 2;
+
+        for (int ring = 0; ring <= totalRings; ring++)
+        {
+            float t = (float)ring / totalRings;
+            float y, ringRadius;
+
+            if (t < 0.25f)
+            {
+                float angle = (t / 0.25f) * MathF.PI / 2f;
+                y = -bodyH / 2f - radius * MathF.Cos(angle);
+                ringRadius = radius * MathF.Sin(angle);
+            }
+            else if (t < 0.75f)
+            {
+                y = -bodyH / 2f + bodyH * ((t - 0.25f) / 0.5f);
+                ringRadius = radius;
+            }
+            else
+            {
+                float angle = ((t - 0.75f) / 0.25f) * MathF.PI / 2f;
+                y = bodyH / 2f + radius * MathF.Sin(angle);
+                ringRadius = radius * MathF.Cos(angle);
+            }
+
+            for (int seg = 0; seg <= segments; seg++)
+            {
+                float angle2 = seg * MathF.Tau / segments;
+                float cos = MathF.Cos(angle2);
+                float sin = MathF.Sin(angle2);
+                verts.AddRange(new[] { cos * ringRadius, y, sin * ringRadius, cos, 0f, sin, r, g, b });
+            }
+        }
+
+        int vertsPerRing = segments + 1;
+        for (int ring = 0; ring < totalRings; ring++)
+        {
+            for (int seg = 0; seg < segments; seg++)
+            {
+                uint tl = (uint)(ring * vertsPerRing + seg);
+                uint tr = tl + 1;
+                uint bl = (uint)((ring + 1) * vertsPerRing + seg);
+                uint br = bl + 1;
+                inds.AddRange(new[] { tl, bl, br, tl, br, tr });
+            }
+        }
+
+        return new MeshData(verts.ToArray(), inds.ToArray());
+    }
+
+    /// <summary>
+    /// Returns cube vertex/index data without uploading to GPU.
+    /// </summary>
+    public static MeshData CreateCubeData(float r, float g, float b)
+    {
+        float h = 0.5f;
+        var verts = new List<float>();
+        var inds = new List<uint>();
+
+        void AddFace(float nx, float ny, float nz,
+            float ax, float ay, float az, float bx, float by, float bz)
+        {
+            uint baseIdx = (uint)(verts.Count / 9);
+            float cx = nx * h, cy = ny * h, cz = nz * h;
+            for (int i = -1; i <= 1; i += 2)
+            for (int j = -1; j <= 1; j += 2)
+            {
+                verts.AddRange(new[]
+                {
+                    cx + ax * i * h + bx * j * h,
+                    cy + ay * i * h + by * j * h,
+                    cz + az * i * h + bz * j * h,
+                    nx, ny, nz, r, g, b
+                });
+            }
+            inds.AddRange(new[] { baseIdx, baseIdx + 1, baseIdx + 3, baseIdx, baseIdx + 3, baseIdx + 2 });
+        }
+
+        AddFace( 0,  1,  0,  1, 0, 0,  0, 0, 1);
+        AddFace( 0, -1,  0,  1, 0, 0,  0, 0, 1);
+        AddFace( 1,  0,  0,  0, 1, 0,  0, 0, 1);
+        AddFace(-1,  0,  0,  0, 1, 0,  0, 0, 1);
+        AddFace( 0,  0,  1,  1, 0, 0,  0, 1, 0);
+        AddFace( 0,  0, -1,  1, 0, 0,  0, 1, 0);
+
+        return new MeshData(verts.ToArray(), inds.ToArray());
+    }
+
+    /// <summary>
     /// Full-screen quad for sky rendering (2D positions in clip space).
     /// </summary>
     public static Mesh CreateFullScreenQuad(GL gl)

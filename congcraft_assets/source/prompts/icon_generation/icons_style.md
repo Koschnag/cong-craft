@@ -1,0 +1,1 @@
+Create hand-painted dark-fantasy RPG UI icons with a mid-2000s European PC-RPG feel. Use muted colors, parchment-friendly contrast, thick readable silhouettes, no mobile-game candy colors, no anime rendering, no glossy modern F2P style.

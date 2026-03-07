@@ -1,0 +1,1 @@
+Stylized dark fantasy adventurer for a mid-2000s European action RPG. Inspired by Gothic, Risen, SpellForce 1, Two Worlds. Readable silhouette, practical leather and cloth armor, grounded proportions, warm desaturated palette, not anime, not ultra realistic, preserve broad material zones for vertex color shading.

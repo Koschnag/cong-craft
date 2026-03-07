@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -14,9 +14,15 @@
 
     <!-- Silk.NET native libs (GLFW, OpenAL) muessen mit kopiert werden -->
     <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>link</TrimMode>
+    <TrimMode>full</TrimMode>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../CongCraft.Engine/CongCraft.Engine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="../../congcraft_assets/**/*.*" Link="congcraft_assets/%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>false</ExcludeFromSingleFile>
+    </Content>
   </ItemGroup>
 </Project>

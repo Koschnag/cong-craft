@@ -1,0 +1,1 @@
+Dark fantasy boss with strong silhouette, heavy armor fragments, cloth and metal contrast, oppressive presence, mid-2000s European action RPG mood, avoid modern glossy AAA look.

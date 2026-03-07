@@ -1,0 +1,1 @@
+Stylized animated skeleton enemy for a dark fantasy action RPG, readable silhouette, aged bone, scraps of cloth, low-noise detail, eerie but grounded, not cartoon.

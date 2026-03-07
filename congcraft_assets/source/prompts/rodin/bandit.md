@@ -1,0 +1,1 @@
+Stylized medieval bandit with rough leather armor, worn cloth, improvised metal details, muted brown/gray/green palette, atmospheric Euro-RPG look, rugged and believable, preserve broad material zones for shader classification.

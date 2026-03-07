@@ -1,0 +1,8 @@
+Asset: boss
+Status: Placeholder mesh included
+Purpose: Drop-in replacement target for CongCraft external asset pipeline
+Style: Mid-2000s Euro action RPG, dark fantasy, grounded proportions
+Keep:
+- readable silhouette
+- warm/desaturated palette
+- support for vertex-color material zones

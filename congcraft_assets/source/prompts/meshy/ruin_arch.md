@@ -1,0 +1,1 @@
+Broken stone ruin arch for a gloomy medieval fantasy world, chunky stone masses, readable erosion, slightly overgrown surfaces, grounded and atmospheric.

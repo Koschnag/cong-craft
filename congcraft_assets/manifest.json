@@ -1,0 +1,681 @@
+{
+  "version": 1,
+  "packName": "CongCraft Starter Upgrade Pack",
+  "style": "dark fantasy mid-2000s euro-rpg",
+  "models": [
+    {
+      "id": "player_lod0",
+      "path": "models/characters/player/player_lod0.obj",
+      "fallback": "procedural:player_lod0",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "player_lod1",
+      "path": "models/characters/player/player_lod1.obj",
+      "fallback": "procedural:player_lod1",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "player_idle",
+      "path": "models/characters/player/player_idle.obj",
+      "fallback": "procedural:player_idle",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "npc_blacksmith_lod0",
+      "path": "models/characters/npc_blacksmith/npc_blacksmith_lod0.obj",
+      "fallback": "procedural:npc_blacksmith_lod0",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "npc_blacksmith_lod1",
+      "path": "models/characters/npc_blacksmith/npc_blacksmith_lod1.obj",
+      "fallback": "procedural:npc_blacksmith_lod1",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "npc_merchant_lod0",
+      "path": "models/characters/npc_merchant/npc_merchant_lod0.obj",
+      "fallback": "procedural:npc_merchant_lod0",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "npc_merchant_lod1",
+      "path": "models/characters/npc_merchant/npc_merchant_lod1.obj",
+      "fallback": "procedural:npc_merchant_lod1",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "npc_guard_lod0",
+      "path": "models/characters/npc_guard/npc_guard_lod0.obj",
+      "fallback": "procedural:npc_guard_lod0",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "npc_guard_lod1",
+      "path": "models/characters/npc_guard/npc_guard_lod1.obj",
+      "fallback": "procedural:npc_guard_lod1",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "bandit_lod0",
+      "path": "models/characters/bandit/bandit_lod0.obj",
+      "fallback": "procedural:bandit_lod0",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "bandit_lod1",
+      "path": "models/characters/bandit/bandit_lod1.obj",
+      "fallback": "procedural:bandit_lod1",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "skeleton_lod0",
+      "path": "models/characters/skeleton/skeleton_lod0.obj",
+      "fallback": "procedural:skeleton_lod0",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "skeleton_lod1",
+      "path": "models/characters/skeleton/skeleton_lod1.obj",
+      "fallback": "procedural:skeleton_lod1",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "wolf_lod0",
+      "path": "models/characters/wolf/wolf_lod0.obj",
+      "fallback": "procedural:wolf_lod0",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "wolf_lod1",
+      "path": "models/characters/wolf/wolf_lod1.obj",
+      "fallback": "procedural:wolf_lod1",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "boss_lod0",
+      "path": "models/characters/boss/boss_lod0.obj",
+      "fallback": "procedural:boss_lod0",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "boss_lod1",
+      "path": "models/characters/boss/boss_lod1.obj",
+      "fallback": "procedural:boss_lod1",
+      "vertexColorsRequired": true,
+      "category": "characters"
+    },
+    {
+      "id": "pine_a",
+      "path": "models/environment/trees/pine_a.obj",
+      "fallback": "procedural:pine_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "oak_a",
+      "path": "models/environment/trees/oak_a.obj",
+      "fallback": "procedural:oak_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "dead_tree_a",
+      "path": "models/environment/trees/dead_tree_a.obj",
+      "fallback": "procedural:dead_tree_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "stump_a",
+      "path": "models/environment/trees/stump_a.obj",
+      "fallback": "procedural:stump_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "rock_large_a",
+      "path": "models/environment/rocks/rock_large_a.obj",
+      "fallback": "procedural:rock_large_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "rock_medium_a",
+      "path": "models/environment/rocks/rock_medium_a.obj",
+      "fallback": "procedural:rock_medium_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "cliff_fragment_a",
+      "path": "models/environment/rocks/cliff_fragment_a.obj",
+      "fallback": "procedural:cliff_fragment_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "pillar_broken_a",
+      "path": "models/environment/ruins/pillar_broken_a.obj",
+      "fallback": "procedural:pillar_broken_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "arch_ruin_a",
+      "path": "models/environment/ruins/arch_ruin_a.obj",
+      "fallback": "procedural:arch_ruin_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "wall_ruin_a",
+      "path": "models/environment/ruins/wall_ruin_a.obj",
+      "fallback": "procedural:wall_ruin_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "statue_fragment_a",
+      "path": "models/environment/ruins/statue_fragment_a.obj",
+      "fallback": "procedural:statue_fragment_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "hut_a",
+      "path": "models/environment/buildings/hut_a.obj",
+      "fallback": "procedural:hut_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "smithy_a",
+      "path": "models/environment/buildings/smithy_a.obj",
+      "fallback": "procedural:smithy_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "watchtower_a",
+      "path": "models/environment/buildings/watchtower_a.obj",
+      "fallback": "procedural:watchtower_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "wooden_gate_a",
+      "path": "models/environment/buildings/wooden_gate_a.obj",
+      "fallback": "procedural:wooden_gate_a",
+      "vertexColorsRequired": true,
+      "category": "environment"
+    },
+    {
+      "id": "crate_a",
+      "path": "models/props/crates/crate_a.obj",
+      "fallback": "procedural:crate_a",
+      "vertexColorsRequired": true,
+      "category": "props"
+    },
+    {
+      "id": "barrel_a",
+      "path": "models/props/barrels/barrel_a.obj",
+      "fallback": "procedural:barrel_a",
+      "vertexColorsRequired": true,
+      "category": "props"
+    },
+    {
+      "id": "torch_a",
+      "path": "models/props/torches/torch_a.obj",
+      "fallback": "procedural:torch_a",
+      "vertexColorsRequired": true,
+      "category": "props"
+    },
+    {
+      "id": "campfire_a",
+      "path": "models/props/camp/campfire_a.obj",
+      "fallback": "procedural:campfire_a",
+      "vertexColorsRequired": true,
+      "category": "props"
+    },
+    {
+      "id": "chest_wood_a",
+      "path": "models/props/loot/chest_wood_a.obj",
+      "fallback": "procedural:chest_wood_a",
+      "vertexColorsRequired": true,
+      "category": "props"
+    },
+    {
+      "id": "coin_pile_a",
+      "path": "models/props/loot/coin_pile_a.obj",
+      "fallback": "procedural:coin_pile_a",
+      "vertexColorsRequired": true,
+      "category": "props"
+    },
+    {
+      "id": "sword_iron_a",
+      "path": "models/weapons/sword_iron_a.obj",
+      "fallback": "procedural:sword_iron_a",
+      "vertexColorsRequired": true,
+      "category": "weapons"
+    },
+    {
+      "id": "sword_steel_a",
+      "path": "models/weapons/sword_steel_a.obj",
+      "fallback": "procedural:sword_steel_a",
+      "vertexColorsRequired": true,
+      "category": "weapons"
+    },
+    {
+      "id": "axe_bandit_a",
+      "path": "models/weapons/axe_bandit_a.obj",
+      "fallback": "procedural:axe_bandit_a",
+      "vertexColorsRequired": true,
+      "category": "weapons"
+    },
+    {
+      "id": "shield_wood_a",
+      "path": "models/weapons/shield_wood_a.obj",
+      "fallback": "procedural:shield_wood_a",
+      "vertexColorsRequired": true,
+      "category": "weapons"
+    },
+    {
+      "id": "staff_mage_a",
+      "path": "models/weapons/staff_mage_a.obj",
+      "fallback": "procedural:staff_mage_a",
+      "vertexColorsRequired": true,
+      "category": "weapons"
+    },
+    {
+      "id": "anvil_a",
+      "path": "models/stations/anvil_a.obj",
+      "fallback": "procedural:anvil_a",
+      "vertexColorsRequired": true,
+      "category": "stations"
+    },
+    {
+      "id": "alchemy_table_a",
+      "path": "models/stations/alchemy_table_a.obj",
+      "fallback": "procedural:alchemy_table_a",
+      "vertexColorsRequired": true,
+      "category": "stations"
+    },
+    {
+      "id": "workbench_a",
+      "path": "models/stations/workbench_a.obj",
+      "fallback": "procedural:workbench_a",
+      "vertexColorsRequired": true,
+      "category": "stations"
+    },
+    {
+      "id": "hut_a_col",
+      "path": "models/collision/hut_a_col.obj",
+      "fallback": "procedural:hut_a_col",
+      "vertexColorsRequired": true,
+      "category": "collision"
+    },
+    {
+      "id": "smithy_a_col",
+      "path": "models/collision/smithy_a_col.obj",
+      "fallback": "procedural:smithy_a_col",
+      "vertexColorsRequired": true,
+      "category": "collision"
+    },
+    {
+      "id": "arch_ruin_a_col",
+      "path": "models/collision/arch_ruin_a_col.obj",
+      "fallback": "procedural:arch_ruin_a_col",
+      "vertexColorsRequired": true,
+      "category": "collision"
+    }
+  ],
+  "textures": [
+    {
+      "id": "icon_sword_iron",
+      "path": "textures/icons/items/icon_sword_iron.png",
+      "category": "icon_item"
+    },
+    {
+      "id": "icon_potion_health",
+      "path": "textures/icons/items/icon_potion_health.png",
+      "category": "icon_item"
+    },
+    {
+      "id": "icon_potion_mana",
+      "path": "textures/icons/items/icon_potion_mana.png",
+      "category": "icon_item"
+    },
+    {
+      "id": "icon_shield_wood",
+      "path": "textures/icons/items/icon_shield_wood.png",
+      "category": "icon_item"
+    },
+    {
+      "id": "icon_coin",
+      "path": "textures/icons/items/icon_coin.png",
+      "category": "icon_item"
+    },
+    {
+      "id": "icon_chest",
+      "path": "textures/icons/items/icon_chest.png",
+      "category": "icon_item"
+    },
+    {
+      "id": "icon_fireball",
+      "path": "textures/icons/skills/icon_fireball.png",
+      "category": "icon_skill"
+    },
+    {
+      "id": "icon_heal",
+      "path": "textures/icons/skills/icon_heal.png",
+      "category": "icon_skill"
+    },
+    {
+      "id": "icon_shield",
+      "path": "textures/icons/skills/icon_shield.png",
+      "category": "icon_skill"
+    },
+    {
+      "id": "icon_ice_nova",
+      "path": "textures/icons/skills/icon_ice_nova.png",
+      "category": "icon_skill"
+    },
+    {
+      "id": "icon_strength",
+      "path": "textures/icons/skills/icon_strength.png",
+      "category": "icon_skill"
+    },
+    {
+      "id": "icon_agility",
+      "path": "textures/icons/skills/icon_agility.png",
+      "category": "icon_skill"
+    },
+    {
+      "id": "icon_talk",
+      "path": "textures/icons/ui/icon_talk.png",
+      "category": "icon_ui"
+    },
+    {
+      "id": "icon_loot",
+      "path": "textures/icons/ui/icon_loot.png",
+      "category": "icon_ui"
+    },
+    {
+      "id": "icon_attack",
+      "path": "textures/icons/ui/icon_attack.png",
+      "category": "icon_ui"
+    },
+    {
+      "id": "icon_inventory",
+      "path": "textures/icons/ui/icon_inventory.png",
+      "category": "icon_ui"
+    },
+    {
+      "id": "marker_npc",
+      "path": "textures/icons/minimap/marker_npc.png",
+      "category": "icon_minimap"
+    },
+    {
+      "id": "marker_enemy",
+      "path": "textures/icons/minimap/marker_enemy.png",
+      "category": "icon_minimap"
+    },
+    {
+      "id": "marker_boss",
+      "path": "textures/icons/minimap/marker_boss.png",
+      "category": "icon_minimap"
+    },
+    {
+      "id": "marker_station",
+      "path": "textures/icons/minimap/marker_station.png",
+      "category": "icon_minimap"
+    },
+    {
+      "id": "blood_a",
+      "path": "textures/decals/blood_a.png",
+      "category": "decal"
+    },
+    {
+      "id": "scorch_a",
+      "path": "textures/decals/scorch_a.png",
+      "category": "decal"
+    },
+    {
+      "id": "moss_a",
+      "path": "textures/decals/moss_a.png",
+      "category": "decal"
+    },
+    {
+      "id": "npc_blacksmith",
+      "path": "textures/portraits/npc_blacksmith.png",
+      "category": "portrait"
+    },
+    {
+      "id": "npc_merchant",
+      "path": "textures/portraits/npc_merchant.png",
+      "category": "portrait"
+    },
+    {
+      "id": "boss",
+      "path": "textures/portraits/boss.png",
+      "category": "portrait"
+    }
+  ],
+  "ui": [
+    {
+      "id": "frame_inventory",
+      "path": "ui/frames/frame_inventory.png",
+      "category": "frame"
+    },
+    {
+      "id": "frame_dialogue",
+      "path": "ui/frames/frame_dialogue.png",
+      "category": "frame"
+    },
+    {
+      "id": "frame_tooltip",
+      "path": "ui/frames/frame_tooltip.png",
+      "category": "frame"
+    },
+    {
+      "id": "frame_skills",
+      "path": "ui/frames/frame_skills.png",
+      "category": "frame"
+    },
+    {
+      "id": "panel_parchment",
+      "path": "ui/panels/panel_parchment.png",
+      "category": "panel"
+    },
+    {
+      "id": "panel_leather",
+      "path": "ui/panels/panel_leather.png",
+      "category": "panel"
+    },
+    {
+      "id": "panel_wood",
+      "path": "ui/panels/panel_wood.png",
+      "category": "panel"
+    },
+    {
+      "id": "button_idle",
+      "path": "ui/buttons/button_idle.png",
+      "category": "button"
+    },
+    {
+      "id": "button_hover",
+      "path": "ui/buttons/button_hover.png",
+      "category": "button"
+    },
+    {
+      "id": "button_pressed",
+      "path": "ui/buttons/button_pressed.png",
+      "category": "button"
+    },
+    {
+      "id": "checkbox_gold",
+      "path": "ui/buttons/checkbox_gold.png",
+      "category": "button"
+    },
+    {
+      "id": "health_fill",
+      "path": "ui/bars/health_fill.png",
+      "category": "bar"
+    },
+    {
+      "id": "mana_fill",
+      "path": "ui/bars/mana_fill.png",
+      "category": "bar"
+    },
+    {
+      "id": "stamina_fill",
+      "path": "ui/bars/stamina_fill.png",
+      "category": "bar"
+    },
+    {
+      "id": "boss_health_fill",
+      "path": "ui/bars/boss_health_fill.png",
+      "category": "bar"
+    },
+    {
+      "id": "cursor_default",
+      "path": "ui/cursors/cursor_default.png",
+      "category": "cursor"
+    },
+    {
+      "id": "cursor_attack",
+      "path": "ui/cursors/cursor_attack.png",
+      "category": "cursor"
+    },
+    {
+      "id": "cursor_talk",
+      "path": "ui/cursors/cursor_talk.png",
+      "category": "cursor"
+    },
+    {
+      "id": "cursor_loot",
+      "path": "ui/cursors/cursor_loot.png",
+      "category": "cursor"
+    }
+  ],
+  "audio": [
+    {
+      "id": "menu_theme_alt",
+      "path": "audio/music/menu_theme_alt.wav",
+      "category": "music/menu_theme_alt.wav"
+    },
+    {
+      "id": "village_day",
+      "path": "audio/music/village_day.wav",
+      "category": "music/village_day.wav"
+    },
+    {
+      "id": "village_night",
+      "path": "audio/music/village_night.wav",
+      "category": "music/village_night.wav"
+    },
+    {
+      "id": "combat_light",
+      "path": "audio/music/combat_light.wav",
+      "category": "music/combat_light.wav"
+    },
+    {
+      "id": "combat_boss",
+      "path": "audio/music/combat_boss.wav",
+      "category": "music/combat_boss.wav"
+    },
+    {
+      "id": "dungeon_ambient",
+      "path": "audio/music/dungeon_ambient.wav",
+      "category": "music/dungeon_ambient.wav"
+    },
+    {
+      "id": "sword_hit_01",
+      "path": "audio/sfx/combat/sword_hit_01.wav",
+      "category": "sfx/combat"
+    },
+    {
+      "id": "sword_hit_02",
+      "path": "audio/sfx/combat/sword_hit_02.wav",
+      "category": "sfx/combat"
+    },
+    {
+      "id": "block_01",
+      "path": "audio/sfx/combat/block_01.wav",
+      "category": "sfx/combat"
+    },
+    {
+      "id": "footstep_01",
+      "path": "audio/sfx/footsteps/footstep_01.wav",
+      "category": "sfx/footsteps"
+    },
+    {
+      "id": "footstep_02",
+      "path": "audio/sfx/footsteps/footstep_02.wav",
+      "category": "sfx/footsteps"
+    },
+    {
+      "id": "ui_click_01",
+      "path": "audio/sfx/ui/ui_click_01.wav",
+      "category": "sfx/ui"
+    },
+    {
+      "id": "ui_open_01",
+      "path": "audio/sfx/ui/ui_open_01.wav",
+      "category": "sfx/ui"
+    },
+    {
+      "id": "fireball_cast_01",
+      "path": "audio/sfx/magic/fireball_cast_01.wav",
+      "category": "sfx/magic"
+    },
+    {
+      "id": "heal_cast_01",
+      "path": "audio/sfx/magic/heal_cast_01.wav",
+      "category": "sfx/magic"
+    },
+    {
+      "id": "ice_nova_01",
+      "path": "audio/sfx/magic/ice_nova_01.wav",
+      "category": "sfx/magic"
+    },
+    {
+      "id": "wind_loop_01",
+      "path": "audio/sfx/ambience/wind_loop_01.wav",
+      "category": "sfx/ambience"
+    },
+    {
+      "id": "campfire_loop_01",
+      "path": "audio/sfx/ambience/campfire_loop_01.wav",
+      "category": "sfx/ambience"
+    },
+    {
+      "id": "npc_greeting_01",
+      "path": "audio/voices/npc/npc_greeting_01.wav",
+      "category": "voices/npc"
+    },
+    {
+      "id": "enemy_alert_01",
+      "path": "audio/voices/barks/enemy_alert_01.wav",
+      "category": "voices/barks"
+    }
+  ]
+}
