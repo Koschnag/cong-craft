@@ -31,8 +31,10 @@ public sealed class SkyRenderer : ISystem
 
     public void Render(GameTime time)
     {
+        // Sky vertex shader sets Z=0.999 (near far plane) so depth test against
+        // already-drawn terrain (Z < 0.999) correctly clips the sky behind geometry.
+        // DepthMask=false prevents the sky from overwriting terrain depth values.
         _gl.DepthMask(false);
-        _gl.Disable(EnableCap.DepthTest);
 
         _skyShader.Use();
         _skyShader.SetUniform("uZenithColor", _dayNight.ZenithColor);
@@ -41,7 +43,6 @@ public sealed class SkyRenderer : ISystem
         _skyShader.SetUniform("uTime", time.TotalTimeF);
         _quad.Draw();
 
-        _gl.Enable(EnableCap.DepthTest);
         _gl.DepthMask(true);
     }
 
