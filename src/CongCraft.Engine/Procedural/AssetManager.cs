@@ -22,8 +22,22 @@ public sealed class AssetManager
     public AssetManager(GL gl)
     {
         _gl = gl;
-        _assetsDir = Path.Combine(AppContext.BaseDirectory, "assets", "models");
+        _assetsDir = ResolveAssetsDir();
         Directory.CreateDirectory(_assetsDir);
+    }
+
+    private static string ResolveAssetsDir()
+    {
+        // Standard location next to executable
+        var baseDir = AppContext.BaseDirectory;
+        var standard = Path.Combine(baseDir, "assets", "models");
+        if (Directory.Exists(standard)) return standard;
+
+        // macOS .app bundle: assets live in Contents/Resources/
+        var resourcesDir = Path.Combine(baseDir, "..", "Resources", "assets", "models");
+        if (Directory.Exists(resourcesDir)) return Path.GetFullPath(resourcesDir);
+
+        return standard;
     }
 
     /// <summary>

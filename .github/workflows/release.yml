@@ -92,9 +92,12 @@ jobs:
           chmod +x "$APP/Contents/MacOS/CongCraft.Game"
           find publish -name '*.dylib' -exec cp {} "$APP/Contents/MacOS/" \;
 
-          # Copy game assets
+          # Copy game assets into Resources (not MacOS) to avoid codesign issues
           if [ -d publish/congcraft_assets ]; then
-            cp -R publish/congcraft_assets "$APP/Contents/MacOS/congcraft_assets"
+            cp -R publish/congcraft_assets "$APP/Contents/Resources/congcraft_assets"
+          fi
+          if [ -d publish/assets ]; then
+            cp -R publish/assets "$APP/Contents/Resources/assets"
           fi
 
       - name: Sign .app bundle
