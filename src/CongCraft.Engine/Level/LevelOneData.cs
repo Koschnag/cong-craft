@@ -42,7 +42,7 @@ public static class LevelOneData
             Name = "Ashvale - The Frontier",
             WorldSize = 256f,
             WaterLevel = 1.8f,
-            PlayerSpawn = new Vector3(0, 10, 8),
+            PlayerSpawn = new Vector3(0, 0, 8), // Y is set dynamically from terrain height
 
             // ════════════════════════════════════════════
             // HEIGHT FEATURES — terrain sculpting

@@ -79,6 +79,7 @@ public static class GameSetup
         engine.RegisterSystem(new WaterPlane());
         engine.RegisterSystem(new ParticleRenderSystem());
         engine.RegisterSystem(new MenuSystem());
+        engine.RegisterSystem(new TutorialSystem());
         engine.RegisterSystem(new HudSystem());
         engine.RegisterSystem(new AudioSystem());
 
@@ -125,11 +126,20 @@ internal sealed class PlayerSetupSystem : Engine.ECS.Systems.ISystem
         services.Register(assets);
         assets.GenerateAllAssets();
 
-        // Create player at level spawn point
+        // Compute proper spawn height from terrain
+        var terrainGen = services.Get<LevelTerrainGenerator>();
+        float terrainY = terrainGen.GetHeightAt(_spawnPos.X, _spawnPos.Z);
+        var spawnPos = new Vector3(_spawnPos.X, terrainY + 0.9f, _spawnPos.Z);
+
+        // Initialize camera to player spawn immediately so scene renders correctly from frame 1
+        var camera = services.Get<Engine.Rendering.Camera>();
+        camera.Target = spawnPos;
+
+        // Create player at level spawn point (clamped to terrain)
         var player = _world.CreateEntity();
         _world.AddComponent(player, new TransformComponent
         {
-            Position = _spawnPos,
+            Position = spawnPos,
             Scale = Vector3.One
         });
         _world.AddComponent(player, new PlayerComponent());
