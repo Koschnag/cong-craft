@@ -45,7 +45,7 @@ public sealed class InputSystem : ISystem
             mouse.MouseUp += OnMouseUp;
         }
 
-        // Start with mouse free for main menu
+        // Start with mouse free — MenuSystem will capture it when entering gameplay
         _state.IsMouseCaptured = false;
         SetCursorMode(false);
     }

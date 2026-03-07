@@ -69,9 +69,14 @@ public sealed class MenuSystem : ISystem
         _textRenderer = new TextRenderer(_gl, _font);
         _textures = new UITextureAtlas(_gl);
 
-        // Initialize game state
+        // Initialize game state — auto-start in gameplay mode (ESC for pause menu)
         _gameState = new GameStateManager();
+        _gameState.SetMode(GameMode.Playing);
         _world.SetSingleton(_gameState);
+
+        // Capture mouse for gameplay camera control
+        if (_world.TryGetSingleton<InputState>(out var input) && input != null)
+            input.IsMouseCaptured = true;
 
         // Initialize ember particles
         for (int i = 0; i < _embers.Length; i++)

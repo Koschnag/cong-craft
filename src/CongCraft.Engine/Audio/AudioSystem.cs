@@ -119,10 +119,14 @@ public sealed class AudioSystem : ISystem
 
             DevLog.Info("Audio tracks and SFX loaded");
 
-            // Start with menu music
-            _al.SetSourceProperty(_menuSource, SourceFloat.Gain, MusicVolume);
-            _al.SourcePlay(_menuSource);
-            _currentPlaying = GameMode.MainMenu;
+            // Start music matching current game mode (Playing if auto-started)
+            var startMode = GameMode.MainMenu;
+            if (_world.TryGetSingleton<GameStateManager>(out var gsm) && gsm != null)
+                startMode = gsm.CurrentMode;
+            var startSource = GetSourceForMode(startMode);
+            _al.SetSourceProperty(startSource, SourceFloat.Gain, MusicVolume);
+            _al.SourcePlay(startSource);
+            _currentPlaying = startMode;
 
             _initialized = true;
             DevLog.Info("AudioSystem initialized successfully");
