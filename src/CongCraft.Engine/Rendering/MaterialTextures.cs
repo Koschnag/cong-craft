@@ -4,8 +4,8 @@ using Silk.NET.OpenGL;
 namespace CongCraft.Engine.Rendering;
 
 /// <summary>
-/// Holds procedurally generated material textures for entity rendering.
-/// Registered as a service so all render systems can share the same textures.
+/// Holds material textures for entity rendering.
+/// Tries to load from congcraft_assets PNG files first, falls back to procedural.
 /// Textures are sampled via triplanar mapping in the entity shader.
 /// </summary>
 public sealed class MaterialTextures : IDisposable
@@ -22,12 +22,26 @@ public sealed class MaterialTextures : IDisposable
     {
         _gl = gl;
 
-        // Generate and upload all material textures (512x512 with mipmaps)
-        MetalTex = TextureGenerator.UploadTexture(gl, TextureGenerator.GenerateMetalPixels(), 512, 512);
-        LeatherTex = TextureGenerator.UploadTexture(gl, TextureGenerator.GenerateLeatherPixels(), 512, 512);
-        SkinTex = TextureGenerator.UploadTexture(gl, TextureGenerator.GenerateSkinPixels(), 512, 512);
-        WoodTex = TextureGenerator.UploadTexture(gl, TextureGenerator.GenerateWoodPixels(), 512, 512);
-        FabricTex = TextureGenerator.UploadTexture(gl, TextureGenerator.GenerateFabricPixels(), 512, 512);
+        // Load material textures: try PNG files, fall back to procedural (512x512 with mipmaps)
+        MetalTex = TextureLoader.LoadOrGenerate(gl,
+            AssetPaths.TextureFile("materials/mat_metal.png"),
+            () => TextureGenerator.GenerateMetalPixels());
+
+        LeatherTex = TextureLoader.LoadOrGenerate(gl,
+            AssetPaths.TextureFile("materials/mat_leather.png"),
+            () => TextureGenerator.GenerateLeatherPixels());
+
+        SkinTex = TextureLoader.LoadOrGenerate(gl,
+            AssetPaths.TextureFile("materials/mat_skin.png"),
+            () => TextureGenerator.GenerateSkinPixels());
+
+        WoodTex = TextureLoader.LoadOrGenerate(gl,
+            AssetPaths.TextureFile("materials/mat_wood.png"),
+            () => TextureGenerator.GenerateWoodPixels());
+
+        FabricTex = TextureLoader.LoadOrGenerate(gl,
+            AssetPaths.TextureFile("materials/mat_fabric.png"),
+            () => TextureGenerator.GenerateFabricPixels());
     }
 
     /// <summary>

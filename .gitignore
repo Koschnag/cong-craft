@@ -23,3 +23,8 @@ Thumbs.db
 ## Build
 publish/
 artifacts/
+
+## Temporary
+congcraft-assets.zip
+integrate-assets.sh
+git-push.sh

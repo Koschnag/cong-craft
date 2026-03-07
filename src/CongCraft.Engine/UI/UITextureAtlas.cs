@@ -24,22 +24,28 @@ public sealed class UITextureAtlas : IDisposable
     {
         _gl = gl;
 
-        Parchment = TextureGenerator.UploadTexture(gl,
-            UITextureGenerator.GenerateParchment(128), 128, 128);
-        GoldLeaf = TextureGenerator.UploadTexture(gl,
-            UITextureGenerator.GenerateGoldLeaf(64), 64, 64);
-        Leather = TextureGenerator.UploadTexture(gl,
-            UITextureGenerator.GenerateLeather(64), 64, 64);
-        WoodGrain = TextureGenerator.UploadTexture(gl,
-            UITextureGenerator.GenerateWoodGrain(128), 128, 128);
+        // Try to load UI textures from PNG files, fall back to procedural
+        Parchment = TextureLoader.LoadOrGenerate(gl,
+            AssetPaths.UIFile("panels/panel_parchment.png"),
+            () => UITextureGenerator.GenerateParchment(128), 128);
+        GoldLeaf = TextureLoader.LoadOrGenerate(gl,
+            AssetPaths.UIFile("frames/frame_inventory.png"),
+            () => UITextureGenerator.GenerateGoldLeaf(64), 64);
+        Leather = TextureLoader.LoadOrGenerate(gl,
+            AssetPaths.UIFile("panels/panel_leather.png"),
+            () => UITextureGenerator.GenerateLeather(64), 64);
+        WoodGrain = TextureLoader.LoadOrGenerate(gl,
+            AssetPaths.UIFile("panels/panel_wood.png"),
+            () => UITextureGenerator.GenerateWoodGrain(128), 128);
         VineBorder = UploadWithAlpha(gl,
             UITextureGenerator.GenerateVineBorder(256, 32), 256, 32);
         CornerOrnament = UploadWithAlpha(gl,
             UITextureGenerator.GenerateCornerOrnament(64), 64, 64);
         MenuBackground = TextureGenerator.UploadTexture(gl,
             UITextureGenerator.GenerateMenuBackground(512, 256), 512, 256);
-        Metal = TextureGenerator.UploadTexture(gl,
-            UITextureGenerator.GenerateMetal(64), 64, 64);
+        Metal = TextureLoader.LoadOrGenerate(gl,
+            AssetPaths.TextureFile("materials/mat_metal.png"),
+            () => UITextureGenerator.GenerateMetal(64), 64);
     }
 
     private static unsafe uint UploadWithAlpha(GL gl, byte[] pixels, int w, int h)

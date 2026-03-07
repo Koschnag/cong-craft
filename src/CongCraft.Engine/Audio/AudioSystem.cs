@@ -3,6 +3,7 @@ using CongCraft.Engine.Combat;
 using CongCraft.Engine.Core;
 using CongCraft.Engine.ECS;
 using CongCraft.Engine.ECS.Systems;
+using CongCraft.Engine.Procedural;
 using Silk.NET.OpenAL;
 
 namespace CongCraft.Engine.Audio;
@@ -70,35 +71,47 @@ public sealed class AudioSystem : ISystem
 
             DevLog.Info("OpenAL device and context created");
 
-            // Generate all music themes
-            LoadTrack(ProceduralMusic.GenerateMenuTheme(40), out _menuBuffer, out _menuSource);
-            LoadTrack(ProceduralMusic.GenerateExplorationTheme(45), out _explorationBuffer, out _explorationSource);
-            LoadTrack(ProceduralMusic.GenerateCombatTheme(30), out _combatBuffer, out _combatSource);
+            // Music tracks: try WAV files first, fall back to procedural
+            LoadTrackFromFileOrGenerate(
+                AssetPaths.AudioFile("music/menu_theme_alt.wav"),
+                () => ProceduralMusic.GenerateMenuTheme(40),
+                out _menuBuffer, out _menuSource);
+            LoadTrackFromFileOrGenerate(
+                AssetPaths.AudioFile("music/village_day.wav"),
+                () => ProceduralMusic.GenerateExplorationTheme(45),
+                out _explorationBuffer, out _explorationSource);
+            LoadTrackFromFileOrGenerate(
+                AssetPaths.AudioFile("music/combat_light.wav"),
+                () => ProceduralMusic.GenerateCombatTheme(30),
+                out _combatBuffer, out _combatSource);
 
-            // Generate SFX
-            LoadSfxType(SfxType.Click, ProceduralMusic.GenerateClickSfx());
-            LoadSfxType(SfxType.Hover, ProceduralMusic.GenerateHoverSfx());
-            LoadSfxType(SfxType.Select, ProceduralMusic.GenerateSelectSfx());
-            LoadSfxType(SfxType.SwordSwing, ProceduralMusic.GenerateSwordSwingSfx());
-            LoadSfxType(SfxType.SwordHit, ProceduralMusic.GenerateSwordHitSfx());
-            LoadSfxType(SfxType.FootstepGrass, ProceduralMusic.GenerateFootstepGrassSfx());
-            LoadSfxType(SfxType.FootstepStone, ProceduralMusic.GenerateFootstepStoneSfx());
-            LoadSfxType(SfxType.EnemyHit, ProceduralMusic.GenerateEnemyHitSfx());
-            LoadSfxType(SfxType.EnemyDeath, ProceduralMusic.GenerateEnemyDeathSfx());
-            LoadSfxType(SfxType.PlayerHurt, ProceduralMusic.GeneratePlayerHurtSfx());
-            LoadSfxType(SfxType.ItemPickup, ProceduralMusic.GenerateItemPickupSfx());
-            LoadSfxType(SfxType.SpellCast, ProceduralMusic.GenerateSpellCastSfx());
-            LoadSfxType(SfxType.DodgeWhoosh, ProceduralMusic.GenerateDodgeWhooshSfx());
+            // SFX: try WAV files first, fall back to procedural
+            LoadSfxFromFileOrGenerate(SfxType.Click, "sfx/ui/ui_click_01.wav", ProceduralMusic.GenerateClickSfx);
+            LoadSfxFromFileOrGenerate(SfxType.Hover, null, ProceduralMusic.GenerateHoverSfx);
+            LoadSfxFromFileOrGenerate(SfxType.Select, "sfx/ui/ui_open_01.wav", ProceduralMusic.GenerateSelectSfx);
+            LoadSfxFromFileOrGenerate(SfxType.SwordSwing, "sfx/combat/sword_hit_01.wav", ProceduralMusic.GenerateSwordSwingSfx);
+            LoadSfxFromFileOrGenerate(SfxType.SwordHit, "sfx/combat/sword_hit_02.wav", ProceduralMusic.GenerateSwordHitSfx);
+            LoadSfxFromFileOrGenerate(SfxType.FootstepGrass, "sfx/footsteps/footstep_01.wav", ProceduralMusic.GenerateFootstepGrassSfx);
+            LoadSfxFromFileOrGenerate(SfxType.FootstepStone, "sfx/footsteps/footstep_02.wav", ProceduralMusic.GenerateFootstepStoneSfx);
+            LoadSfxFromFileOrGenerate(SfxType.EnemyHit, "sfx/combat/block_01.wav", ProceduralMusic.GenerateEnemyHitSfx);
+            LoadSfxFromFileOrGenerate(SfxType.EnemyDeath, null, ProceduralMusic.GenerateEnemyDeathSfx);
+            LoadSfxFromFileOrGenerate(SfxType.PlayerHurt, null, ProceduralMusic.GeneratePlayerHurtSfx);
+            LoadSfxFromFileOrGenerate(SfxType.ItemPickup, null, ProceduralMusic.GenerateItemPickupSfx);
+            LoadSfxFromFileOrGenerate(SfxType.SpellCast, "sfx/magic/fireball_cast_01.wav", ProceduralMusic.GenerateSpellCastSfx);
+            LoadSfxFromFileOrGenerate(SfxType.DodgeWhoosh, null, ProceduralMusic.GenerateDodgeWhooshSfx);
 
-            // NPC voice lines (procedural formant synthesis)
-            LoadSfxType(SfxType.NpcGreeting, ProceduralMusic.GenerateNpcGreetingSfx());
-            LoadSfxType(SfxType.NpcFarewell, ProceduralMusic.GenerateNpcFarewellSfx());
-            LoadSfxType(SfxType.NpcFemaleVoice, ProceduralMusic.GenerateNpcFemaleVoiceSfx());
-            LoadSfxType(SfxType.NpcDeepVoice, ProceduralMusic.GenerateNpcDeepVoiceSfx());
-            LoadSfxType(SfxType.NpcMerchantVoice, ProceduralMusic.GenerateNpcMerchantVoiceSfx());
+            // NPC voice lines
+            LoadSfxFromFileOrGenerate(SfxType.NpcGreeting, "voices/npc/npc_greeting_01.wav", ProceduralMusic.GenerateNpcGreetingSfx);
+            LoadSfxFromFileOrGenerate(SfxType.NpcFarewell, null, ProceduralMusic.GenerateNpcFarewellSfx);
+            LoadSfxFromFileOrGenerate(SfxType.NpcFemaleVoice, null, ProceduralMusic.GenerateNpcFemaleVoiceSfx);
+            LoadSfxFromFileOrGenerate(SfxType.NpcDeepVoice, null, ProceduralMusic.GenerateNpcDeepVoiceSfx);
+            LoadSfxFromFileOrGenerate(SfxType.NpcMerchantVoice, null, ProceduralMusic.GenerateNpcMerchantVoiceSfx);
 
             // Ambient wind loop
-            LoadTrack(ProceduralMusic.GenerateAmbientWind(20), out _ambientWindBuffer, out _ambientWindSource);
+            LoadTrackFromFileOrGenerate(
+                AssetPaths.AudioFile("sfx/ambience/wind_loop_01.wav"),
+                () => ProceduralMusic.GenerateAmbientWind(20),
+                out _ambientWindBuffer, out _ambientWindSource);
 
             // Create SFX source pool
             for (int i = 0; i < _sfxSources.Length; i++)
@@ -151,6 +164,40 @@ public sealed class AudioSystem : ISystem
     {
         LoadSfxBuffer(data, out uint buffer);
         _sfxBuffers[type] = buffer;
+    }
+
+    /// <summary>Load a music track from WAV file, fall back to procedural.</summary>
+    private void LoadTrackFromFileOrGenerate(string wavPath, Func<short[]> proceduralFallback,
+        out uint buffer, out uint source)
+    {
+        var wav = WavLoader.Load(wavPath);
+        if (wav.HasValue)
+        {
+            DevLog.Info($"Loaded audio: {Path.GetFileName(wavPath)}");
+            LoadTrack(wav.Value.Samples, out buffer, out source);
+        }
+        else
+        {
+            LoadTrack(proceduralFallback(), out buffer, out source);
+        }
+    }
+
+    /// <summary>Load an SFX from WAV file, fall back to procedural.</summary>
+    private void LoadSfxFromFileOrGenerate(SfxType type, string? wavRelativePath, Func<short[]> proceduralFallback)
+    {
+        if (wavRelativePath != null)
+        {
+            var fullPath = AssetPaths.AudioFile(wavRelativePath);
+            var wav = WavLoader.Load(fullPath);
+            if (wav.HasValue)
+            {
+                DevLog.Info($"Loaded SFX: {wavRelativePath}");
+                LoadSfxType(type, wav.Value.Samples);
+                return;
+            }
+        }
+
+        LoadSfxType(type, proceduralFallback());
     }
 
     /// <summary>Play a one-shot SFX using a round-robin source pool.</summary>
