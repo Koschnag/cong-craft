@@ -1,16 +1,17 @@
 using Silk.NET.OpenGL;
+using CongCraft.Engine.Core;
 using CongCraft.Engine.Rendering;
 
 namespace CongCraft.Engine.Procedural;
 
 /// <summary>
 /// Manages loading and caching of external 3D model assets (OBJ files).
-/// Assets are stored in the "assets/models" directory relative to the executable.
+/// Searches for assets in congcraft_assets/models/ first, then assets/models/.
 /// Falls back to procedural generation when external assets are unavailable.
 ///
-/// Workflow: On first run, procedural meshes are exported as OBJ files.
-/// These OBJs can then be replaced with AI-generated models (e.g. from Meshy, Luma, Rodin)
-/// while keeping the same vertex color material hints for the shader system.
+/// Workflow: Assets from congcraft_assets/ are loaded when available.
+/// If not found, procedural meshes are generated and exported as OBJ files.
+/// These OBJs can then be replaced with AI-generated models (e.g. from Meshy, Luma, Rodin).
 /// </summary>
 public sealed class AssetManager
 {
@@ -18,6 +19,56 @@ public sealed class AssetManager
     private readonly Dictionary<string, MeshData> _meshDataCache = new();
     private readonly Dictionary<string, Mesh> _meshCache = new();
     private readonly string _assetsDir;
+
+    // Mapping from code asset names to congcraft_assets paths
+    private static readonly Dictionary<string, string[]> _assetNameMap = new()
+    {
+        // Player
+        ["player_warrior"] = new[] { "characters/player/player_lod0.obj", "characters/player/player_idle.obj" },
+
+        // Enemies
+        ["enemy_bandit"] = new[] { "characters/bandit/bandit_lod0.obj" },
+        ["enemy_skeleton"] = new[] { "characters/skeleton/skeleton_lod0.obj" },
+        ["enemy_wolf"] = new[] { "characters/wolf/wolf_lod0.obj" },
+        ["enemy_troll"] = new[] { "characters/boss/boss_lod0.obj" },
+
+        // Trees
+        ["tree_default"] = new[] { "environment/trees/pine_a.obj" },
+        ["tree_tall"] = new[] { "environment/trees/oak_a.obj" },
+        ["tree_small"] = new[] { "environment/trees/dead_tree_a.obj" },
+
+        // Rocks
+        ["rock_default"] = new[] { "environment/rocks/rock_medium_a.obj" },
+        ["rock_small"] = new[] { "environment/rocks/rock_large_a.obj" },
+        ["rock_boulder"] = new[] { "environment/rocks/cliff_fragment_a.obj" },
+
+        // Ruins
+        ["ruin_pillar"] = new[] { "environment/ruins/pillar_broken_a.obj" },
+        ["ruin_broken_pillar"] = new[] { "environment/ruins/pillar_broken_a.obj" },
+        ["ruin_wall"] = new[] { "environment/ruins/wall_ruin_a.obj" },
+        ["ruin_arch"] = new[] { "environment/ruins/arch_ruin_a.obj" },
+
+        // Props
+        ["weapon_sword"] = new[] { "weapons/sword_iron_a.obj" },
+
+        // Stations
+        ["station_anvil"] = new[] { "stations/anvil_a.obj" },
+        ["station_alchemy"] = new[] { "stations/alchemy_table_a.obj" },
+        ["station_workbench"] = new[] { "stations/workbench_a.obj" },
+
+        // Buildings
+        ["building_hut"] = new[] { "environment/buildings/hut_a.obj" },
+        ["building_smithy"] = new[] { "environment/buildings/smithy_a.obj" },
+        ["building_watchtower"] = new[] { "environment/buildings/watchtower_a.obj" },
+        ["building_gate"] = new[] { "environment/buildings/wooden_gate_a.obj" },
+
+        // Props
+        ["prop_crate"] = new[] { "props/crates/crate_a.obj" },
+        ["prop_barrel"] = new[] { "props/barrels/barrel_a.obj" },
+        ["prop_torch"] = new[] { "props/torches/torch_a.obj" },
+        ["prop_campfire"] = new[] { "props/camp/campfire_a.obj" },
+        ["prop_chest"] = new[] { "props/loot/chest_wood_a.obj" },
+    };
 
     public AssetManager(GL gl)
     {
@@ -59,18 +110,46 @@ public sealed class AssetManager
 
     /// <summary>
     /// Load mesh data from an OBJ file (without creating GPU resources).
+    /// Searches in congcraft_assets/models/ first, then assets/models/.
     /// </summary>
     public MeshData? LoadMeshData(string name, float defaultR = 0.5f, float defaultG = 0.5f, float defaultB = 0.5f)
     {
         if (_meshDataCache.TryGetValue(name, out var cached))
             return cached;
 
+        // Try congcraft_assets first (name-mapped paths)
+        if (_assetNameMap.TryGetValue(name, out var candidates))
+        {
+            foreach (var candidate in candidates)
+            {
+                var artPath = AssetPaths.ModelFile(candidate);
+                if (File.Exists(artPath))
+                {
+                    var data = ObjLoader.Load(artPath, defaultR, defaultG, defaultB);
+                    _meshDataCache[name] = data;
+                    DevLog.Info($"Loaded model: {candidate} (as '{name}')");
+                    return data;
+                }
+            }
+        }
+
+        // Try congcraft_assets with the code name directly
+        var directArtPath = AssetPaths.ModelFile(name + ".obj");
+        if (File.Exists(directArtPath))
+        {
+            var data = ObjLoader.Load(directArtPath, defaultR, defaultG, defaultB);
+            _meshDataCache[name] = data;
+            DevLog.Info($"Loaded model: {name}.obj");
+            return data;
+        }
+
+        // Fall back to assets/models/ (exported procedural OBJs)
         string path = Path.Combine(_assetsDir, name + ".obj");
         if (!File.Exists(path)) return null;
 
-        var data = ObjLoader.Load(path, defaultR, defaultG, defaultB);
-        _meshDataCache[name] = data;
-        return data;
+        var fallbackData = ObjLoader.Load(path, defaultR, defaultG, defaultB);
+        _meshDataCache[name] = fallbackData;
+        return fallbackData;
     }
 
     /// <summary>

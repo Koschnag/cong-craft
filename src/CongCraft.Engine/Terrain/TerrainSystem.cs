@@ -50,21 +50,26 @@ public sealed class TerrainSystem : ISystem, IShadowCaster
         _terrainShader = new Shader(_gl, ShaderSources.TerrainVertex, ShaderSources.TerrainFragment);
         _shadowMap = services.Get<ShadowMap>();
 
-        // Generate and upload terrain textures (512x512 with mipmaps)
-        var grassPixels = TextureGenerator.GenerateGrassPixels();
-        _grassTex = TextureGenerator.UploadTexture(_gl, grassPixels, 512, 512);
+        // Load terrain textures: try PNG files from congcraft_assets, fall back to procedural
+        _grassTex = TextureLoader.LoadOrGenerate(_gl,
+            AssetPaths.TextureFile("terrain/terrain_grass.png"),
+            () => TextureGenerator.GenerateGrassPixels());
 
-        var stonePixels = TextureGenerator.GenerateStonePixels();
-        _stoneTex = TextureGenerator.UploadTexture(_gl, stonePixels, 512, 512);
+        _stoneTex = TextureLoader.LoadOrGenerate(_gl,
+            AssetPaths.TextureFile("terrain/terrain_stone.png"),
+            () => TextureGenerator.GenerateStonePixels());
 
-        var dirtPixels = TextureGenerator.GenerateDirtPixels();
-        _dirtTex = TextureGenerator.UploadTexture(_gl, dirtPixels, 512, 512);
+        _dirtTex = TextureLoader.LoadOrGenerate(_gl,
+            AssetPaths.TextureFile("terrain/terrain_dirt.png"),
+            () => TextureGenerator.GenerateDirtPixels());
 
-        var snowPixels = TextureGenerator.GenerateSnowPixels();
-        _snowTex = TextureGenerator.UploadTexture(_gl, snowPixels, 512, 512);
+        _snowTex = TextureLoader.LoadOrGenerate(_gl,
+            AssetPaths.TextureFile("terrain/terrain_snow.png"),
+            () => TextureGenerator.GenerateSnowPixels());
 
-        var pathPixels = TextureGenerator.GeneratePathPixels();
-        _pathTex = TextureGenerator.UploadTexture(_gl, pathPixels, 512, 512);
+        _pathTex = TextureLoader.LoadOrGenerate(_gl,
+            AssetPaths.TextureFile("terrain/terrain_path.png"),
+            () => TextureGenerator.GeneratePathPixels());
 
         // Load initial chunks around origin
         LoadChunksAround(0, 0);
